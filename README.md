@@ -51,7 +51,9 @@ but the build process downloads and installs them automatically (with
 
 Here's the build and install process in short:
 
-    $ sudo aptitude install sbcl libsqlite3-dev
+    $ sudo aptitude install sbcl libsqlite3-dev git
+    $ git clone https://github.com/tlikonen/tagdb
+    $ cd tagdb
     $ make
     $ make install          # Default target: ~/bin/tagdb
 
