@@ -425,8 +425,11 @@
 
 (defun run-text-editor (pathname)
   (sb-ext:run-program
-   (cond ((sb-posix:getenv "EDITOR"))
-         (t (throw-error "Please set $EDITOR variable.")))
+   (let ((editor (sb-posix:getenv "EDITOR")))
+     (cond ((and (stringp editor)
+                 (plusp (length editor)))
+            editor)
+           (t (throw-error "Please set $EDITOR variable."))))
    (list (etypecase pathname
            (pathname (sb-ext:native-namestring pathname :as-file t))
            (string pathname)))
