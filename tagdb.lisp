@@ -34,10 +34,12 @@
 
 (define-condition exit-program () nil)
 
+
 (define-condition tagdb-error (error)
   ((text :reader tagdb-error-text :initarg :text))
   (:report (lambda (condition stream)
              (format stream "~A" (tagdb-error-text condition)))))
+
 
 (defun throw-error (fmt &rest args)
   (error 'tagdb-error :text (apply #'format nil fmt args)))
@@ -108,6 +110,7 @@
   (typecase thing
     (integer thing)
     (string (parse-integer thing :junk-allowed t))))
+
 
 (defun change-counter-set (value)
   (query "UPDATE maintenance SET value=~A WHERE key='change counter'"
