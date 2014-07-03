@@ -734,9 +734,14 @@ exclusive:
 
   (defun parse-command-line (arglist)
     (multiple-value-bind (ignored options other)
-        (unix-options:getopt arglist (concatenate 'string general-options
-                                                  command-options)
-                             nil)
+        (handler-case
+            (unix-options:getopt arglist (concatenate 'string general-options
+                                                      command-options)
+                                 nil)
+          (type-error ()
+            (throw-error "Couldn't parse the command-line.~%~
+                The pseudo option \"--\" marks the end of options ~
+                (and the start of tag list).")))
       (declare (ignore ignored))
       (values (delete-duplicates options :test #'equal) other)))
 
