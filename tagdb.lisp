@@ -382,7 +382,7 @@
                         # Modified: ~A~%~
                         # Tags: ~{~A~^ ~}~%~%~A~&"))
              (:quiet (formatter "~&~4*~A~&"))
-             (:short (formatter "~&~3*# Tags: ~{~A~^ ~}~%~*"))
+             (:short (formatter "~&~3*# Tags: ~{~A~^ ~}~*"))
              (:verbose-short (formatter "~&~*# Created:  ~A~%~
                         # Modified: ~A~%~
                         # Tags: ~{~A~^ ~}~%~*"))
@@ -392,7 +392,8 @@
         :do (funcall formatter stream (hash-record-id id)
                      (format-time created) (format-time modified)
                      tag-names content)
-        :if rest :do (terpri stream)))
+        :if rest :do (terpri stream)
+        :finally (fresh-line stream)))
 
 
 (defun db-find-tags (&optional tag-name)
