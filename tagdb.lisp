@@ -400,13 +400,13 @@
         (loop :with columns := 78
               :with column := 0
               :for tag :in tags
-              :do (cond ((= column 0)
+              :do (cond ((or (= column 0)
+                             (> (+ column 1 (length tag)) columns))
                          (message "~&~A" tag)
-                         (incf column (length tag)))
-                        ((<= (+ column 1 (length tag)) columns)
+                         (setf column (length tag)))
+                        (t
                          (message " ~A" tag)
-                         (incf column (1+ (length tag))))
-                        (t (setf column 0)))
+                         (incf column (1+ (length tag)))))
               :finally (message "~&"))
         (throw-error "No tags found."))))
 
