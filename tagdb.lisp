@@ -30,6 +30,7 @@
 (defvar *output-quiet* nil)
 (defvar *output-short* nil)
 (defvar *output-verbose* nil)
+(defvar *output-editor* nil)
 (defparameter *program-database-version* 1)
 
 
@@ -373,20 +374,25 @@
              " " (:hour 2) ":" (:min 2) ":" (:sec 2) " " :gmt-offset)))
 
 
-(defun print-records (record-lists &optional mode
-                                     (stream *standard-output*))
+(defun print-records (record-lists &optional (stream *standard-output*))
   (loop :with formatter
-        := (case mode
-             (:editor (formatter "~&# Id: ~A~2* Tags: ~{~A~^ ~}~%~%~A~&"))
-             (:verbose (formatter "~&~*# Created:  ~A~%~
-                        # Modified: ~A~%~
-                        # Tags: ~{~A~^ ~}~%~%~A~&"))
-             (:quiet (formatter "~&~4*~A~&"))
-             (:short (formatter "~&~3*# Tags: ~{~A~^ ~}~*"))
-             (:verbose-short (formatter "~&~*# Created:  ~A~%~
+        := (cond
+             (*output-editor*
+              (formatter "~&# Id: ~A~2* Tags: ~{~A~^ ~}~%~%~A~&"))
+             ((and *output-verbose* *output-short*)
+              (formatter "~&~*# Created:  ~A~%~
                         # Modified: ~A~%~
                         # Tags: ~{~A~^ ~}~%~*"))
+             (*output-short*
+              (formatter "~&~3*# Tags: ~{~A~^ ~}~*"))
+             (*output-verbose*
+              (formatter "~&~*# Created:  ~A~%~
+                        # Modified: ~A~%~
+                        # Tags: ~{~A~^ ~}~%~%~A~&"))
+             (*output-quiet*
+              (formatter "~&~4*~A~&"))
              (t (formatter "~&~3*# Tags: ~{~A~^ ~}~%~%~A~&")))
+
         :for (now . rest) :on record-lists
         :for (id created modified content . tag-names) := now
         :do (funcall formatter stream (hash-record-id id)
@@ -514,7 +520,8 @@
               (query "INSERT INTO maintenance (key, value) ~
                         VALUES ('seen edit message', 1)")
               (change-counter-add 1))))
-        (print-records records :editor file))
+        (let ((*output-editor* t))
+          (print-records records file)))
 
       (loop :named editor
             :with hash-table
@@ -716,10 +723,10 @@ exclusive:
                 (change-counter-add 1)))))))
 
 
-(defun command-print-records (tag-names &optional mode)
+(defun command-print-records (tag-names)
   (assert-tag-name-validity tag-names)
   (with-database
-    (print-records (find-records tag-names) mode)))
+    (print-records (find-records tag-names))))
 
 
 (let ((general-options "qv")
@@ -767,12 +774,7 @@ exclusive:
                  (when (and *output-quiet* *output-verbose*)
                    (error-message "~&Option \"-q\" is ignored when ~
                                 combined with \"-v\".~%"))
-                 (command-print-records
-                  tag-names (cond ((and *output-verbose* *output-short*
-                                        :verbose-short))
-                                  (*output-short* :short)
-                                  (*output-verbose* :verbose)
-                                  (*output-quiet* :quiet))))))))))
+                 (command-print-records tag-names))))))))
 
 
 (defun main (&optional argv)
