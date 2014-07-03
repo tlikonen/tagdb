@@ -28,6 +28,7 @@
 (defvar *database* nil)
 (defvar *changes-before-vacuum* 1000)
 (defvar *output-quiet* nil)
+(defvar *output-short* nil)
 (defvar *output-verbose* nil)
 (defparameter *program-database-version* 1)
 
@@ -381,6 +382,10 @@
                         # Modified: ~A~%~
                         # Tags: ~{~A~^ ~}~%~%~A~&"))
              (:quiet (formatter "~&~4*~A~&"))
+             (:short (formatter "~&~3*# Tags: ~{~A~^ ~}~%~*"))
+             (:verbose-short (formatter "~&~*# Created:  ~A~%~
+                        # Modified: ~A~%~
+                        # Tags: ~{~A~^ ~}~%~*"))
              (t (formatter "~&~3*# Tags: ~{~A~^ ~}~%~%~A~&")))
         :for (now . rest) :on record-lists
         :for (id created modified content . tag-names) := now
@@ -601,6 +606,11 @@ By default the program prints database records that match the given
 tags. There are also options for other operations which are mutually
 exclusive:
 
+  -s <tag ...>
+
+        Short output. This is like the default operation but does not
+        print records' content, only tags.
+
   -c <tag ...>
 
         Create a new database record associated with the given tags. If
@@ -712,7 +722,7 @@ exclusive:
 
 
 (let ((general-options "qv")
-      (command-options "celrh"))
+      (command-options "scelrh"))
 
   (defun parse-command-line (arglist)
     (multiple-value-bind (ignored options other)
@@ -740,7 +750,8 @@ exclusive:
                               :finally (return t))))))
 
         (let ((*output-quiet* (optionp "q"))
-              (*output-verbose* (optionp "v")))
+              (*output-verbose* (optionp "v"))
+              (*output-short* (optionp "s")))
 
           (cond ((optionp "h") (command-h))
                 ((optionp "c") (command-c tag-names))
@@ -748,9 +759,19 @@ exclusive:
                 ((optionp "l") (command-l tag-names))
                 ((optionp "r") (command-r tag-names))
                 ((not tag-names) (throw-error "No tags given."))
-                (t (command-print-records
-                    tag-names (cond (*output-verbose* :verbose)
-                                    (*output-quiet* :quiet))))))))))
+                (t
+                 (when (and *output-quiet* *output-short*)
+                   (error-message "~&Option \"-q\" is ignored when ~
+                                combined with \"-s\".~%"))
+                 (when (and *output-quiet* *output-verbose*)
+                   (error-message "~&Option \"-q\" is ignored when ~
+                                combined with \"-v\".~%"))
+                 (command-print-records
+                  tag-names (cond ((and *output-verbose* *output-short*
+                                        :verbose-short))
+                                  (*output-short* :short)
+                                  (*output-verbose* :verbose)
+                                  (*output-quiet* :quiet))))))))))
 
 
 (defun main (&optional argv)
