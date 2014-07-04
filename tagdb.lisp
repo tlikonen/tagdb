@@ -636,10 +636,10 @@ exclusive:
         ignored. If record's content is completely empty (no lines or
         only empty lines) the record will be deleted.
 
-  -l [tag ...]
+  -l [tag]
 
-        List tags that match the given tags. If no tags were given list
-        all tags.
+        List tags that match the given tag. If no tag is given list all
+        tags.
 
   -r <old tag> <new tag>
 
