@@ -1,7 +1,7 @@
 Tagdb
 =====
 
-**Simple tag-based command-line database tool**
+**Tag-based command-line database tool**
 
 
 Introduction
@@ -10,7 +10,7 @@ Introduction
 _Tagdb_ is a simple tag-based command-line database tool which can store
 any kind of text records. Every record is associated with one or more
 tags which can be used to find the records. _Tagdb_ is useful for saving
-and finding personal information.
+and finding personal notes quickly.
 
 
 Examples
@@ -24,24 +24,23 @@ can be used as well.
     tagdb -c address email John_Smith
 
 _Tagdb's_ default operation prints database records that match the given
-tags. For example, the following command prints all records with tags
-`John_Smith` and `email`.
+tags. For example, the following command prints all records which have
+tags containing string `John` and `email`.
 
-    tagdb John_Smith email
+    tagdb John email
 
 Records and their tags can be edited with `-e` option. The default text
 editor is launched and all matching records can be edited at once.
 
     tagdb -e John_Smith email
 
-Currently used tags can be printed with `-l` option and more help on
-command-line usage is printed with `-h` option.
+See `-h` for more help on the command-line usage.
 
 
 Build and install
 -----------------
 
-The build process is fairly straightforward in GNU/Linux distributions.
+The build process is quite straightforward in GNU/Linux distributions.
 _Tagdb_ depends on [SBCL][] (a Common Lisp implementation) and
 [SQLite][] database back-end. For example, in [Debian GNU/Linux][Debian]
 or similar distributions they are in packages `sbcl` and
@@ -56,6 +55,8 @@ Here's the build and install process in short:
     $ cd tagdb
     $ make
     $ make install          # Default target: ~/bin/tagdb
+
+And you are ready to go. Start with `tagdb -h` command.
 
 
 [SBCL]:    http://www.sbcl.org/
