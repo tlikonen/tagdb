@@ -513,7 +513,7 @@
 # Here you can edit records' content and tags. You must not touch record
 # header lines other than tags. Empty lines at the beginning and end of
 # the record content are ignored. If record's content is completely
-# empty (no lines or only blank lines) the record will be deleted.~%~%")
+# empty (no lines or only empty lines) the record will be deleted.~%~%")
             (unless already-seen
               (format file "~
 # The above message will not show next time unless -v option is used.~%~%")
@@ -634,7 +634,7 @@ exclusive:
         When the editor has quit the records will be updated. Empty
         lines at the beginning and end of the record content are
         ignored. If record's content is completely empty (no lines or
-        only blank lines) the record will be deleted.
+        only empty lines) the record will be deleted.
 
   -l [tag ...]
 
