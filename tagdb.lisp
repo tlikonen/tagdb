@@ -510,10 +510,11 @@
                                         WHERE key='seen edit message'")))
           (when (or (not already-seen) *output-verbose*)
             (format file "~
-# Here you can edit records' content and tags. You must not touch record
-# header lines other than tags. Empty lines at the beginning and end of
-# the record content are ignored. If record's content is completely
-# empty (no lines or only empty lines) the record will be deleted.~%~%")
+# Here you can edit records' content and tags. You must not edit record
+# header lines other than the tag list. Empty lines at the beginning and
+# end of the record content are ignored. If record's content is
+# completely empty (no lines or only empty lines) the record will be
+# deleted.~%~%")
             (unless already-seen
               (format file "~
 # The above message will not show next time unless -v option is used.~%~%")
