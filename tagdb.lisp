@@ -573,10 +573,12 @@
                            (handler-case (assert-tag-names tag-names)
                              (tagdb-error (c)
                                (message "Error!~%")
-                               (error-message "~&~A Returning to editor ~
-                                        in 5 seconds..." c)
-                               (sleep 5)
-                               (error-message "~%")
+                               (error-message "~&~A~%" c)
+                               (format *query-io* "Press ENTER to return to ~
+                                        text editor...")
+                               (force-output *query-io*)
+                               (read-line *query-io* nil)
+                               (fresh-line *query-io*)
                                (return-from content)))
                            (setf (fill-pointer text) 0 start 0 end 0)
                            (vector-push-extend
