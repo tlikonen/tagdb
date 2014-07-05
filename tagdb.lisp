@@ -287,7 +287,7 @@
     (values new-tag-ids old-tag-ids)))
 
 
-(defun assert-tag-name-validity (tag-names)
+(defun assert-tag-names (tag-names)
   (unless tag-names
     (throw-error "No tags. At least one tag is required."))
   (loop :for tag-name :in (etypecase tag-names
@@ -571,7 +571,7 @@
                            (if record-id
                                (progn
                                  (handler-case
-                                     (assert-tag-name-validity tag-names)
+                                     (assert-tag-names tag-names)
                                    (tagdb-error (c)
                                      (message "~%")
                                      (error-message "~&~A Returning to editor ~
@@ -653,7 +653,7 @@ exclusive:
 
 
 (defun command-c (tag-names)
-  (assert-tag-name-validity tag-names)
+  (assert-tag-names tag-names)
   (with-database
     (if (listen *standard-input*)
         (create-new-record-from-stream tag-names *standard-input*)
@@ -661,7 +661,7 @@ exclusive:
 
 
 (defun command-e (tag-names)
-  (assert-tag-name-validity tag-names)
+  (assert-tag-names tag-names)
   (with-database
     (find-and-edit-records tag-names)))
 
@@ -671,7 +671,7 @@ exclusive:
     (error-message "~&Only the first tag is used.~%")
     (setf (rest tag-names) nil))
   (when tag-names
-    (assert-tag-name-validity tag-names))
+    (assert-tag-names tag-names))
   (with-database
     (print-tags (first tag-names))))
 
@@ -686,7 +686,7 @@ exclusive:
       (setf (rest (rest tag-names)) nil))
     (when (equal (nth 0 tag-names) (nth 1 tag-names))
       (throw-error "<old tag> and <new tag> can't be the same.")))
-  (assert-tag-name-validity tag-names)
+  (assert-tag-names tag-names)
 
   (with-database
     (let* ((old (nth 0 tag-names))
@@ -724,7 +724,7 @@ exclusive:
 
 
 (defun command-print-records (tag-names)
-  (assert-tag-name-validity tag-names)
+  (assert-tag-names tag-names)
   (with-database
     (print-records (find-records tag-names))))
 
