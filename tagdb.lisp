@@ -259,7 +259,7 @@
 
 (defun insert-or-get-tag (tag-name)
   (let ((id (query-caar "SELECT id FROM tags WHERE name=~A"
-                         (sql-string-esc tag-name))))
+                        (sql-string-esc tag-name))))
     (if id id (prog1 (db-insert-tag tag-name)
                 (change-counter-add 1)))))
 
@@ -692,9 +692,9 @@ exclusive:
     (let* ((old (nth 0 tag-names))
            (new (nth 1 tag-names))
            (old-id (query-caar "SELECT id FROM tags WHERE name=~A"
-                                (sql-string-esc old)))
+                               (sql-string-esc old)))
            (new-id (query-caar "SELECT id FROM tags WHERE name=~A"
-                                (sql-string-esc new))))
+                               (sql-string-esc new))))
 
       (if (not old-id)
           (throw-error "Tag \"~A\" not found." old)
