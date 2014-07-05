@@ -364,7 +364,8 @@
 
 
 (defun hash-record-id (id)
-  (sxhash (princ-to-string id)))
+  (let ((*print-base* 36))
+    (princ-to-string (sxhash (princ-to-string id)))))
 
 
 (defun format-time (universal-time)
@@ -495,10 +496,9 @@
   (let ((words (split-sequence #\space line :remove-empty-subseqs nil)))
     (when (and (equal "#" (nth 0 words))
                (equal "Id:" (nth 1 words))
-               (every #'digit-char-p (nth 2 words))
+               (every #'alphanumericp (nth 2 words))
                (equal "Tags:" (nth 3 words)))
-      (values (normalize-integer (nth 2 words))
-              (delete "" (nthcdr 4 words) :test #'string=)))))
+      (values (nth 2 words) (delete "" (nthcdr 4 words) :test #'string=)))))
 
 
 (defun find-and-edit-records (tag-names)
@@ -526,7 +526,7 @@
 
       (loop :named editor
             :with hash-table
-            := (loop :with table := (make-hash-table)
+            := (loop :with table := (make-hash-table :test #'equal)
                      :for (id . nil) :in records
                      :do (setf (gethash (hash-record-id id) table) id)
                      :finally (return table))
