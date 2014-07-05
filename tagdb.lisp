@@ -539,6 +539,7 @@
                     :with start
                     :with end
                     :for line := (read-line file nil)
+                    :for line-number :upfrom 1
 
                     :do
                     (multiple-value-bind (id-hash tag-names)
@@ -566,11 +567,12 @@
                          (unless line
                            (message "~&All done.~%")
                            (return-from editor))
-                         (message "~&Processing record ~A: " id-hash)
+                         (message "~&Line ~D: Processing record ~A: "
+                                  line-number id-hash)
                          (let ((record-id (gethash id-hash hash-table)))
                            (handler-case (assert-tag-names tag-names)
                              (tagdb-error (c)
-                               (message "~%")
+                               (message "Error!~%")
                                (error-message "~&~A Returning to editor ~
                                         in 5 seconds..." c)
                                (sleep 5)
@@ -581,18 +583,18 @@
                             (cons record-id tag-names) text)))
 
                         ((and (not start) id-hash)
-                         (error-message "~&There is a line that looks like a ~
+                         (error-message "~&Line ~D: The line looks like a ~
                                 record header but has an unknown record id.~%~
                                 I'm ignoring it because no valid record has ~
-                                started in the file yet.~%"))
+                                started in the file yet.~%" line-number))
 
                         ((integerp start)
                          (when id-hash
                            (message "Warning!~%")
-                           (error-message "~&There is a line that looks like a ~
+                           (error-message "~&Line ~D: The line looks like a ~
                                 record header but has an unknown record id.~%~
                                 I'll take that it's record's content and ~
-                                indent the line by two spaces.~%")
+                                indent the line by two spaces.~%" line-number)
                            (setf line (concatenate 'string "  " line)))
                          (vector-push-extend line text)
                          (cond ((and (= start 0)
