@@ -339,15 +339,15 @@
       (throw-error records-error-msg))
 
     (loop :for record-id :in record-ids
-          :for record-tag-names := (sort (query-nconc "SELECT t.name ~
+          :for record-tag-names := (query-nconc "SELECT t.name ~
                         FROM record_tag AS j ~
                         LEFT JOIN tags AS t ON j.tag_id=t.id ~
                         WHERE j.record_id=~A" record-id)
-                                         #'string-lessp)
           :if (every (lambda (tag)
                        (member tag record-tag-names :test #'search))
                      tag-names)
-          :collect (cons record-id record-tag-names) :into collection
+          :collect (cons record-id (sort record-tag-names #'string-lessp))
+          :into collection
           :finally (unless (setf tags (delete-duplicates collection
                                                          :key #'first))
                      (throw-error records-error-msg)))
