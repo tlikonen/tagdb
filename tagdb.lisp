@@ -526,9 +526,8 @@
       (loop :named editor
             :with hash-table
             := (loop :with table := (make-hash-table)
-                     :for record :in records
-                     :do (setf (gethash (hash-record-id (first record)) table)
-                               record)
+                     :for (id . nil) :in records
+                     :do (setf (gethash (hash-record-id id) table) id)
                      :finally (return table))
             :with text := (make-array 10 :adjustable t :fill-pointer 0)
             :do
@@ -545,7 +544,8 @@
                         (parse-record-header line)
 
                       (cond
-                        ((or id-hash (not line))
+                        ((or (nth-value 1 (gethash id-hash hash-table))
+                             (not line))
                          (when (integerp start)
                            (let ((record-id (first (aref text 0)))
                                  (tags (rest (aref text 0))))
@@ -566,28 +566,33 @@
                            (message "~&All done.~%")
                            (return-from editor))
                          (message "~&Processing record ~A: " id-hash)
-                         (let ((record-id
-                                (first (gethash id-hash hash-table))))
-                           (if record-id
-                               (progn
-                                 (handler-case
-                                     (assert-tag-names tag-names)
-                                   (tagdb-error (c)
-                                     (message "~%")
-                                     (error-message "~&~A Returning to editor ~
+                         (let ((record-id (gethash id-hash hash-table)))
+                           (handler-case (assert-tag-names tag-names)
+                             (tagdb-error (c)
+                               (message "~%")
+                               (error-message "~&~A Returning to editor ~
                                         in 5 seconds..." c)
-                                     (sleep 5)
-                                     (error-message "~%")
-                                     (return-from content)))
-                                 (setf (fill-pointer text) 0 start 0 end 0)
-                                 (vector-push-extend
-                                  (cons record-id tag-names) text))
-                               (progn
-                                 (setf start nil end nil)
-                                 (message "Unknown record id. ~
-                                        Skipping record.~%")))))
+                               (sleep 5)
+                               (error-message "~%")
+                               (return-from content)))
+                           (setf (fill-pointer text) 0 start 0 end 0)
+                           (vector-push-extend
+                            (cons record-id tag-names) text)))
+
+                        ((and (not start) id-hash)
+                         (error-message "~&There is a line that looks like a ~
+                                record header but has an unknown record id.~%~
+                                I'm ignoring it because no valid record has ~
+                                started in the file yet.~%"))
 
                         ((integerp start)
+                         (when id-hash
+                           (message "Warning!~%")
+                           (error-message "~&There is a line that looks like a ~
+                                record header but has an unknown record id.~%~
+                                I'll take that it's record's content and ~
+                                indent the line by two spaces.~%")
+                           (setf line (concatenate 'string "  " line)))
                          (vector-push-extend line text)
                          (cond ((and (= start 0)
                                      (not (empty-string-p line)))
