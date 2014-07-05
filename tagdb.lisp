@@ -204,8 +204,7 @@
 
 (defmacro with-database (&body body)
   `(let ((*database* nil))
-     (unwind-protect
-          (progn (connect) (sqlite:with-transaction *database* ,@body))
+     (unwind-protect (progn (connect) ,@body)
        (vacuum-maybe)
        (disconnect))))
 
@@ -665,15 +664,17 @@ exclusive:
 (defun command-c (tag-names)
   (assert-tag-names tag-names)
   (with-database
-    (if (listen *standard-input*)
-        (create-new-record-from-stream tag-names *standard-input*)
-        (create-and-edit-new-record tag-names))))
+    (with-transaction
+      (if (listen *standard-input*)
+          (create-new-record-from-stream tag-names *standard-input*)
+          (create-and-edit-new-record tag-names)))))
 
 
 (defun command-e (tag-names)
   (assert-tag-names tag-names)
   (with-database
-    (find-and-edit-records tag-names)))
+    (with-transaction
+      (find-and-edit-records tag-names))))
 
 
 (defun command-l (tag-names)
@@ -699,38 +700,39 @@ exclusive:
   (assert-tag-names tag-names)
 
   (with-database
-    (let* ((old (nth 0 tag-names))
-           (new (nth 1 tag-names))
-           (old-id (query-caar "SELECT id FROM tags WHERE name=~A"
-                               (sql-string-esc old)))
-           (new-id (query-caar "SELECT id FROM tags WHERE name=~A"
-                               (sql-string-esc new))))
+    (with-transaction
+      (let* ((old (nth 0 tag-names))
+             (new (nth 1 tag-names))
+             (old-id (query-caar "SELECT id FROM tags WHERE name=~A"
+                                 (sql-string-esc old)))
+             (new-id (query-caar "SELECT id FROM tags WHERE name=~A"
+                                 (sql-string-esc new))))
 
-      (if (not old-id)
-          (throw-error "Tag \"~A\" not found." old)
-          (if new-id
-              (loop :for changes :upfrom 1
-                    :for record-id
-                    :in (query-nconc "SELECT record_id FROM record_tag ~
+        (if (not old-id)
+            (throw-error "Tag \"~A\" not found." old)
+            (if new-id
+                (loop :for changes :upfrom 1
+                      :for record-id
+                      :in (query-nconc "SELECT record_id FROM record_tag ~
                                 WHERE tag_id=~A" old-id)
-                    :do
-                    (if (query "SELECT * FROM record_tag ~
+                      :do
+                      (if (query "SELECT * FROM record_tag ~
                                 WHERE record_id=~A AND tag_id=~A"
-                               record-id new-id)
-                        (query "DELETE FROM record_tag ~
+                                 record-id new-id)
+                          (query "DELETE FROM record_tag ~
                                 WHERE record_id=~A AND tag_id=~A"
-                               record-id old-id)
-                        (query "UPDATE record_tag SET tag_id=~A ~
+                                 record-id old-id)
+                          (query "UPDATE record_tag SET tag_id=~A ~
                                 WHERE record_id=~A"
-                               new-id record-id))
-                    :finally
-                    (change-counter-add changes)
-                    (delete-unused-tags (list old-id)))
+                                 new-id record-id))
+                      :finally
+                      (change-counter-add changes)
+                      (delete-unused-tags (list old-id)))
 
-              (progn
-                (query "UPDATE tags SET name=~A WHERE id=~A"
-                       (sql-string-esc new) old-id)
-                (change-counter-add 1)))))))
+                (progn
+                  (query "UPDATE tags SET name=~A WHERE id=~A"
+                         (sql-string-esc new) old-id)
+                  (change-counter-add 1))))))))
 
 
 (defun command-print-records (tag-names)
