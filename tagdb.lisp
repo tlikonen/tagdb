@@ -142,6 +142,12 @@
     (if value (normalize-integer value) 1)))
 
 
+(defun assert-db-write-access ()
+  (handler-case (change-counter-add 0)
+    (sqlite:sqlite-error ()
+      (throw-error "Couldn't access the database. It's probably locked."))))
+
+
 (defun init-database-pathname ()
   (unless *database-pathname*
     (setf *database-pathname*
@@ -665,6 +671,7 @@ exclusive:
   (assert-tag-names tag-names)
   (with-database
     (with-transaction
+      (assert-db-write-access)
       (if (listen *standard-input*)
           (create-new-record-from-stream tag-names *standard-input*)
           (create-and-edit-new-record tag-names)))))
@@ -674,6 +681,7 @@ exclusive:
   (assert-tag-names tag-names)
   (with-database
     (with-transaction
+      (assert-db-write-access)
       (find-and-edit-records tag-names))))
 
 
@@ -701,6 +709,7 @@ exclusive:
 
   (with-database
     (with-transaction
+      (assert-db-write-access)
       (let* ((old (nth 0 tag-names))
              (new (nth 1 tag-names))
              (old-id (query-caar "SELECT id FROM tags WHERE name=~A"
