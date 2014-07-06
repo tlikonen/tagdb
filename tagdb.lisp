@@ -210,8 +210,7 @@
 
 (defmacro with-database (&body body)
   `(let ((*database* nil))
-     (unwind-protect (progn (connect) ,@body)
-       (vacuum-maybe)
+     (unwind-protect (progn (connect) ,@body (vacuum-maybe))
        (disconnect))))
 
 
