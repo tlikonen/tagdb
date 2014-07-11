@@ -93,9 +93,9 @@
     (princ #\' out)))
 
 
-(defun sql-like-esc (str &optional (start "") (end ""))
+(defun sql-like-esc (str &optional wild-start wild-end)
   (with-output-to-string (out)
-    (format out "'~A" start)
+    (format out "'~A" (if wild-start "%" ""))
     (loop :for char :across (typecase str
                               (string str)
                               (character (string str))
@@ -105,7 +105,7 @@
                            ((find char "_%\\") (format nil "\\~A" char))
                            (t char))
                      out))
-    (format out "~A' escape '\\'" end)))
+    (format out "~A' escape '\\'" (if wild-end "%" ""))))
 
 
 (defun normalize-integer (thing)
@@ -338,7 +338,7 @@
                         LEFT JOIN tags AS t ON j.tag_id=t.id ~
                         WHERE ~{t.name LIKE ~A~^ OR ~}"
                                           (mapcar (lambda (tag)
-                                                    (sql-like-esc tag "%" "%"))
+                                                    (sql-like-esc tag t t))
                                                   tag-names)))
       (throw-error records-error-msg))
 
@@ -409,7 +409,7 @@
 
 (defun db-find-tags (&optional tag-name)
   (sort (query-nconc "SELECT name FROM tags WHERE name LIKE ~A"
-                     (sql-like-esc tag-name "%" "%"))
+                     (sql-like-esc tag-name t t))
         #'string-lessp))
 
 
