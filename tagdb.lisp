@@ -264,8 +264,7 @@
 (defun insert-or-get-tag (tag-name)
   (let ((id (query-caar "SELECT id FROM tags WHERE name=~A"
                         (sql-string-esc tag-name))))
-    (if id id (prog1 (db-insert-tag tag-name)
-                (change-counter-add 1)))))
+    (or id (db-insert-tag tag-name))))
 
 
 (defun db-modify-record-tag-connection (record-id new-tag-ids)
