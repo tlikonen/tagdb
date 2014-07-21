@@ -322,7 +322,7 @@
                                         WHERE record_id=~A" record-id)))
     (db-delete-record record-id)
     (query "DELETE FROM record_tag WHERE record_id=~A" record-id)
-    (change-counter-add 1)
+    (change-counter-add (length tag-ids))
     (delete-unused-tags tag-ids)
     record-id))
 
