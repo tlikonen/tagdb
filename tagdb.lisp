@@ -129,7 +129,7 @@
   (change-counter-set (+ count (change-counter-get))))
 
 
-(defun vacuum-maybe (&optional force)
+(defun vacuum-check (&optional force)
   (when (or force (>= (change-counter-get) *changes-before-vacuum*))
     (query "VACUUM")
     (change-counter-set 0)
@@ -210,7 +210,7 @@
 
 (defmacro with-database (&body body)
   `(let ((*database* nil))
-     (unwind-protect (progn (connect) ,@body (vacuum-maybe))
+     (unwind-protect (progn (connect) ,@body (vacuum-check))
        (disconnect))))
 
 
