@@ -730,8 +730,8 @@ exclusive:
                                 WHERE record_id=~A AND tag_id=~A"
                                  record-id old-id)
                           (query "UPDATE record_tag SET tag_id=~A ~
-                                WHERE record_id=~A"
-                                 new-id record-id))
+                                WHERE record_id=~A AND tag_id=~A"
+                                 new-id record-id old-id))
                       :finally
                       (change-counter-add changes)
                       (delete-unused-tags (list old-id)))
