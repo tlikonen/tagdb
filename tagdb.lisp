@@ -383,12 +383,6 @@
         := (cond
              (*output-editor*
               (formatter "~&# Id: ~A~2* Tags: ~{~A~^ ~}~%~%~A~&"))
-             ((and *output-verbose* *output-short*)
-              (formatter "~&~*# Created:  ~A~%~
-                        # Modified: ~A~%~
-                        # Tags: ~{~A~^ ~}~%~*"))
-             (*output-short*
-              (formatter "~&~3*# Tags: ~{~A~^ ~}~*"))
              (*output-verbose*
               (formatter "~&~*# Created:  ~A~%~
                         # Modified: ~A~%~
@@ -401,9 +395,11 @@
         :for (id created modified content . tag-names) := now
         :do (funcall formatter stream (hash-record-id id)
                      (format-time created) (format-time modified)
-                     tag-names content)
-        :if rest :do (terpri stream)
-        :finally (fresh-line stream)))
+                     tag-names
+                     (if *output-short*
+                         (subseq content 0 (position #\Newline content))
+                         content))
+        :if rest :do (terpri stream)))
 
 
 (defun db-find-tags (&optional tag-name)
@@ -629,8 +625,9 @@ exclusive:
 
   -s <tag ...>
 
-        Short output. This is like the default operation but does not
-        print records' content, only tags.
+        Short output. This is like the default operation but only prints
+        the first line of records' content. The first line could be used
+        as record's title.
 
   -c <tag ...>
 
