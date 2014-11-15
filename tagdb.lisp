@@ -789,9 +789,6 @@ exclusive:
                 ((optionp "r") (command-r tag-names))
                 ((not tag-names) (throw-error "No tags given."))
                 (t
-                 (when (and *output-quiet* *output-short*)
-                   (error-message "~&Option \"-q\" is ignored when ~
-                                combined with \"-s\".~%"))
                  (when (and *output-quiet* *output-verbose*)
                    (error-message "~&Option \"-q\" is ignored when ~
                                 combined with \"-v\".~%"))
