@@ -31,7 +31,8 @@
 (defvar *output-short* nil)
 (defvar *output-verbose* nil)
 (defvar *output-editor* nil)
-(defparameter *program-database-version* 1)
+(defvar *output-color* nil)
+(defparameter *program-database-version* 2)
 
 
 (define-condition exit-program () nil)
@@ -142,6 +143,18 @@
     (if value (normalize-integer value) 1)))
 
 
+(defun get-color-default ()
+  (let ((value (query-caar "SELECT value FROM maintenance ~
+                                WHERE key = 'color'")))
+    (if (eql value 1) t nil)))
+
+
+(defun set-color-default (set)
+  (query "UPDATE maintenance SET value = ~A WHERE key = 'color'"
+         (if set 1 0))
+  set)
+
+
 (defun assert-db-write-access ()
   (handler-case (change-counter-add 0)
     (sqlite:sqlite-error ()
@@ -158,6 +171,15 @@
   (ensure-directories-exist *database-pathname*))
 
 
+(defun db-update (current)
+  (loop :for version :from (1+ current) :upto *program-database-version*
+        :do (case version
+              (2 (query "INSERT INTO maintenance (key, value) ~
+                                VALUES ('color', 0)")
+                 (query "UPDATE maintenance SET value = 2 ~
+                                WHERE key = 'database version'")))))
+
+
 (defun init-database ()
   (let ((all (query-nconc "SELECT name FROM sqlite_master WHERE type='table'")))
     (flet ((table-exists-p (thing)
@@ -165,9 +187,8 @@
 
       (if (table-exists-p "maintenance")
           (let ((version (query-database-version)))
-            (cond ((= version *program-database-version*)
-                   ;; Everything OK.
-                   )
+            (cond ((< version *program-database-version*)
+                   (db-update version))
                   ((> version *program-database-version*)
                    (throw-error "Database file is of version ~A ~
                 but this program can only handle versions upto ~A.~%~
@@ -183,6 +204,8 @@
                 ('database version',~A)" *program-database-version*)
             (query "INSERT INTO maintenance (key, value) ~
                 VALUES ('change counter', 0)")
+            (query "INSERT INTO maintenance (key, value) ~
+                VALUES ('color', 0)")
             (query "CREATE TABLE records (id INTEGER PRIMARY KEY, ~
                         created INTEGER, ~
                 modified INTEGER, content TEXT)")
@@ -378,24 +401,43 @@
              " " (:hour 2) ":" (:min 2) ":" (:sec 2) " " :gmt-offset)))
 
 
+(defun set-color-mode ()
+  (setf *output-color*
+        (cond ((equalp *output-color* "yes") t)
+              ((equalp *output-color* "no") nil)
+              ((equalp *output-color* "yes-default")
+               (set-color-default t))
+              ((equalp *output-color* "no-default")
+               (set-color-default nil))
+              (t (when (stringp *output-color*)
+                   (error-message "~&Unknown option \"~A\".~%" *output-color*))
+                 (get-color-default)))))
+
+
+(defun term-color (&optional true)
+  (if *output-color*
+      (format nil "~C[~Am" #\Esc (if true "32" "0"))
+      ""))
+
+
 (defun print-records (record-lists &optional (stream *standard-output*))
   (loop :with formatter
         := (cond
              (*output-editor*
-              (formatter "~&# Id: ~A~2* Tags: ~{~A~^ ~}~%~%~A~&"))
+              (formatter "~&# Id: ~1@*~A~4@* Tags: ~{~A~^ ~}~6@*~%~%~A~&"))
              (*output-verbose*
-              (formatter "~&~*# Created:  ~A~%~
-                        # Modified: ~A~%~
-                        # Tags: ~{~A~^ ~}~%~%~A~&"))
+              (formatter "~&~A# Created:  ~2@*~A~%~
+                        ~0@*~A# Modified: ~3@*~A~%~
+                        ~0@*~A# Tags: ~4@*~{~A~^ ~}~A~%~%~A~&"))
              (*output-quiet*
-              (formatter "~&~4*~A~&"))
-             (t (formatter "~&~3*# Tags: ~{~A~^ ~}~%~%~A~&")))
+              (formatter "~&~6@*~A~&"))
+             (t (formatter "~&~A# Tags: ~4@*~{~A~^ ~}~A~%~%~A~&")))
 
         :for (now . rest) :on record-lists
         :for (id created modified content . tag-names) := now
-        :do (funcall formatter stream (hash-record-id id)
+        :do (funcall formatter stream (term-color t) (hash-record-id id)
                      (format-time created) (format-time modified)
-                     tag-names
+                     tag-names (term-color nil)
                      (if *output-short*
                          (subseq content 0 (position #\Newline content))
                          content))
@@ -607,10 +649,13 @@
 
 
 (defun command-h ()
+  (when *output-color*
+    (with-database (set-color-mode)))
+
   (format t "~&~
-Tagdb is a simple tag-based database tool which can store any kind of
-text records. Every record is associated with one or more tags which can
-be used to find the records.
+Tagdb is a tag-based database tool which can store any kind of text
+records. Every record is associated with one or more tags which can be
+used to find the records.
 
 Usage: tagdb [options] [--] [tag ...]
 
@@ -618,6 +663,12 @@ General options
 
   -q    Quiet output.
   -v    Verbose output.
+
+  --color=mode
+
+        Set terminal color mode to \"mode\" which can be \"yes\",
+        \"no\", \"yes-default\" or \"no-default\". The last two will set
+        the default color mode.
 
 By default the program prints database records that match the given
 tags. There are also options for other operations which are mutually
@@ -667,6 +718,7 @@ exclusive:
   (with-database
     (with-transaction
       (assert-db-write-access)
+      (set-color-mode)
       (if (listen *standard-input*)
           (create-new-record-from-stream tag-names *standard-input*)
           (create-and-edit-new-record tag-names)))))
@@ -677,6 +729,7 @@ exclusive:
   (with-database
     (with-transaction
       (assert-db-write-access)
+      (set-color-mode)
       (find-and-edit-records tag-names))))
 
 
@@ -687,6 +740,7 @@ exclusive:
   (when tag-names
     (assert-tag-names tag-names))
   (with-database
+    (set-color-mode)
     (print-tags (first tag-names))))
 
 
@@ -705,6 +759,7 @@ exclusive:
   (with-database
     (with-transaction
       (assert-db-write-access)
+      (set-color-mode)
       (let* ((old (nth 0 tag-names))
              (new (nth 1 tag-names))
              (old-id (query-caar "SELECT id FROM tags WHERE name=~A"
@@ -742,6 +797,7 @@ exclusive:
 (defun command-print-records (tag-names)
   (assert-tag-names tag-names)
   (with-database
+    (set-color-mode)
     (print-records (find-records tag-names))))
 
 
@@ -753,7 +809,7 @@ exclusive:
         (handler-case
             (unix-options:getopt arglist (concatenate 'string general-options
                                                       command-options)
-                                 nil)
+                                 '("color="))
           (type-error ()
             (throw-error "Couldn't parse the command-line.~%~
                 The pseudo option \"--\" marks the end of options ~
@@ -780,7 +836,8 @@ exclusive:
 
         (let ((*output-quiet* (optionp "q"))
               (*output-verbose* (optionp "v"))
-              (*output-short* (optionp "s")))
+              (*output-short* (optionp "s"))
+              (*output-color* (nth 1 (member "color" options :test #'equal))))
 
           (cond ((optionp "h") (command-h))
                 ((optionp "c") (command-c tag-names))
