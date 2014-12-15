@@ -653,9 +653,10 @@
     (with-database (set-color-mode)))
 
   (format t "~&~
-Tagdb is a tag-based database tool which can store any kind of text
-records. Every record is associated with one or more tags which can be
-used to find the records.
+
+Tagdb is a tag-based database tool for storing text records. Every
+record is associated with one or more tags which can be used to find the
+records.
 
 Usage: tagdb [options] [--] [tag ...]
 
@@ -670,9 +671,9 @@ General options
         \"no\", \"yes-default\" or \"no-default\". The last two will set
         the default color mode.
 
-By default the program prints database records that match the given
-tags. There are also options for other operations which are mutually
-exclusive:
+The default operation is to print all database records that match the
+given tags. Other operations are available through command-line options.
+Options are mutually exclusive.
 
   -s <tag ...>
 
@@ -685,8 +686,8 @@ exclusive:
         Create a new database record associated with the given tags. If
         there seems to be data coming from the standard input it will be
         saved as the record's content. Otherwise the default text editor
-        is launched for editing the record's content. Empty lines at the
-        beginning and end of the record content are ignored.
+        is launched for editing the record. Empty lines at the beginning
+        and end are ignored.
 
   -e <tag ...>
 
@@ -694,8 +695,8 @@ exclusive:
         default text editor for editing the records' contents and tags.
         When the editor has quit the records will be updated. Empty
         lines at the beginning and end of the record content are
-        ignored. If record's content is completely empty (no lines or
-        only empty lines) the record will be deleted.
+        ignored. If record is completely empty (no lines or only empty
+        lines) the record will be deleted from the database.
 
   -l [tag]
 
@@ -704,9 +705,9 @@ exclusive:
 
   -r <old tag> <new tag>
 
-        Re-associate records. All database records associated with the
-        old tag will be associated with the new tag. The old tag will
-        disappear.
+        Reassociate records. All database records associated with the
+        old tag will be associated with the new tag. The old tag is then
+        removed.
 
   -h    Print this help text.
 
