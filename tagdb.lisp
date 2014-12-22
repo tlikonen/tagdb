@@ -454,17 +454,7 @@
   (let ((tags (db-find-tags tag-name))
         (*output-quiet* nil))
     (if tags
-        (loop :with columns := 78
-              :with column := 0
-              :for tag :in tags
-              :do (cond ((or (= column 0)
-                             (> (+ column 1 (length tag)) columns))
-                         (message "~&~A" tag)
-                         (setf column (length tag)))
-                        (t
-                         (message " ~A" tag)
-                         (incf column (1+ (length tag)))))
-              :finally (message "~&"))
+        (dolist (tag tags) (message "~A~%" tag))
         (throw-error "No tags found."))))
 
 
