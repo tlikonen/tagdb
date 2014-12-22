@@ -116,14 +116,14 @@
 
 
 (defun change-counter-set (value)
-  (query "UPDATE maintenance SET value=~A WHERE key='change counter'"
+  (query "UPDATE maintenance SET value = ~A WHERE key = 'change counter'"
          (normalize-integer value))
   value)
 
 
 (defun change-counter-get ()
   (normalize-integer (query-caar "SELECT value FROM maintenance ~
-                                WHERE key='change counter'")))
+                                WHERE key = 'change counter'")))
 
 
 (defun change-counter-add (count)
@@ -139,7 +139,7 @@
 
 (defun query-database-version ()
   (let ((value (query-caar "SELECT value FROM maintenance ~
-                                WHERE key='database version'")))
+                                WHERE key = 'database version'")))
     (if value (normalize-integer value) 1)))
 
 
@@ -181,7 +181,7 @@
 
 
 (defun init-database ()
-  (let ((all (query-nconc "SELECT name FROM sqlite_master WHERE type='table'")))
+  (let ((all (query-nconc "SELECT name FROM sqlite_master WHERE type = 'table'")))
     (flet ((table-exists-p (thing)
              (member thing all :test #'string-equal)))
 
@@ -214,7 +214,7 @@
             (query "CREATE TABLE record_tag (record_id INTEGER, ~
                         tag_id INTEGER)")))
 
-      (query "PRAGMA case_sensitive_like=1"))))
+      (query "PRAGMA case_sensitive_like = 1"))))
 
 
 (defun connect ()
@@ -249,9 +249,9 @@
   (unless tag-ids
     (setf tag-ids (query-nconc "SELECT id FROM tags")))
   (loop :for id :in tag-ids
-        :unless (query "SELECT tag_id FROM record_tag WHERE tag_id=~A" id)
+        :unless (query "SELECT tag_id FROM record_tag WHERE tag_id = ~A" id)
         :do
-        (query "DELETE FROM tags WHERE id=~A" id)
+        (query "DELETE FROM tags WHERE id = ~A" id)
         (change-counter-add 1)
         :and :collect id))
 
@@ -266,14 +266,14 @@
 
 
 (defun db-modify-record (record-id text)
-  (query "UPDATE records SET modified=~A,content=~A WHERE id=~A"
+  (query "UPDATE records SET modified = ~A, content = ~A WHERE id = ~A"
          (get-universal-time) (sql-string-esc text) record-id)
   (change-counter-add 1)
   record-id)
 
 
 (defun db-delete-record (record-id)
-  (query "DELETE FROM records WHERE id=~A" record-id)
+  (query "DELETE FROM records WHERE id = ~A" record-id)
   (change-counter-add 1)
   record-id)
 
@@ -285,7 +285,7 @@
 
 
 (defun insert-or-get-tag (tag-name)
-  (let ((id (query-caar "SELECT id FROM tags WHERE name=~A"
+  (let ((id (query-caar "SELECT id FROM tags WHERE name = ~A"
                         (sql-string-esc tag-name))))
     (or id (db-insert-tag tag-name))))
 
@@ -293,13 +293,13 @@
 (defun db-modify-record-tag-connection (record-id new-tag-ids)
   (setf new-tag-ids (remove-duplicates new-tag-ids))
   (let ((old-tag-ids (query-nconc "SELECT tag_id FROM record_tag ~
-                                                WHERE record_id=~A"
+                                                WHERE record_id = ~A"
                                   record-id)))
 
     (let ((diff (set-difference old-tag-ids new-tag-ids)))
       (when diff
         (query "DELETE FROM record_tag ~
-                WHERE record_id=~A AND (~{tag_id=~A~^ OR ~})"
+                WHERE record_id = ~A AND (~{tag_id = ~A~^ OR ~})"
                record-id diff)
         (delete-unused-tags diff)
         (change-counter-add (length diff))))
@@ -342,9 +342,9 @@
 
 (defun delete-record (record-id)
   (let ((tag-ids (query-nconc "SELECT tag_id FROM record_tag ~
-                                        WHERE record_id=~A" record-id)))
+                                        WHERE record_id = ~A" record-id)))
     (db-delete-record record-id)
-    (query "DELETE FROM record_tag WHERE record_id=~A" record-id)
+    (query "DELETE FROM record_tag WHERE record_id = ~A" record-id)
     (change-counter-add (length tag-ids))
     (delete-unused-tags tag-ids)
     record-id))
@@ -357,7 +357,7 @@
 
     (unless (setf record-ids (query-nconc "SELECT j.record_id ~
                         FROM record_tag AS j ~
-                        LEFT JOIN tags AS t ON j.tag_id=t.id ~
+                        LEFT JOIN tags AS t ON j.tag_id = t.id ~
                         WHERE ~{t.name LIKE ~A~^ OR ~}"
                                           (mapcar (lambda (tag)
                                                     (sql-like-esc tag t t))
@@ -367,8 +367,8 @@
     (loop :for record-id :in record-ids
           :for record-tag-names := (query-nconc "SELECT t.name ~
                         FROM record_tag AS j ~
-                        LEFT JOIN tags AS t ON j.tag_id=t.id ~
-                        WHERE j.record_id=~A" record-id)
+                        LEFT JOIN tags AS t ON j.tag_id = t.id ~
+                        WHERE j.record_id = ~A" record-id)
           :if (every (lambda (tag)
                        (member tag record-tag-names :test #'search))
                      tag-names)
@@ -380,8 +380,8 @@
 
     (loop :for (id . names) :in tags
           :for record-data := (first (query "SELECT ~
-                                id,created,modified,content ~
-                                FROM records WHERE id=~A" id))
+                                id, created, modified, content ~
+                                FROM records WHERE id = ~A" id))
           :collect (nconc record-data names) :into collection
           :finally (return (sort collection #'string-lessp
                                  :key (lambda (item)
@@ -548,7 +548,7 @@
     (with-temp-file tempname
       (with-open-file (file tempname :direction :output :if-exists :overwrite)
         (let ((already-seen (query "SELECT value FROM maintenance ~
-                                        WHERE key='seen edit message'")))
+                                        WHERE key = 'seen edit message'")))
           (when (or (not already-seen) *output-verbose*)
             (format file "~
 # Here you can edit records' content and tags. You must not edit record
@@ -763,9 +763,9 @@ Options are mutually exclusive.
       (set-color-mode)
       (let* ((old (nth 0 tag-names))
              (new (nth 1 tag-names))
-             (old-id (query-caar "SELECT id FROM tags WHERE name=~A"
+             (old-id (query-caar "SELECT id FROM tags WHERE name = ~A"
                                  (sql-string-esc old)))
-             (new-id (query-caar "SELECT id FROM tags WHERE name=~A"
+             (new-id (query-caar "SELECT id FROM tags WHERE name = ~A"
                                  (sql-string-esc new))))
 
         (if (not old-id)
@@ -774,23 +774,23 @@ Options are mutually exclusive.
                 (loop :for changes :upfrom 1
                       :for record-id
                       :in (query-nconc "SELECT record_id FROM record_tag ~
-                                WHERE tag_id=~A" old-id)
+                                WHERE tag_id = ~A" old-id)
                       :do
                       (if (query "SELECT * FROM record_tag ~
-                                WHERE record_id=~A AND tag_id=~A"
+                                WHERE record_id = ~A AND tag_id = ~A"
                                  record-id new-id)
                           (query "DELETE FROM record_tag ~
-                                WHERE record_id=~A AND tag_id=~A"
+                                WHERE record_id = ~A AND tag_id = ~A"
                                  record-id old-id)
-                          (query "UPDATE record_tag SET tag_id=~A ~
-                                WHERE record_id=~A AND tag_id=~A"
+                          (query "UPDATE record_tag SET tag_id = ~A ~
+                                WHERE record_id = ~A AND tag_id = ~A"
                                  new-id record-id old-id))
                       :finally
                       (change-counter-add changes)
                       (delete-unused-tags (list old-id)))
 
                 (progn
-                  (query "UPDATE tags SET name=~A WHERE id=~A"
+                  (query "UPDATE tags SET name = ~A WHERE id = ~A"
                          (sql-string-esc new) old-id)
                   (change-counter-add 1))))))))
 
