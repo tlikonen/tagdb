@@ -688,10 +688,10 @@ Options are mutually exclusive.
         ignored. If record is completely empty (no lines or only empty
         lines) the record will be deleted from the database.
 
-  -l [tag]
+  -l [string]
 
-        List tags that match the given tag. If no tag is given list all
-        tags.
+        List tags that match the given string. If no string is given
+        list all tags.
 
   -r <old tag> <new tag>
 
