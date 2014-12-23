@@ -351,17 +351,21 @@
 
 
 (defun find-records (tag-names)
-  (let ((record-ids nil)
+  (let ((record-ids (loop :for tag :in tag-names
+                          :collect
+                          (query-nconc "SELECT j.record_id ~
+                                FROM record_tag AS j ~
+                                LEFT JOIN tags AS t ON j.tag_id = t.id ~
+                                WHERE t.name LIKE ~A"
+                                       (sql-like-esc tag t t))
+                          :into collection
+                          :finally
+                          (return (delete-duplicates
+                                   (reduce #'nintersection collection)))))
         (tags nil)
         (records-error-msg "No records found."))
 
-    (unless (setf record-ids (query-nconc "SELECT j.record_id ~
-                        FROM record_tag AS j ~
-                        LEFT JOIN tags AS t ON j.tag_id = t.id ~
-                        WHERE ~{t.name LIKE ~A~^ OR ~}"
-                                          (mapcar (lambda (tag)
-                                                    (sql-like-esc tag t t))
-                                                  tag-names)))
+    (unless record-ids
       (throw-error records-error-msg))
 
     (loop :for record-id :in record-ids
@@ -369,13 +373,9 @@
                         FROM record_tag AS j ~
                         LEFT JOIN tags AS t ON j.tag_id = t.id ~
                         WHERE j.record_id = ~A" record-id)
-          :if (every (lambda (tag)
-                       (member tag record-tag-names :test #'search))
-                     tag-names)
           :collect (cons record-id (sort record-tag-names #'string-lessp))
           :into collection
-          :finally (unless (setf tags (delete-duplicates collection
-                                                         :key #'first))
+          :finally (unless (setf tags collection)
                      (throw-error records-error-msg)))
 
     (loop :for (id . names) :in tags
