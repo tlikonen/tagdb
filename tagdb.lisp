@@ -726,7 +726,7 @@ Options are mutually exclusive.
 
 (defun command-l (tag-names)
   (when (rest tag-names)
-    (error-message "~&Only the first tag is used.~%")
+    (error-message "~&Note: Only the first string is used.~%")
     (setf (rest tag-names) nil))
   (when tag-names
     (assert-tag-names tag-names))
