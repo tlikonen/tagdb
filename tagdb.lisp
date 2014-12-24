@@ -66,7 +66,7 @@
       (throw-error "No connection to the database.")))
 
 
-(defun query-caar (format-string &rest parameters)
+(defun query-1 (format-string &rest parameters)
   (caar (apply #'query format-string parameters)))
 
 
@@ -122,7 +122,7 @@
 
 
 (defun change-counter-get ()
-  (normalize-integer (query-caar "SELECT value FROM maintenance ~
+  (normalize-integer (query-1 "SELECT value FROM maintenance ~
                                 WHERE key = 'change counter'")))
 
 
@@ -141,13 +141,13 @@
 
 
 (defun query-database-version ()
-  (let ((value (query-caar "SELECT value FROM maintenance ~
+  (let ((value (query-1 "SELECT value FROM maintenance ~
                                 WHERE key = 'database version'")))
     (if value (normalize-integer value) 1)))
 
 
 (defun get-color-default ()
-  (let ((value (query-caar "SELECT value FROM maintenance ~
+  (let ((value (query-1 "SELECT value FROM maintenance ~
                                 WHERE key = 'color'")))
     (if (eql value 1) t nil)))
 
@@ -288,8 +288,8 @@
 
 
 (defun insert-or-get-tag (tag-name)
-  (let ((id (query-caar "SELECT id FROM tags WHERE name = ~A"
-                        (sql-string-esc tag-name))))
+  (let ((id (query-1 "SELECT id FROM tags WHERE name = ~A"
+                     (sql-string-esc tag-name))))
     (or id (db-insert-tag tag-name))))
 
 
@@ -756,10 +756,10 @@ Options are mutually exclusive.
       (set-color-mode)
       (let* ((old (nth 0 tag-names))
              (new (nth 1 tag-names))
-             (old-id (query-caar "SELECT id FROM tags WHERE name = ~A"
-                                 (sql-string-esc old)))
-             (new-id (query-caar "SELECT id FROM tags WHERE name = ~A"
-                                 (sql-string-esc new))))
+             (old-id (query-1 "SELECT id FROM tags WHERE name = ~A"
+                              (sql-string-esc old)))
+             (new-id (query-1 "SELECT id FROM tags WHERE name = ~A"
+                              (sql-string-esc new))))
 
         (if (not old-id)
             (throw-error "Tag \"~A\" not found." old)
