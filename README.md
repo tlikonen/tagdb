@@ -7,10 +7,10 @@ Tagdb
 Introduction
 ------------
 
-_Tagdb_ is a simple tag-based command-line database tool which can store
-any kind of text records. Every record is associated with one or more
-tags which can be used to find the records. _Tagdb_ is useful for saving
-and finding personal notes quickly.
+_Tagdb_ is a simple tag-based command-line database tool for storing
+text records. Every record is associated with one or more tags which can
+be used to find the records. _Tagdb_ is useful for saving and finding
+personal notes quickly.
 
 
 Examples
