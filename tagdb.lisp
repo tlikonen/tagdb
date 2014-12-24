@@ -127,7 +127,10 @@
 
 
 (defun change-counter-add (count)
-  (change-counter-set (+ count (change-counter-get))))
+  (query "UPDATE maintenance SET value = value + ~A ~
+                WHERE key = 'change counter'"
+         (normalize-integer count))
+  count)
 
 
 (defun vacuum-check (&optional force)
