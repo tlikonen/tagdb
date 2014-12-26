@@ -299,22 +299,26 @@
 (defun db-modify-record-tag-connection (record-id new-tag-ids)
   (setf new-tag-ids (remove-duplicates new-tag-ids))
   (let ((old-tag-ids (query-nconc "SELECT tag_id FROM record_tag ~
-                                                WHERE record_id = ~A"
+                                        WHERE record_id = ~A"
                                   record-id)))
 
-    (let ((diff (set-difference old-tag-ids new-tag-ids)))
-      (when diff
-        (query "DELETE FROM record_tag ~
-                WHERE record_id = ~A AND (~{tag_id = ~A~^ OR ~})"
-               record-id diff)
-        (delete-unused-tags diff)
-        (change-counter-add (length diff))))
+    (loop :with old := (set-difference old-tag-ids new-tag-ids)
+          :for tag-id :in old
+          :do (query "DELETE FROM record_tag ~
+                        WHERE record_id = ~A AND tag_id = ~A"
+                     record-id tag-id)
+          :finally
+          (when old
+            (delete-unused-tags old)
+            (change-counter-add (length old))))
 
     (loop :with new := (set-difference new-tag-ids old-tag-ids)
           :for tag-id :in new
           :do (query "INSERT INTO record_tag (record_id, tag_id) ~
                         VALUES (~A, ~A)" record-id tag-id)
-          :finally (change-counter-add (length new)))
+          :finally
+          (when new
+            (change-counter-add (length new))))
 
     (values new-tag-ids old-tag-ids)))
 
