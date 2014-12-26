@@ -251,15 +251,10 @@
               tag-name)))
 
 
-(defun delete-unused-tags (&optional tag-ids)
-  (unless tag-ids
-    (setf tag-ids (query-nconc "SELECT id FROM tags")))
-  (loop :for id :in tag-ids
-        :unless (query "SELECT tag_id FROM record_tag WHERE tag_id = ~A" id)
-        :do
-        (query "DELETE FROM tags WHERE id = ~A" id)
-        (change-counter-add 1)
-        :and :collect id))
+(defun delete-unused-tags ()
+  (query "DELETE FROM tags WHERE id IN ~
+        (SELECT tags.id FROM tags LEFT JOIN record_tag AS j ~
+        ON tags.id = j.tag_id WHERE j.tag_id IS NULL)"))
 
 
 (defun db-insert-record (text)
@@ -309,7 +304,6 @@
                      record-id tag-id)
           :finally
           (when old
-            (delete-unused-tags old)
             (change-counter-add (length old))))
 
     (loop :with new := (set-difference new-tag-ids old-tag-ids)
@@ -356,7 +350,6 @@
     (db-delete-record record-id)
     (query "DELETE FROM record_tag WHERE record_id = ~A" record-id)
     (change-counter-add (length tag-ids))
-    (delete-unused-tags tag-ids)
     record-id))
 
 
@@ -734,7 +727,8 @@ Options are mutually exclusive.
     (with-transaction
       (assert-db-write-access)
       (set-color-mode)
-      (find-and-edit-records tag-names))))
+      (find-and-edit-records tag-names)
+      (delete-unused-tags))))
 
 
 (defun command-l (tag-names)
@@ -790,7 +784,7 @@ Options are mutually exclusive.
                                  new-id record-id old-id))
                       :finally
                       (change-counter-add changes)
-                      (delete-unused-tags (list old-id)))
+                      (delete-unused-tags))
 
                 (progn
                   (query "UPDATE tags SET name = ~A WHERE id = ~A"
