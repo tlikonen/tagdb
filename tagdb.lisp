@@ -174,13 +174,10 @@
   (ensure-directories-exist *database-pathname*))
 
 
-(defun db-update (current)
-  (loop :for version :from (1+ current) :upto *program-database-version*
-        :do (case version
-              (2 (query "INSERT INTO maintenance (key, value) ~
-                                VALUES ('color', 0)")
-                 (query "UPDATE maintenance SET value = 2 ~
-                                WHERE key = 'database version'")))))
+(defun db-update-2 ()
+  ;; Add color option.
+  (query "INSERT INTO maintenance (key, value) VALUES ('color', 0)")
+  (query "UPDATE maintenance SET value = 2 WHERE key = 'database version'"))
 
 
 (defun init-database ()
@@ -191,9 +188,15 @@
       (if (table-exists-p "maintenance")
           (let ((version (query-database-version)))
             (cond ((< version *program-database-version*)
-                   (db-update version))
+                   (message "Updating database from v~D to v~D.~%"
+                            version *program-database-version*)
+                   (loop :for target :from (1+ version)
+                         :upto *program-database-version*
+                         :do (funcall (read-from-string
+                                       (format nil "db-update-~D" target))))
+                   (vacuum-check t))
                   ((> version *program-database-version*)
-                   (throw-error "Database file is of version ~A ~
+                   (throw-error "The database is of version ~A ~
                 but this program can only handle versions upto ~A.~%~
                 Please update the program."
                                 version *program-database-version*))))
