@@ -32,7 +32,7 @@
 (defvar *output-verbose* nil)
 (defvar *output-editor* nil)
 (defvar *output-color* nil)
-(defparameter *program-database-version* 2)
+(defparameter *program-database-version* 3)
 
 
 (define-condition exit-program () nil)
@@ -180,6 +180,19 @@
   (query "UPDATE maintenance SET value = 2 WHERE key = 'database version'"))
 
 
+(defun db-update-3 ()
+  ;; Use foreign keys in record_tag table.
+  (with-transaction
+    (query "CREATE TABLE record_tag_v3 (~
+        record_id INTEGER REFERENCES records(id) ON DELETE CASCADE, ~
+        tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE)")
+    (query "INSERT INTO record_tag_v3 ~
+        SELECT record_id, tag_id FROM record_tag")
+    (query "DROP TABLE record_tag")
+    (query "ALTER TABLE record_tag_v3 RENAME TO record_tag")
+    (query "UPDATE maintenance SET value = 3 WHERE key = 'database version'")))
+
+
 (defun init-database ()
   (let ((all (query-nconc "SELECT name FROM sqlite_master WHERE type = 'table'")))
     (flet ((table-exists-p (thing)
@@ -205,20 +218,33 @@
           (with-transaction
             (message "~&Preparing database file ~A.~%"
                      (sb-ext:native-pathname *database-pathname*))
-            (query "CREATE TABLE maintenance (key TEXT UNIQUE, value INTEGER)")
+
+            (query "CREATE TABLE maintenance (~
+                key TEXT UNIQUE, ~
+                value INTEGER)")
+
             (query "INSERT INTO maintenance (key, value) VALUES ~
                 ('database version',~A)" *program-database-version*)
             (query "INSERT INTO maintenance (key, value) ~
                 VALUES ('change counter', 0)")
             (query "INSERT INTO maintenance (key, value) ~
                 VALUES ('color', 0)")
-            (query "CREATE TABLE records (id INTEGER PRIMARY KEY, ~
-                        created INTEGER, ~
-                modified INTEGER, content TEXT)")
-            (query "CREATE TABLE tags (id INTEGER PRIMARY KEY, ~
-                        name TEXT UNIQUE)")
-            (query "CREATE TABLE record_tag (record_id INTEGER, ~
-                        tag_id INTEGER)"))))))
+
+            (query "CREATE TABLE records (~
+                id INTEGER PRIMARY KEY, ~
+                created INTEGER, ~
+                modified INTEGER, ~
+                content TEXT)")
+
+            (query "CREATE TABLE tags (~
+                id INTEGER PRIMARY KEY, ~
+                name TEXT UNIQUE)")
+
+            (query "CREATE TABLE record_tag (~
+                record_id INTEGER REFERENCES records(id) ON DELETE CASCADE, ~
+                tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE)")))
+
+      (query "PRAGMA foreign_keys = ON"))))
 
 
 (defun connect ()
@@ -343,11 +369,10 @@
 
 
 (defun delete-record (record-id)
-  (let ((tag-ids (query-nconc "SELECT tag_id FROM record_tag ~
-                                        WHERE record_id = ~A" record-id)))
+  (let ((tag-ids (query-1 "SELECT count(*) FROM record_tag ~
+                        WHERE record_id = ~A" record-id)))
     (db-delete-record record-id)
-    (query "DELETE FROM record_tag WHERE record_id = ~A" record-id)
-    (change-counter-add (length tag-ids))
+    (change-counter-add tag-ids)
     record-id))
 
 
@@ -448,7 +473,7 @@
 (defun db-find-tags (&optional tag-name)
   (query "SELECT count(t.id) AS count, t.name FROM tags AS t ~
         JOIN record_tag AS j ON t.id = j.tag_id ~
-         WHERE t.name LIKE ~A GROUP BY t.name ORDER BY count DESC"
+        WHERE t.name LIKE ~A GROUP BY t.name ORDER BY count DESC"
          (sql-like-esc (or tag-name "") t t)))
 
 
