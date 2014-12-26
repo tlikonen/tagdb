@@ -218,9 +218,7 @@
             (query "CREATE TABLE tags (id INTEGER PRIMARY KEY, ~
                         name TEXT UNIQUE)")
             (query "CREATE TABLE record_tag (record_id INTEGER, ~
-                        tag_id INTEGER)")))
-
-      (query "PRAGMA case_sensitive_like = 1"))))
+                        tag_id INTEGER)"))))))
 
 
 (defun connect ()
