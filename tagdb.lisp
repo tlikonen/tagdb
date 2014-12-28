@@ -32,7 +32,7 @@
 (defvar *output-verbose* nil)
 (defvar *output-editor* nil)
 (defvar *output-color* nil)
-(defparameter *program-database-version* 3)
+(defparameter *program-database-version* 4)
 
 
 (define-condition exit-program () nil)
@@ -182,6 +182,7 @@
 
 (defun db-update-3 ()
   ;; Use foreign keys in record_tag table.
+  (query "PRAGMA foreign_keys = OFF")
   (with-transaction
     (query "CREATE TABLE record_tag_v3 (~
         record_id INTEGER REFERENCES records(id) ON DELETE CASCADE, ~
@@ -193,58 +194,72 @@
     (query "UPDATE maintenance SET value = 3 WHERE key = 'database version'")))
 
 
-(defun init-database ()
-  (let ((all (query-nconc "SELECT name FROM sqlite_master WHERE type = 'table'")))
-    (flet ((table-exists-p (thing)
-             (member thing all :test #'string-equal)))
+(defun db-update-4 ()
+  ;; Composite primary key for record_tag table.
+  (query "PRAGMA foreign_keys = OFF")
+  (with-transaction
+    (query "ALTER TABLE record_tag RENAME TO record_tag_old")
+    (query "CREATE TABLE record_tag (~
+        record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE, ~
+        tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE, ~
+        PRIMARY KEY (record_id, tag_id))")
+    (query "INSERT INTO record_tag ~
+        SELECT record_id, tag_id FROM record_tag_old")
+    (query "DROP TABLE record_tag_old")
+    (query "UPDATE maintenance SET value = 4 WHERE key = 'database version'"))
+  (query "PRAGMA foreign_keys = ON"))
 
-      (if (table-exists-p "maintenance")
-          (let ((version (query-database-version)))
-            (cond ((< version *program-database-version*)
-                   (message "Updating database from v~D to v~D.~%"
-                            version *program-database-version*)
-                   (loop :for target :from (1+ version)
-                         :upto *program-database-version*
-                         :do (funcall (read-from-string
-                                       (format nil "db-update-~D" target))))
-                   (vacuum-check t))
-                  ((> version *program-database-version*)
-                   (throw-error "The database is of version ~A ~
+
+(defun init-database ()
+  (if (query-1 "SELECT 1 FROM sqlite_master ~
+                WHERE type = 'table' AND name = 'maintenance'")
+      (let ((version (query-database-version)))
+        (cond ((< version *program-database-version*)
+               (message "Updating database from v~D to v~D.~%"
+                        version *program-database-version*)
+               (loop :for target :from (1+ version)
+                     :upto *program-database-version*
+                     :do (funcall (read-from-string
+                                   (format nil "db-update-~D" target))))
+               (vacuum-check t))
+              ((> version *program-database-version*)
+               (throw-error "The database is of version ~A ~
                 but this program can only handle versions upto ~A.~%~
                 Please update the program."
-                                version *program-database-version*))))
+                            version *program-database-version*))))
 
-          ;; Database is missing
-          (with-transaction
-            (message "~&Preparing database file ~A.~%"
-                     (sb-ext:native-pathname *database-pathname*))
+      ;; Database is missing
+      (with-transaction
+        (message "~&Preparing database file ~A.~%"
+                 (sb-ext:native-pathname *database-pathname*))
 
-            (query "CREATE TABLE maintenance (~
+        (query "CREATE TABLE maintenance (~
                 key TEXT UNIQUE, ~
                 value INTEGER)")
 
-            (query "INSERT INTO maintenance (key, value) VALUES ~
+        (query "INSERT INTO maintenance (key, value) VALUES ~
                 ('database version',~A)" *program-database-version*)
-            (query "INSERT INTO maintenance (key, value) ~
+        (query "INSERT INTO maintenance (key, value) ~
                 VALUES ('change counter', 0)")
-            (query "INSERT INTO maintenance (key, value) ~
+        (query "INSERT INTO maintenance (key, value) ~
                 VALUES ('color', 0)")
 
-            (query "CREATE TABLE records (~
+        (query "CREATE TABLE records (~
                 id INTEGER PRIMARY KEY, ~
                 created INTEGER, ~
                 modified INTEGER, ~
                 content TEXT)")
 
-            (query "CREATE TABLE tags (~
+        (query "CREATE TABLE tags (~
                 id INTEGER PRIMARY KEY, ~
                 name TEXT UNIQUE)")
 
-            (query "CREATE TABLE record_tag (~
-                record_id INTEGER REFERENCES records(id) ON DELETE CASCADE, ~
-                tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE)")))
+        (query "CREATE TABLE record_tag (~
+        record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE, ~
+        tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE, ~
+        PRIMARY KEY (record_id, tag_id))")))
 
-      (query "PRAGMA foreign_keys = ON"))))
+  (query "PRAGMA foreign_keys = ON"))
 
 
 (defun connect ()
