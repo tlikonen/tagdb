@@ -702,8 +702,8 @@ General options
   --color=mode
 
         Set terminal color mode to \"mode\" which can be \"yes\",
-        \"no\", \"yes-default\" or \"no-default\". The last two will set
-        the default color mode.
+        \"no\", \"yes-default\" or \"no-default\". The last two will
+        save the default color mode.
 
 The default operation is to print all database records that match the
 given tags. Other operations are available through command-line options.
