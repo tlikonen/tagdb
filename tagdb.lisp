@@ -215,8 +215,8 @@
                 WHERE type = 'table' AND name = 'maintenance'")
       (let ((version (query-database-version)))
         (cond ((< version *program-database-version*)
-               (message "Updating database from v~D to v~D.~%"
-                        version *program-database-version*)
+               (error-message "Updating database from v~D to v~D.~%"
+                              version *program-database-version*)
                (loop :for target :from (1+ version)
                      :upto *program-database-version*
                      :do (funcall (read-from-string
