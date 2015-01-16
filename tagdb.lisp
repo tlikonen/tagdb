@@ -693,7 +693,7 @@ Tagdb is a tag-based database tool for storing text records. Every
 record is associated with one or more tags which can be used to find the
 records.
 
-Usage: tagdb [options] [--] [tag ...]
+Usage: tagdb [options] [--] [tag] ...
 
 General options
 
@@ -710,13 +710,13 @@ The default operation is to print all database records that match the
 given tags. Other operations are available through command-line options.
 Options are mutually exclusive.
 
-  -s <tag ...>
+  -s <tag> ...
 
         Short output. This is like the default operation but only prints
         the first line of records' content. The first line could be used
         as record's title.
 
-  -c <tag ...>
+  -c <tag> ...
 
         Create a new database record associated with the given tags. If
         there seems to be data coming from the standard input it will be
@@ -724,7 +724,7 @@ Options are mutually exclusive.
         is launched for editing the record. Empty lines at the beginning
         and end are ignored.
 
-  -e <tag ...>
+  -e <tag> ...
 
         Find all records that match the given tags and launch the
         default text editor for editing the records' contents and tags.
