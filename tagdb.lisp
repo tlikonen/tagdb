@@ -489,15 +489,16 @@
 (defun db-find-tags (&optional tag-name)
   (query "SELECT count(t.id) AS count, t.name FROM tags AS t ~
         JOIN record_tag AS j ON t.id = j.tag_id ~
-        WHERE t.name LIKE ~A GROUP BY t.name ORDER BY count DESC"
+        WHERE t.name LIKE ~A GROUP BY t.name"
          (sql-like-esc (or tag-name "") t t)))
 
 
 (defun print-tags (&optional tag-name)
-  (let ((tags (db-find-tags tag-name))
+  (let ((tags (sort (db-find-tags tag-name) #'string-lessp :key #'second))
         (*output-quiet* nil))
     (if tags
-        (loop :with width := (length (princ-to-string (caar tags)))
+        (loop :with width := (length (princ-to-string
+                                      (reduce #'max tags :key #'first)))
               :for (count tag) :in tags
               :do (message "~V<~D~> ~A~%" width count tag))
         (throw-error "No tags found."))))
