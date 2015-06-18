@@ -174,13 +174,16 @@
   (ensure-directories-exist *database-pathname*))
 
 
-(defun db-update-2 ()
+(defgeneric db-update (version))
+
+
+(defmethod db-update ((version (eql 2)))
   ;; Add color option.
   (query "INSERT INTO maintenance (key, value) VALUES ('color', 0)")
   (query "UPDATE maintenance SET value = 2 WHERE key = 'database version'"))
 
 
-(defun db-update-3 ()
+(defmethod db-update ((version (eql 3)))
   ;; Use foreign keys in record_tag table.
   (query "PRAGMA foreign_keys = OFF")
   (with-transaction
@@ -194,7 +197,7 @@
     (query "UPDATE maintenance SET value = 3 WHERE key = 'database version'")))
 
 
-(defun db-update-4 ()
+(defmethod db-update ((version (eql 4)))
   ;; Composite primary key for record_tag table.
   (query "PRAGMA foreign_keys = OFF")
   (with-transaction
@@ -219,8 +222,7 @@
                               version *program-database-version*)
                (loop :for target :from (1+ version)
                      :upto *program-database-version*
-                     :do (funcall (read-from-string
-                                   (format nil "db-update-~D" target))))
+                     :do (db-update target))
                (vacuum-check t))
               ((> version *program-database-version*)
                (throw-error "The database is of version ~A ~
