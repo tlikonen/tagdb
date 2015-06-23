@@ -261,8 +261,8 @@
         tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE, ~
         PRIMARY KEY (record_id, tag_id))")))
 
-  (query "PRAGMA foreign_keys = YES")
-  (query "PRAGMA case_sensitive_like = YES"))
+  (query "PRAGMA foreign_keys = ON")
+  (query "PRAGMA case_sensitive_like = ON"))
 
 
 (defun connect ()
