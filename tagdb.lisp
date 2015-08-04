@@ -633,8 +633,8 @@
                              (if (= start 0)
                                  (progn
                                    (delete-record record-id)
-                                   (message "No content. ~
-                                        The record is deleted.~%"))
+                                   (message "No content; ~
+                                        deleting the record.~%"))
                                  (progn
                                    (modify-record
                                     record-id
