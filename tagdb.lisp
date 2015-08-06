@@ -32,7 +32,7 @@
 (defvar *output-verbose* nil)
 (defvar *output-editor* nil)
 (defvar *output-color* nil)
-(defparameter *program-database-version* 4)
+(defparameter *program-database-version* 5)
 
 
 (define-condition exit-program () nil)
@@ -213,6 +213,12 @@
   (query "PRAGMA foreign_keys = ON"))
 
 
+(defmethod db-update ((version (eql 5)))
+  (with-transaction
+    (query "UPDATE maintenance SET value = 5 WHERE key = 'database version'")
+    (query "PRAGMA auto_vacuum = FULL")))
+
+
 (defun init-database ()
   (if (query-1 "SELECT 1 FROM sqlite_master ~
                 WHERE type = 'table' AND name = 'maintenance'")
@@ -234,6 +240,8 @@
       (with-transaction
         (message "~&Preparing database file ~A.~%"
                  (sb-ext:native-pathname *database-pathname*))
+
+        (query "PRAGMA auto_vacuum = FULL")
 
         (query "CREATE TABLE maintenance (~
                 key TEXT UNIQUE, ~
