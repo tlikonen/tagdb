@@ -468,7 +468,7 @@
 
 (defun term-color (&optional true)
   (if *output-color*
-      (format nil "~C[~Am" #\Esc (if true "32" "0"))
+      (format nil "~C[~Am" #\Esc (if true "0;32" "0"))
       ""))
 
 
