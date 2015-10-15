@@ -854,14 +854,9 @@ Options are mutually exclusive.
 
   (defun parse-command-line (arglist)
     (multiple-value-bind (ignored options other)
-        (handler-case
-            (unix-options:getopt arglist (concatenate 'string general-options
-                                                      command-options)
-                                 '("color="))
-          (type-error ()
-            (throw-error "Couldn't parse the command-line.~%~
-                The pseudo option \"--\" marks the end of options ~
-                (and the start of tag list).")))
+        (unix-options:getopt arglist (concatenate 'string general-options
+                                                  command-options)
+                             '("color="))
       (declare (ignore ignored))
       (values (delete-duplicates options :test #'equal) other)))
 
