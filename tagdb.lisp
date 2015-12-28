@@ -443,7 +443,7 @@
 
 (defun hash-record-id (id)
   (let ((*print-base* 36))
-    (princ-to-string (sxhash (princ-to-string id)))))
+    (princ-to-string id)))
 
 
 (defun format-time (universal-time)
