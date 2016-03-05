@@ -48,6 +48,14 @@
   (error 'tagdb-error :text (apply #'format nil fmt args)))
 
 
+(defclass record ()
+  ((id :reader id :initarg :id)
+   (created :reader created :initarg :created)
+   (modified :reader modified :initarg :modified)
+   (tags :reader tags :initarg :tags)
+   (content :reader content :initarg :content)))
+
+
 (defun message (fmt &rest args)
   (unless *output-quiet*
     (apply #'format t fmt args)
@@ -431,14 +439,17 @@
                      (throw-error records-error-msg)))
 
     (loop :for (id . names) :in tags
-          :for record-data := (first (query "SELECT ~
-                                id, created, modified, content ~
+          :for (created modified content) := (first (query "~
+                                SELECT created, modified, content ~
                                 FROM records WHERE id = ~A" id))
-          :collect (nconc record-data names) :into collection
+          :collect (make-instance 'record :id id
+                                  :created created
+                                  :modified modified
+                                  :tags names :content content)
+          :into collection
           :finally (return (sort collection #'string-lessp
                                  :key (lambda (item)
-                                        (format nil "~{~A ~}"
-                                                (nthcdr 4 item))))))))
+                                        (format nil "~{~A ~}" (tags item))))))))
 
 
 (defun hash-record-id (id)
@@ -472,7 +483,7 @@
       ""))
 
 
-(defun print-records (record-lists &optional (stream *standard-output*))
+(defun print-records (records &optional (stream *standard-output*))
   (loop :with formatter
         := (cond
              (*output-editor*
@@ -485,14 +496,15 @@
               (formatter "~&~6@*~A~&"))
              (t (formatter "~&~A# Tags: ~4@*~{~A~^ ~}~A~%~%~A~&")))
 
-        :for (now . rest) :on record-lists
-        :for (id created modified content . tag-names) := now
-        :do (funcall formatter stream (term-color t) (hash-record-id id)
-                     (format-time created) (format-time modified)
-                     tag-names (term-color nil)
+        :for (record . rest) :on records
+        :for i :upfrom 1
+        :do (funcall formatter stream (term-color t) (hash-record-id i)
+                     (format-time (created record)) (format-time (modified record))
+                     (tags record) (term-color nil)
                      (if *output-short*
-                         (subseq content 0 (position #\Newline content))
-                         content))
+                         (subseq (content record)
+                                 0 (position #\Newline (content record)))
+                         (content record)))
         :if rest :do (terpri stream)))
 
 
@@ -614,8 +626,9 @@
       (loop :named editor
             :with hash-table
             := (loop :with table := (make-hash-table :test #'equal)
-                     :for (id . nil) :in records
-                     :do (setf (gethash (hash-record-id id) table) id)
+                     :for record :in records
+                     :for i :upfrom 1
+                     :do (setf (gethash (hash-record-id i) table) (id record))
                      :finally (return table))
             :with text := (make-array 10 :adjustable t :fill-pointer 0)
             :do
