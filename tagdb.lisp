@@ -707,7 +707,7 @@
                                 (setf end (1- (length text))))))))))))))
 
 
-(defun command-h ()
+(defun command-help ()
   (when *output-color*
     (with-database (set-color-mode)))
 
@@ -774,7 +774,7 @@ Options are mutually exclusive.
 "))
 
 
-(defun command-c (tag-names)
+(defun command-create (tag-names)
   (assert-tag-names tag-names)
   (with-database
     (with-transaction
@@ -785,7 +785,7 @@ Options are mutually exclusive.
           (create-and-edit-new-record tag-names)))))
 
 
-(defun command-e (tag-names)
+(defun command-edit (tag-names)
   (assert-tag-names tag-names)
   (with-database
     (with-transaction
@@ -795,7 +795,7 @@ Options are mutually exclusive.
       (delete-unused-tags))))
 
 
-(defun command-l (tag-names)
+(defun command-list (tag-names)
   (when (rest tag-names)
     (error-message "~&Note: Only the first string is used.~%")
     (setf (rest tag-names) nil))
@@ -806,7 +806,7 @@ Options are mutually exclusive.
     (print-tags (first tag-names))))
 
 
-(defun command-r (tag-names)
+(defun command-reassociate (tag-names)
   (let ((number-of-tags (length tag-names)))
     (case number-of-tags
       (0 (throw-error "Must give OLD and NEW tag."))
@@ -863,50 +863,88 @@ Options are mutually exclusive.
     (print-records (find-records tag-names))))
 
 
-(let ((general-options "qv")
-      (command-options "scelrh"))
+(defun parse-command-line (args)
+  (loop :with color :with short :with verbose :with help :with quiet
+        :with create :with edit :with list :with reassociate
+        :with unknown
+        :with options-still := t
+        :with arg := nil
+        :while args
+        :if (setf arg (pop args)) :do
 
-  (defun parse-command-line (arglist)
-    (multiple-value-bind (ignored options other)
-        (unix-options:getopt arglist (concatenate 'string general-options
-                                                  command-options)
-                             '("color="))
-      (declare (ignore ignored))
-      (values (delete-duplicates options :test #'equal) other)))
+        (cond
+          ((equal "--" arg)
+           (loop-finish))
+
+          ((and (> (length arg) 2)
+                (equal "--" (subseq arg 0 2)))
+           (cond ((equal "--color" arg)
+                  (setf color (pop args)))
+                 ((and (>= (length arg) 8)
+                       (equal "--color=" (subseq arg 0 8)))
+                  (setf color (subseq arg 8)))
+                 (t (push arg unknown))))
+
+          ((and (> (length arg) 1)
+                (equal "-" (subseq arg 0 1)))
+           (loop :for option :across (subseq arg 1)
+                 :do (case option
+                       (#\q (setf quiet t))
+                       (#\v (setf verbose t))
+                       (#\s (setf short t))
+                       (#\e (setf edit t))
+                       (#\c (setf create t))
+                       (#\l (setf list t))
+                       (#\r (setf reassociate t))
+                       (#\h (setf help t))
+                       (t (push (format nil "-~C" option) unknown)))))
+
+          (t (push arg args)
+             (loop-finish)))
+
+        :finally
+        (return
+          (values
+           (list :quiet quiet :verbose verbose :color color
+                 :short short :edit edit :create create :list list
+                 :reassociate reassociate :help help)
+           args
+           (delete-duplicates (nreverse unknown)) :test #'equal))))
 
 
-  (defun execute-command-line (arglist)
-    (multiple-value-bind (options tag-names)
-        (parse-command-line arglist)
+(defun execute-command-line (args)
+  (multiple-value-bind (options tag-names unknown)
+      (parse-command-line args)
 
-      (flet ((optionp (option)
-               (and (member option options :test #'equal)
-                    (or (find (aref option 0) general-options :test #'equal)
-                        (loop :for o :across command-options
-                              :for string-o := (string o)
-                              :do (when (and (not (equal string-o option))
-                                             (find string-o options
-                                                   :test #'equal))
-                                    (throw-error "Mutually exclusive options ~
-                                        used together. Use -h for help."))
-                              :finally (return t))))))
+    (loop :for u :in unknown
+          :do (error-message "Unknown option \"~A\".~%" u))
 
-        (let ((*output-quiet* (optionp "q"))
-              (*output-verbose* (optionp "v"))
-              (*output-short* (optionp "s"))
-              (*output-color* (nth 1 (member "color" options :test #'equal))))
+    (when (> (length (delete nil (list (getf options :short)
+                                       (getf options :create)
+                                       (getf options :edit)
+                                       (getf options :list)
+                                       (getf options :reassociate)
+                                       (getf options :help))))
+             1)
+      (throw-error "Mutually exclusive options used together. ~
+                        Use -h for help."))
 
-          (cond ((optionp "h") (command-h))
-                ((optionp "c") (command-c tag-names))
-                ((optionp "e") (command-e tag-names))
-                ((optionp "l") (command-l tag-names))
-                ((optionp "r") (command-r tag-names))
-                ((not tag-names) (throw-error "No tags given."))
-                (t
-                 (when (and *output-quiet* *output-verbose*)
-                   (error-message "~&Option \"-q\" is ignored when ~
+    (let ((*output-quiet* (getf options :quiet))
+          (*output-verbose* (getf options :verbose))
+          (*output-short* (getf options :short))
+          (*output-color* (getf options :color)))
+
+      (cond ((getf options :help) (command-help))
+            ((getf options :create) (command-create tag-names))
+            ((getf options :edit) (command-edit tag-names))
+            ((getf options :list) (command-list tag-names))
+            ((getf options :reassociate) (command-reassociate tag-names))
+            ((not tag-names) (throw-error "No tags given."))
+            (t
+             (when (and *output-quiet* *output-verbose*)
+               (error-message "~&Option \"-q\" is ignored when ~
                                 combined with \"-v\".~%"))
-                 (command-print-records tag-names))))))))
+             (command-print-records tag-names))))))
 
 
 (defun main (&optional argv)
