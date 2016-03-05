@@ -717,30 +717,31 @@ Tagdb is a tag-based database tool for storing text records. Every
 record is associated with one or more tags which can be used to find the
 records.
 
-Usage: tagdb [options] [--] [tag] ...
+Usage: tagdb [OPTION] [--] [TAG] ...
 
 General options
 
   -q    Quiet output.
   -v    Verbose output.
 
-  --color=mode
+  --color=MODE
+  --color MODE
 
-        Set terminal color mode to \"mode\" which can be \"yes\",
-        \"no\", \"yes-default\" or \"no-default\". The last two will
-        save the default color mode.
+        Set terminal color mode to MODE which can be \"yes\", \"no\",
+        \"yes-default\" or \"no-default\". The last two will save the
+        default color mode.
 
 The default operation is to print all database records that match the
 given tags. Other operations are available through command-line options.
 Options are mutually exclusive.
 
-  -s <tag> ...
+  -s TAG ...
 
         Short output. This is like the default operation but only prints
         the first line of records' content. The first line could be used
         as record's title.
 
-  -c <tag> ...
+  -c TAG ...
 
         Create a new database record associated with the given tags. If
         there seems to be data coming from the standard input it will be
@@ -748,7 +749,7 @@ Options are mutually exclusive.
         is launched for editing the record. Empty lines at the beginning
         and end are ignored.
 
-  -e <tag> ...
+  -e TAG ...
 
         Find all records that match the given tags and launch the
         default text editor for editing the records' contents and tags.
@@ -757,12 +758,12 @@ Options are mutually exclusive.
         ignored. If record is completely empty (no lines or only empty
         lines) the record will be deleted from the database.
 
-  -l [string]
+  -l [STRING]
 
         List tags that match the given string. If no string is given
         list all tags.
 
-  -r <old tag> <new tag>
+  -r OLD NEW
 
         Reassociate records. All database records associated with the
         old tag will be associated with the new tag. The old tag is then
@@ -808,13 +809,13 @@ Options are mutually exclusive.
 (defun command-r (tag-names)
   (let ((number-of-tags (length tag-names)))
     (case number-of-tags
-      (0 (throw-error "Must give <old tag> and <new tag>."))
-      (1 (throw-error "Must also give <new tag>.")))
+      (0 (throw-error "Must give OLD and NEW tag."))
+      (1 (throw-error "Must also give NEW tag.")))
     (when (> number-of-tags 2)
       (error-message "~&Only the first two tags are used.~%")
       (setf (rest (rest tag-names)) nil))
     (when (equal (nth 0 tag-names) (nth 1 tag-names))
-      (throw-error "<old tag> and <new tag> can't be the same.")))
+      (throw-error "OLD and NEW tag can't be the same.")))
   (assert-tag-names tag-names)
 
   (with-database
