@@ -58,6 +58,8 @@
     (format *error-output* "~&~A~%" c)
     (sb-ext:exit :code 1)))
 
+(pushnew *default-pathname-defaults* asdf:*central-registry*)
+
 (handler-case (ql:quickload *system*)
   (sb-sys:interactive-interrupt ()
     (sb-ext:exit :code 1))
