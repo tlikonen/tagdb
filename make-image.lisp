@@ -58,7 +58,8 @@
     (format *error-output* "~&~A~%" c)
     (sb-ext:exit :code 1)))
 
-(pushnew *default-pathname-defaults* ql:*local-project-directories*)
+(pushnew *default-pathname-defaults* ql:*local-project-directories*
+         :test #'equal)
 
 (handler-case (ql:quickload *system*)
   (sb-sys:interactive-interrupt ()
