@@ -829,31 +829,32 @@ Options are mutually exclusive.
              (new-id (query-1 "SELECT id FROM tags WHERE name = ~A"
                               (sql-string-esc new))))
 
-        (if (not old-id)
-            (throw-error "Tag \"~A\" not found." old)
-            (if new-id
-                (loop :for changes :upfrom 1
-                      :for record-id
-                      :in (query-nconc "SELECT record_id FROM record_tag ~
-                                WHERE tag_id = ~A" old-id)
-                      :do
-                      (if (query "SELECT * FROM record_tag ~
-                                WHERE record_id = ~A AND tag_id = ~A"
-                                 record-id new-id)
-                          (query "DELETE FROM record_tag ~
-                                WHERE record_id = ~A AND tag_id = ~A"
-                                 record-id old-id)
-                          (query "UPDATE record_tag SET tag_id = ~A ~
-                                WHERE record_id = ~A AND tag_id = ~A"
-                                 new-id record-id old-id))
-                      :finally
-                      (change-counter-add changes)
-                      (delete-unused-tags))
+        (cond
+          ((not old-id)
+           (throw-error "Tag \"~A\" not found." old))
 
-                (progn
-                  (query "UPDATE tags SET name = ~A WHERE id = ~A"
-                         (sql-string-esc new) old-id)
-                  (change-counter-add 1))))))))
+          (new-id
+           (loop :for changes :upfrom 1
+                 :for record-id
+                 :in (query-nconc "SELECT record_id FROM record_tag ~
+                                WHERE tag_id = ~A" old-id)
+                 :do
+                 (if (query "SELECT * FROM record_tag ~
+                                WHERE record_id = ~A AND tag_id = ~A"
+                            record-id new-id)
+                     (query "DELETE FROM record_tag ~
+                                WHERE record_id = ~A AND tag_id = ~A"
+                            record-id old-id)
+                     (query "UPDATE record_tag SET tag_id = ~A ~
+                                WHERE record_id = ~A AND tag_id = ~A"
+                            new-id record-id old-id))
+                 :finally
+                 (change-counter-add changes)
+                 (delete-unused-tags)))
+
+          (t (query "UPDATE tags SET name = ~A WHERE id = ~A"
+                    (sql-string-esc new) old-id)
+             (change-counter-add 1)))))))
 
 
 (defun command-print-records (tag-names)
