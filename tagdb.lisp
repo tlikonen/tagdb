@@ -473,7 +473,8 @@
               ((equalp *output-color* "no-default")
                (set-color-default nil))
               (t (when (stringp *output-color*)
-                   (error-message "~&Unknown option \"~A\".~%" *output-color*))
+                   (error-message "~&Unknown color option \"~A\".~%"
+                                  *output-color*))
                  (get-color-default)))))
 
 
