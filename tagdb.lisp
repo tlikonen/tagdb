@@ -726,7 +726,6 @@ General options
   -v    Verbose output.
 
   --color=MODE
-  --color MODE
 
         Set terminal color mode to MODE which can be \"yes\", \"no\",
         \"yes-default\" or \"no-default\". The last two will save the
@@ -880,9 +879,7 @@ Options are mutually exclusive.
 
           ((and (> (length arg) 2)
                 (equal "--" (subseq arg 0 2)))
-           (cond ((equal "--color" arg)
-                  (setf color (pop args)))
-                 ((and (>= (length arg) 8)
+           (cond ((and (>= (length arg) 8)
                        (equal "--color=" (subseq arg 0 8)))
                   (setf color (subseq arg 8)))
                  (t (push arg unknown))))
