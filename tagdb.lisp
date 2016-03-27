@@ -668,7 +668,7 @@
                          (unless line
                            (message "~&All done.~%")
                            (return-from editor))
-                         (message "~&Line ~D: Processing record ~A: "
+                         (message "~&Line ~D: Id ~A: "
                                   line-number id-hash)
                          (let ((record-id (gethash id-hash hash-table)))
                            (handler-case (assert-tag-names tag-names)
