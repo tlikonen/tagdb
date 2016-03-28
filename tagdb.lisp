@@ -612,9 +612,8 @@
             (format file "~
 # Here you can edit records' content and tags. You must not edit record
 # header lines other than the tag list. Empty lines at the beginning and
-# end of the record content are ignored. If record's content is
-# completely empty (no lines or only empty lines) the record will be
-# deleted.~%~%")
+# end of the record content are ignored. If a record has empty content
+# the record will be deleted from the database.~%~%")
             (unless already-seen
               (format file "~
 # The above message will not show next time unless -v option is used.~%~%")
@@ -753,10 +752,9 @@ Options are mutually exclusive.
 
         Find all records that match the given tags and launch the
         default text editor for editing the records' contents and tags.
-        When the editor has quit the records will be updated. Empty
-        lines at the beginning and end of the record content are
-        ignored. If record is completely empty (no lines or only empty
-        lines) the record will be deleted from the database.
+        Empty lines at the beginning and end of the record content are
+        ignored. If a record has empty content the record will be
+        deleted from the database.
 
   -l [STRING]
 
