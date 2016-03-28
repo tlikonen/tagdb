@@ -868,7 +868,6 @@ Options are mutually exclusive.
   (loop :with color :with short :with verbose :with help :with quiet
         :with create :with edit :with list :with reassociate
         :with unknown
-        :with options-still := t
         :with arg := nil
         :while args
         :if (setf arg (pop args)) :do
