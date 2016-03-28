@@ -499,13 +499,13 @@
 
         :for (record . rest) :on records
         :for i :upfrom 1
-        :do (funcall formatter stream (term-color t) (hash-record-id i)
-                     (format-time (created record)) (format-time (modified record))
-                     (tags record) (term-color nil)
-                     (if *output-short*
-                         (subseq (content record)
-                                 0 (position #\Newline (content record)))
-                         (content record)))
+        :do (format stream formatter (term-color t) (hash-record-id i)
+                    (format-time (created record)) (format-time (modified record))
+                    (tags record) (term-color nil)
+                    (if *output-short*
+                        (subseq (content record)
+                                0 (position #\Newline (content record)))
+                        (content record)))
         :if rest :do (terpri stream)))
 
 
