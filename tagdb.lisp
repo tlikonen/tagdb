@@ -711,13 +711,12 @@
   (when *output-color*
     (with-database (set-color-mode)))
 
-  (format t "~&~
+  (format t "~
 
-Tagdb is a tag-based database tool for storing text records. Every
-record is associated with one or more tags which can be used to find the
-records.
+Usage: tagdb [options] [--] TAG ...
 
-Usage: tagdb [OPTION] [--] [TAG] ...
+  The default operation prints all database records that match the given
+  TAG(s).
 
 General options
 
@@ -730,9 +729,7 @@ General options
         \"yes-default\" or \"no-default\". The last two will save the
         default color mode.
 
-The default operation is to print all database records that match the
-given tags. Other operations are available through command-line options.
-Options are mutually exclusive.
+Command options
 
   -s TAG ...
 
@@ -922,7 +919,7 @@ Options are mutually exclusive.
                                        (getf options :reassociate)
                                        (getf options :help))))
              1)
-      (throw-error "Mutually exclusive options used together. ~
+      (throw-error "Only one command option is allowed. ~
                         Use -h for help."))
 
     (let ((*output-quiet* (getf options :quiet))
