@@ -708,6 +708,8 @@
 
 
 (defun command-help ()
+  ;; Help command doesn't use colors but user might combine it with
+  ;; --color=yes-default, for example.
   (when *output-color*
     (with-database (set-color-mode)))
 
