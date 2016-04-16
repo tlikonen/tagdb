@@ -725,6 +725,11 @@ General options
   -q    Quiet output.
   -v    Verbose output.
 
+  --db=FILE
+
+        Use FILE as the database file instead of the default
+        ~~/.config/tagdb.db.
+
   --color=MODE
 
         Set terminal color mode to MODE which can be \"yes\", \"no\",
@@ -864,7 +869,7 @@ Command options
 (defun parse-command-line (args)
   (loop :with color :with short :with verbose :with help :with quiet
         :with create :with edit :with list :with reassociate
-        :with unknown
+        :with db :with unknown
         :with arg := nil
         :while args
         :if (setf arg (pop args)) :do
@@ -878,6 +883,9 @@ Command options
            (cond ((and (>= (length arg) 8)
                        (equal "--color=" (subseq arg 0 8)))
                   (setf color (subseq arg 8)))
+                 ((and (>= (length arg) 5)
+                       (equal "--db=" (subseq arg 0 5)))
+                  (setf db (subseq arg 5)))
                  (t (push arg unknown))))
 
           ((and (> (length arg) 1)
@@ -900,7 +908,7 @@ Command options
         :finally
         (return
           (values
-           (list :quiet quiet :verbose verbose :color color
+           (list :quiet quiet :verbose verbose :color color :db db
                  :short short :edit edit :create create :list list
                  :reassociate reassociate :help help)
            args
@@ -928,6 +936,12 @@ Command options
           (*output-verbose* (getf options :verbose))
           (*output-short* (getf options :short))
           (*output-color* (getf options :color)))
+
+      (let ((path (getf options :db)))
+        (when path
+          (if (plusp (length path))
+              (setf *database-pathname* (sb-ext:parse-native-namestring path))
+              (throw-error "Invalid filename for option --db=FILE."))))
 
       (cond ((getf options :help) (command-help))
             ((getf options :create) (command-create tag-names))
