@@ -124,7 +124,7 @@
 
 
 (defun change-counter-set (value)
-  (query "UPDATE maintenance SET value = ~A WHERE key = 'change counter'"
+  (query "UPDATE maintenance SET value = ~D WHERE key = 'change counter'"
          (normalize-integer value))
   value)
 
@@ -135,7 +135,7 @@
 
 
 (defun change-counter-add (count)
-  (query "UPDATE maintenance SET value = value + ~A ~
+  (query "UPDATE maintenance SET value = value + ~D ~
                 WHERE key = 'change counter'"
          (normalize-integer count))
   count)
@@ -161,7 +161,7 @@
 
 
 (defun set-color-default (set)
-  (query "UPDATE maintenance SET value = ~A WHERE key = 'color'"
+  (query "UPDATE maintenance SET value = ~D WHERE key = 'color'"
          (if set 1 0))
   set)
 
@@ -239,8 +239,8 @@
                      :do (db-update target))
                (vacuum-check t))
               ((> version *program-database-version*)
-               (throw-error "The database is of version ~A ~
-                but this program can only handle versions upto ~A.~%~
+               (throw-error "The database is of version ~D ~
+                but this program can only handle versions upto ~D.~%~
                 Please update the program."
                             version *program-database-version*))))
 
@@ -256,7 +256,7 @@
                 value INTEGER)")
 
         (query "INSERT INTO maintenance (key, value) VALUES ~
-                ('database version',~A)" *program-database-version*)
+                ('database version', ~D)" *program-database-version*)
         (query "INSERT INTO maintenance (key, value) ~
                 VALUES ('change counter', 0)")
         (query "INSERT INTO maintenance (key, value) ~
@@ -318,21 +318,21 @@
 (defun db-insert-record (text)
   (let ((now (get-universal-time)))
     (query "INSERT INTO records (created, modified, content) ~
-                VALUES (~A, ~A, ~A)"
+                VALUES (~D, ~D, ~A)"
            now now (sql-string-esc text))
     (prog1 (query-last-insert-rowid)
       (change-counter-add 1))))
 
 
 (defun db-modify-record (record-id text)
-  (query "UPDATE records SET modified = ~A, content = ~A WHERE id = ~A"
+  (query "UPDATE records SET modified = ~D, content = ~A WHERE id = ~D"
          (get-universal-time) (sql-string-esc text) record-id)
   (change-counter-add 1)
   record-id)
 
 
 (defun db-delete-record (record-id)
-  (query "DELETE FROM records WHERE id = ~A" record-id)
+  (query "DELETE FROM records WHERE id = ~D" record-id)
   (change-counter-add 1)
   record-id)
 
@@ -352,13 +352,13 @@
 (defun db-modify-record-tag-connection (record-id new-tag-ids)
   (setf new-tag-ids (remove-duplicates new-tag-ids))
   (let ((old-tag-ids (query-nconc "SELECT tag_id FROM record_tag ~
-                                        WHERE record_id = ~A"
+                                        WHERE record_id = ~D"
                                   record-id)))
 
     (loop :with old := (set-difference old-tag-ids new-tag-ids)
           :for tag-id :in old
           :do (query "DELETE FROM record_tag ~
-                        WHERE record_id = ~A AND tag_id = ~A"
+                        WHERE record_id = ~D AND tag_id = ~D"
                      record-id tag-id)
           :finally
           (when old
@@ -367,7 +367,7 @@
     (loop :with new := (set-difference new-tag-ids old-tag-ids)
           :for tag-id :in new
           :do (query "INSERT INTO record_tag (record_id, tag_id) ~
-                        VALUES (~A, ~A)" record-id tag-id)
+                        VALUES (~D, ~D)" record-id tag-id)
           :finally
           (when new
             (change-counter-add (length new))))
@@ -404,7 +404,7 @@
 
 (defun delete-record (record-id)
   (let ((tag-ids (query-1 "SELECT count(*) FROM record_tag ~
-                        WHERE record_id = ~A" record-id)))
+                        WHERE record_id = ~D" record-id)))
     (db-delete-record record-id)
     (change-counter-add tag-ids)
     record-id))
@@ -432,7 +432,7 @@
           :for record-tag-names := (query-nconc "SELECT t.name ~
                         FROM record_tag AS j ~
                         LEFT JOIN tags AS t ON j.tag_id = t.id ~
-                        WHERE j.record_id = ~A" record-id)
+                        WHERE j.record_id = ~D" record-id)
           :collect (cons record-id (sort record-tag-names #'string-lessp))
           :into collection
           :finally (unless (setf tags collection)
@@ -441,7 +441,7 @@
     (loop :for (id . names) :in tags
           :for (created modified content) := (first (query "~
                                 SELECT created, modified, content ~
-                                FROM records WHERE id = ~A" id))
+                                FROM records WHERE id = ~D" id))
           :collect (make-instance 'record :id id
                                   :created created
                                   :modified modified
@@ -839,22 +839,22 @@ Command options
            (loop :for changes :upfrom 1
                  :for record-id
                  :in (query-nconc "SELECT record_id FROM record_tag ~
-                                WHERE tag_id = ~A" old-id)
+                                WHERE tag_id = ~D" old-id)
                  :do
                  (if (query "SELECT * FROM record_tag ~
-                                WHERE record_id = ~A AND tag_id = ~A"
+                                WHERE record_id = ~D AND tag_id = ~D"
                             record-id new-id)
                      (query "DELETE FROM record_tag ~
-                                WHERE record_id = ~A AND tag_id = ~A"
+                                WHERE record_id = ~D AND tag_id = ~D"
                             record-id old-id)
-                     (query "UPDATE record_tag SET tag_id = ~A ~
-                                WHERE record_id = ~A AND tag_id = ~A"
+                     (query "UPDATE record_tag SET tag_id = ~D ~
+                                WHERE record_id = ~D AND tag_id = ~D"
                             new-id record-id old-id))
                  :finally
                  (change-counter-add changes)
                  (delete-unused-tags)))
 
-          (t (query "UPDATE tags SET name = ~A WHERE id = ~A"
+          (t (query "UPDATE tags SET name = ~A WHERE id = ~D"
                     (sql-string-esc new) old-id)
              (change-counter-add 1)))))))
 
