@@ -479,7 +479,7 @@
 
 
 (defun term-color (&optional true)
-  (if *output-color*
+  (if (and *output-color* (not *output-editor*))
       (format nil "~C[~Am" #\Esc (if true "0;32" "0"))
       ""))
 
@@ -491,10 +491,10 @@
                  :do (funcall function record n)
                  :if rest :do (terpri stream)))
 
-         (taglist (record)
-           (format stream "~&~A# Tags:" (term-color t))
+         (taglist (prefix record)
+           (format stream "~&~A~A" (term-color t) prefix)
            (loop :with column-max := 78
-                 :with column-min := 7
+                 :with column-min := (length prefix)
                  :with column := column-min
                  :for (tag . rest) :on (tags record)
                  :do
@@ -503,14 +503,18 @@
                  (when (and rest (> (1+ (length (first rest)))
                                     (- column-max column)))
                    (setf column column-min)
-                   (format stream "~&~A# Tags:" (term-color t))))))
+                   (format stream "~&~A~A" (term-color t) prefix))))
+
+         (format-contents (string)
+           (if (and *output-short* (not *output-editor*))
+               (subseq string 0 (position #\Newline string))
+               string)))
 
     (record-loop
      (cond (*output-editor*
             (lambda (record n)
-              (format stream "~&# Id: ~A Tags: ~{~A~^ ~}~%~%~A~&"
-                      (hash-record-id n) (tags record)
-                      (content record))))
+              (taglist (format nil "# Id: ~A Tags:" (hash-record-id n)) record)
+              (format stream "~%~%~A~&" (format-contents (content record)))))
 
            (*output-verbose*
             (lambda (record n)
@@ -519,20 +523,21 @@
                       (term-color t) (format-time (created record)))
               (format stream "~&~A# Modified: ~A~%"
                       (term-color t) (format-time (modified record)))
-              (taglist record)
+              (taglist "# Tags:" record)
               (format stream "~A~%~%~A~&" (term-color nil)
-                      (content record))))
+                      (format-contents (content record)))))
 
            (*output-quiet*
             (lambda (record n)
               (declare (ignore n))
-              (format stream "~&~A~A~&" (term-color nil) (content record))))
+              (format stream "~&~A~A~&" (term-color nil)
+                      (format-contents (content record)))))
 
            (t (lambda (record n)
                 (declare (ignore n))
-                (taglist record)
+                (taglist "# Tags:" record)
                 (format stream "~A~%~%~A~&" (term-color nil)
-                        (content record))))))))
+                        (format-contents (content record)))))))))
 
 
 (defun db-find-tags (&optional tag-name)
@@ -660,76 +665,100 @@
             :do
             (run-text-editor tempname)
 
-            (with-open-file (file tempname :direction :input)
-              (loop :named content
-                    :with start
-                    :with end
-                    :for line := (read-line file nil)
-                    :for line-number :upfrom 1
+            (flet ((valid-record-p (id-hash)
+                     (and id-hash (nth-value 1 (gethash id-hash hash-table)))))
+              (with-open-file (file tempname :direction :input)
+                (loop :named content
+                      :with start
+                      :with end
+                      :with last-id-hash := nil
+                      :with to-be-deleted := nil
+                      :for line := (read-line file nil)
+                      :for line-number :upfrom 1
 
-                    :do
-                    (multiple-value-bind (id-hash tag-names)
-                        (parse-record-header line)
+                      :do
+                      (multiple-value-bind (id-hash tag-names)
+                          (parse-record-header line)
 
-                      (cond
-                        ((or (nth-value 1 (gethash id-hash hash-table))
-                             (not line))
-                         (when (integerp start)
-                           (let ((record-id (first (aref text 0)))
-                                 (tags (rest (aref text 0))))
-                             (if (= start 0)
-                                 (progn
-                                   (delete-record record-id)
-                                   (message "No content; ~
+                        (cond
+                          ;; This is a record header that adds more tags
+                          ;; for the same record.
+                          ((and (valid-record-p id-hash)
+                                (equal id-hash last-id-hash))
+                           (dolist (tag tag-names)
+                             (push tag (rest (aref text 0)))))
+
+                          ;; This is a new record header or end-of-file.
+                          ((or (valid-record-p id-hash) (not line))
+                           (when (integerp start)
+                             (let ((record-id (first (aref text 0)))
+                                   (tags (rest (aref text 0))))
+                               (cond
+                                 ;; Empty content.
+                                 ((= start 0)
+                                  (pushnew record-id to-be-deleted)
+                                  (message "No content; ~
                                         deleting the record.~%"))
-                                 (progn
-                                   (modify-record
-                                    record-id
-                                    (with-output-to-string (out)
-                                      (loop :for i :from start :upto end
-                                            :do (write-line (aref text i) out)))
-                                    tags)
-                                   (message "Updated.~%")))))
-                         (unless line
-                           (message "~&All done.~%")
-                           (return-from editor))
-                         (message "~&Id ~A: " id-hash)
-                         (let ((record-id (gethash id-hash hash-table)))
-                           (handler-case (assert-tag-names tag-names)
-                             (tagdb-error (c)
-                               (message "Error!~%")
-                               (error-message "~&~A~%" c)
-                               (format *query-io* "Press ENTER to return to ~
+                                 ;; There is content.
+                                 (t
+                                  (modify-record
+                                   record-id
+                                   (with-output-to-string (out)
+                                     (loop :for i :from start :upto end
+                                           :do (write-line (aref text i) out)))
+                                   tags)
+                                  (setf to-be-deleted
+                                        (delete record-id to-be-deleted))
+                                  (message "Updated.~%")))))
+                           (unless line
+                             ;; Everyting done.
+                             (dolist (id to-be-deleted)
+                               (delete-record id))
+                             (message "~&All done.~%")
+                             (return-from editor))
+                           ;; Let's prepare for parsing a new record.
+                           (message "~&Id ~A: " id-hash)
+                           (let ((record-id (gethash id-hash hash-table)))
+                             (handler-case (assert-tag-names tag-names)
+                               (tagdb-error (c)
+                                 (message "Error!~%")
+                                 (error-message "~&~A~%" c)
+                                 (format *query-io* "Press ENTER to return to ~
                                         text editor...")
-                               (force-output *query-io*)
-                               (read-line *query-io* nil)
-                               (fresh-line *query-io*)
-                               (return-from content)))
-                           (setf (fill-pointer text) 0 start 0 end 0)
-                           (vector-push-extend
-                            (cons record-id tag-names) text)))
+                                 (force-output *query-io*)
+                                 (read-line *query-io* nil)
+                                 (fresh-line *query-io*)
+                                 (return-from content)))
+                             (setf (fill-pointer text) 0 start 0 end 0)
+                             (vector-push-extend
+                              (cons record-id tag-names) text)))
 
-                        ((and (not start) id-hash)
-                         (error-message "~&Line ~D: The line looks like a ~
+                          ;; Record header look-alike but no valid
+                          ;; header seen so far.
+                          ((and (not start) id-hash)
+                           (error-message "~&Line ~D: The line looks like a ~
                                 record header but has an unknown record id.~%~
                                 I'm ignoring it because no valid record has ~
                                 started in the file yet.~%" line-number))
 
-                        ((integerp start)
-                         (when id-hash
-                           (message "Warning!~%")
-                           (error-message "~&Line ~D: The line looks like a ~
+                          ;; This line is record's content.
+                          ((integerp start)
+                           (when id-hash
+                             (message "Warning!~%")
+                             (error-message "~&Line ~D: The line looks like a ~
                                 record header but has an unknown record id.~%~
                                 I'll take that it's record's content and ~
                                 indent the line by two spaces.~%" line-number)
-                           (setf line (concatenate 'string "  " line)))
-                         (vector-push-extend line text)
-                         (cond ((and (= start 0)
-                                     (not (empty-string-p line)))
-                                (setf start (1- (length text))
-                                      end start))
-                               ((not (empty-string-p line))
-                                (setf end (1- (length text))))))))))))))
+                             (setf line (concatenate 'string "  " line)))
+                           (vector-push-extend line text)
+                           (cond ((and (= start 0)
+                                       (not (empty-string-p line)))
+                                  (setf start (1- (length text))
+                                        end start))
+                                 ((not (empty-string-p line))
+                                  (setf end (1- (length text)))))))
+
+                        (setf last-id-hash id-hash)))))))))
 
 
 (defun command-help ()
