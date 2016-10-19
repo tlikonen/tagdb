@@ -485,28 +485,54 @@
 
 
 (defun print-records (records &optional (stream *standard-output*))
-  (loop :with formatter
-        := (cond
-             (*output-editor*
-              (formatter "~&# Id: ~1@*~A~4@* Tags: ~{~A~^ ~}~6@*~%~%~A~&"))
-             (*output-verbose*
-              (formatter "~&~A# Created:  ~2@*~A~%~
-                        ~0@*~A# Modified: ~3@*~A~%~
-                        ~0@*~A# Tags: ~4@*~{~A~^ ~}~A~%~%~A~&"))
-             (*output-quiet*
-              (formatter "~&~6@*~A~&"))
-             (t (formatter "~&~A# Tags: ~4@*~{~A~^ ~}~A~%~%~A~&")))
+  (flet ((record-loop (function)
+           (loop :for (record . rest) :on records
+                 :for n :upfrom 1
+                 :do (funcall function record n)
+                 :if rest :do (terpri stream)))
 
-        :for (record . rest) :on records
-        :for i :upfrom 1
-        :do (format stream formatter (term-color t) (hash-record-id i)
-                    (format-time (created record)) (format-time (modified record))
-                    (tags record) (term-color nil)
-                    (if *output-short*
-                        (subseq (content record)
-                                0 (position #\Newline (content record)))
-                        (content record)))
-        :if rest :do (terpri stream)))
+         (taglist (record)
+           (format stream "~&~A# Tags:" (term-color t))
+           (loop :with column-max := 78
+                 :with column-min := 7
+                 :with column := column-min
+                 :for (tag . rest) :on (tags record)
+                 :do
+                 (format stream " ~A" tag)
+                 (incf column (1+ (length tag)))
+                 (when (and rest (> (1+ (length (first rest)))
+                                    (- column-max column)))
+                   (setf column column-min)
+                   (format stream "~&~A# Tags:" (term-color t))))))
+
+    (record-loop
+     (cond (*output-editor*
+            (lambda (record n)
+              (format stream "~&# Id: ~A Tags: ~{~A~^ ~}~%~%~A~&"
+                      (hash-record-id n) (tags record)
+                      (content record))))
+
+           (*output-verbose*
+            (lambda (record n)
+              (declare (ignore n))
+              (format stream "~&~A# Created:  ~A~%"
+                      (term-color t) (format-time (created record)))
+              (format stream "~&~A# Modified: ~A~%"
+                      (term-color t) (format-time (modified record)))
+              (taglist record)
+              (format stream "~A~%~%~A~&" (term-color nil)
+                      (content record))))
+
+           (*output-quiet*
+            (lambda (record n)
+              (declare (ignore n))
+              (format stream "~&~A~A~&" (term-color nil) (content record))))
+
+           (t (lambda (record n)
+                (declare (ignore n))
+                (taglist record)
+                (format stream "~A~%~%~A~&" (term-color nil)
+                        (content record))))))))
 
 
 (defun db-find-tags (&optional tag-name)
