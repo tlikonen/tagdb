@@ -711,7 +711,7 @@
                                         (delete record-id to-be-deleted))
                                   (message "Updated.~%")))))
                            (unless line
-                             ;; Everyting done.
+                             ;; Everything done.
                              (dolist (id to-be-deleted)
                                (delete-record id))
                              (message "~&All done.~%")
