@@ -641,10 +641,16 @@
                                         WHERE key = 'seen edit message'")))
           (when (or (not already-seen) *output-verbose*)
             (format file "~
-# Here you can edit records' content and tags. You must not edit record
-# header lines other than the tag list. Empty lines at the beginning and
-# end of the record content are ignored. If a record has empty content
-# the record will be deleted from the database.~%~%")
+
+# Here you can edit records' content and tags. You must not edit the
+# prefix part of records' header lines: \"# Id: 1 Tags: \". You can edit
+# the tag list that comes after the prefix. If record's header spans
+# over many lines you must keep the lines together (no empty lines
+# between).
+
+# Empty lines at the beginning and end of the record content are
+# ignored. If a record has empty content the record will be deleted from
+# the database.~%~%")
             (unless already-seen
               (format file "~
 # The above message will not show next time unless -v option is used.~%~%")
