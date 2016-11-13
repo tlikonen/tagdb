@@ -35,9 +35,6 @@
 (defparameter *program-database-version* 5)
 
 
-(define-condition exit-program () nil)
-
-
 (define-condition tagdb-error (error)
   ((text :reader tagdb-error-text :initarg :text))
   (:report (lambda (condition stream)
@@ -1018,7 +1015,6 @@ Command options
 
 (defun main (&optional argv)
   (handler-case (execute-command-line (rest argv))
-    (exit-program () nil)
     (error (c)
       (error-message "~&~A~%" c))
     (sb-sys:interactive-interrupt ()
