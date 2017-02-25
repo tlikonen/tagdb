@@ -568,16 +568,19 @@
 
 
 (defun run-text-editor (pathname)
-  (sb-ext:run-program
-   (let ((editor (sb-posix:getenv "EDITOR")))
-     (cond ((and (stringp editor)
-                 (plusp (length editor)))
-            editor)
-           (t (throw-error "Please set $EDITOR variable."))))
-   (list (etypecase pathname
-           (pathname (sb-ext:native-namestring pathname :as-file t))
-           (string pathname)))
-   :search t :wait t :pty nil :input t :output t :error :output))
+  (let ((editor (split-sequence #\space (sb-posix:getenv "EDITOR")
+                                :remove-empty-subseqs t)))
+
+    (unless (every #'stringp editor)
+      (throw-error "Please set EDITOR variable."))
+
+    (sb-ext:run-program
+     (first editor)
+     (append (rest editor)
+             (list (etypecase pathname
+                     (pathname (sb-ext:native-namestring pathname :as-file t))
+                     (string pathname))))
+     :search t :wait t :pty nil :input t :output t :error :output)))
 
 
 (defun empty-string-p (string)
