@@ -1019,9 +1019,11 @@ Command options
 (defun main (&optional argv)
   (handler-case (execute-command-line (rest argv))
     (error (c)
-      (error-message "~&~A~%" c))
+      (error-message "~&~A~%" c)
+      (sb-ext:exit :code 1))
     (sb-sys:interactive-interrupt ()
-      (format t "~%"))))
+      (format t "~%")
+      (sb-ext:exit :code 1))))
 
 
 #+script
