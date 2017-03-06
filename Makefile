@@ -8,6 +8,11 @@ LISPFILES = tagdb.asd tagdb.lisp
 $(IMAGE): $(MAKEIMG) $(LISPFILES)
 	@$(SBCL) --script $(MAKEIMG) $(SYSTEM) $(IMAGE)
 
+README.md: README.template $(IMAGE)
+	sed '/^###USAGE###/,$$d' $< >$@
+	./tagdb -h | sed -r '/.+/s/^/    /' >>$@
+	sed '1,/^###USAGE###/d' $< >>$@
+
 install: $(IMAGE)
 	install -d -- $(bindir)
 	install -m 755 -- $(IMAGE) $(bindir)
