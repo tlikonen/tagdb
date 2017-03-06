@@ -18,7 +18,9 @@ uninstall:
 clean:
 	rm -f -- $(IMAGE) system-index.txt
 
-clean-all: clean
+clean-quicklisp:
 	rm -fr -- quicklisp
 
-.PHONY: clean clean-all install uninstall
+clean-all: clean clean-quicklisp
+
+.PHONY: clean clean-quicklisp clean-all install uninstall
