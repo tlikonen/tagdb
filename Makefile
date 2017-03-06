@@ -16,7 +16,7 @@ uninstall:
 	rm -f -- $(bindir)/$(IMAGE)
 
 clean:
-	rm -f -- $(IMAGE)
+	rm -f -- $(IMAGE) system-index.txt
 
 clean-all: clean
 	rm -fr -- quicklisp
