@@ -10,7 +10,7 @@ $(IMAGE): $(MAKEIMG) $(LISPFILES)
 
 README.md: README.template $(IMAGE)
 	sed '/^###USAGE###/,$$d' $< >$@
-	./tagdb -h | sed -r '/.+/s/^/    /' >>$@
+	./$(IMAGE) -h | sed -r '/.+/s/^/    /' >>$@
 	sed '1,/^###USAGE###/d' $< >>$@
 
 install: $(IMAGE)
