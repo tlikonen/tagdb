@@ -31,7 +31,7 @@ editor is launched and all matching records can be edited at once.
 See `-h` for more help on the command-line usage.
 
 
-Build and install
+Build and Install
 -----------------
 
 The build process is quite straightforward in GNU/Linux distributions.
@@ -59,7 +59,7 @@ And you are ready to go. Start with `tagdb -h` command.
 [QL]:      http://www.quicklisp.org/
 
 
-The source code repository
+The Source Code Repository
 --------------------------
 
 Github repository URL: <https://github.com/tlikonen/tagdb>
@@ -69,7 +69,7 @@ safe to use. New features and experimental code are developed in other
 branches and possibly merged to _master_ when they are ready.
 
 
-Copyright and license
+Copyright and License
 ---------------------
 
 Copyright (C) 2014-2017 Teemu Likonen <<tlikonen@iki.fi>>
