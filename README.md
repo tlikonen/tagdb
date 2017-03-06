@@ -91,9 +91,8 @@ Usage
       -h    Print this help text.
 
 
-
-Build and Install
------------------
+Compile and Install
+-------------------
 
 The build process is quite straightforward in GNU/Linux distributions.
 _Tagdb_ depends on [SBCL][] (a Common Lisp implementation) and
