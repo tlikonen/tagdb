@@ -47,11 +47,12 @@ Usage
             Use FILE as the database file instead of the default
             ~/.config/tagdb.db.
 
-      --color=MODE
+      --format=MODE
 
-            Set terminal color mode to MODE which can be "yes", "no",
-            "yes-default" or "no-default". The last two will save the
-            default color mode.
+            Set output format to MODE which can be "text", "text-color"
+            or "org-mode" (Emacs). You can add suffix "/default" to MODE
+            in which case the specified mode will be saved as the default
+            output mode.
 
     Command options
 

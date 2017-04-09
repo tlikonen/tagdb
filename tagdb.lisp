@@ -49,17 +49,16 @@
 
 
 (defclass output-format ()
-  ((records :accessor records :initarg :records :initform nil)))
-
-
-(defclass text (output-format)
-  ((verbose :reader verbose :initarg :verbose :initform nil)
+  ((records :accessor records :initarg :records :initform nil)
+   (verbose :reader verbose :initarg :verbose :initform nil)
    (quiet :reader quiet :initarg :quiet :initform nil)
    (short :reader short :initarg :short :initform nil)))
 
 
+(defclass text (output-format) nil)
 (defclass text-color (text) nil)
 (defclass text-editor (text) nil)
+(defclass org-mode (output-format) nil)
 
 
 (defun message (fmt &rest args)
@@ -159,11 +158,11 @@
     (if value (normalize-integer value) 1)))
 
 
-(defun get-format-default ()
+(defun get-default-format ()
   (query-1 "SELECT value FROM maintenance WHERE key = 'output format'"))
 
 
-(defun set-format-default (format)
+(defun set-default-format (format)
   (query "UPDATE maintenance SET value = ~A WHERE key = 'output format'"
          (sql-string-esc format))
   format)
@@ -545,6 +544,33 @@
                         (format-contents (content record)))))))))
 
 
+(defmethod print-records ((format org-mode) &optional (stream *standard-output*))
+  (flet ((org-header-line-p (string)
+           (loop :with stars := 0
+                 :for c :across string
+                 :do (cond ((eql c #\space)
+                            (return (plusp stars)))
+                           ((eql c #\*)
+                            (incf stars))
+                           (t (return nil))))))
+
+    (loop :for (record . rest) :on (records format)
+          :do (with-input-from-string (s (content record))
+                (loop :initially
+                      (let ((topic (read-line s nil)))
+                        (cond ((not topic))
+                              ((string= "* " (subseq topic 0 (min 2 (length topic))))
+                               (format stream "~A~%" topic))
+                              (t (format stream "* ~A~%" topic))))
+
+                      :for line := (read-line s nil)
+                      :while line
+                      :do (if (org-header-line-p line)
+                              (format stream "*~A~%" line)
+                              (format stream "~A~%" line))))
+          :if rest :do (terpri stream))))
+
+
 (defun db-find-tags (&optional tag-name)
   (query "SELECT count(t.id) AS count, t.name FROM tags AS t ~
         JOIN record_tag AS j ON t.id = j.tag_id ~
@@ -791,10 +817,10 @@ General options
 
   --format=MODE
 
-        Set output format to MODE which can be \"text\" or
-        \"text-color\". You can add suffix \"/default\" to MODE in which
-        case the specified mode will be saved as the default output
-        mode.
+        Set output format to MODE which can be \"text\", \"text-color\"
+        or \"org-mode\" (Emacs). You can add suffix \"/default\" to MODE
+        in which case the specified mode will be saved as the default
+        output mode.
 
 Command options
 
@@ -994,19 +1020,24 @@ Command options
       (let ((verbose (getf options :verbose))
             (quiet (getf options :quiet))
             (short (getf options :short))
-            (format (or (getf options :format) (get-format-default))))
+            (format (or (getf options :format) (get-default-format))))
 
         (cond ((equalp format "text")
                (setf format 'text))
               ((equalp format "text/default")
-               (set-format-default "text")
+               (set-default-format "text")
                (setf format 'text))
               ((equalp format "text-color")
                (setf format 'text-color))
               ((equalp format "text-color/default")
-               (set-format-default "text-color")
+               (set-default-format "text-color")
                (setf format 'text-color))
-              (t (throw-error "~&Unknown format option \"~A\".~%" format)))
+              ((equalp format "org-mode")
+               (setf format 'org-mode))
+              ((equalp format "org-mode/default")
+               (set-default-format "org-mode")
+               (setf format 'org-mode))
+              (t (throw-error "Unknown format option \"~A\"." format)))
 
         (cond ((getf options :help) (command-help))
               ((getf options :create) (command-create tag-names))
