@@ -27,11 +27,6 @@
 (defvar *database-pathname* nil)
 (defvar *database* nil)
 (defvar *changes-before-vacuum* 1000)
-(defvar *output-quiet* nil)
-(defvar *output-short* nil)
-(defvar *output-verbose* nil)
-(defvar *output-editor* nil)
-(defvar *output-format* nil)
 (defparameter *program-database-version* 6)
 
 
@@ -53,10 +48,23 @@
    (content :reader content :initarg :content)))
 
 
+(defclass output-format ()
+  ((records :accessor records :initarg :records :initform nil)))
+
+
+(defclass text (output-format)
+  ((verbose :reader verbose :initarg :verbose :initform nil)
+   (quiet :reader quiet :initarg :quiet :initform nil)
+   (short :reader short :initarg :short :initform nil)))
+
+
+(defclass text-color (text) nil)
+(defclass text-editor (text) nil)
+
+
 (defun message (fmt &rest args)
-  (unless *output-quiet*
-    (apply #'format t fmt args)
-    (force-output)))
+  (apply #'format t fmt args)
+  (force-output))
 
 
 (defun error-message (fmt &rest args)
@@ -473,64 +481,47 @@
              " " (:hour 2) ":" (:min 2) ":" (:sec 2) " " :gmt-offset)))
 
 
-(defun set-format-mode ()
-  (setf *output-format*
-        (cond ((equalp *output-format* "text")
-               *output-format*)
-              ((equalp *output-format* "text/default")
-               (set-format-default "text")
-               "text")
-              ((equalp *output-format* "text-color")
-               *output-format*)
-              ((equalp *output-format* "text-color/default")
-               (set-format-default "text-color")
-               "text-color")
-              (t (when (stringp *output-format*)
-                   (error-message "~&Unknown format option \"~A\".~%"
-                                  *output-format*))
-                 (get-format-default)))))
+(defgeneric print-records (format &optional stream))
 
 
-(defun term-color (&optional true)
-  (if (and (equalp *output-format* "text-color")
-           (not *output-editor*))
-      (format nil "~C[~Am" #\Esc (if true "0;32" "0"))
-      ""))
+(defmethod print-records ((format text) &optional (stream *standard-output*))
+  (labels ((term-color (&optional true)
+             (if (typep format 'text-color)
+                 (format nil "~C[~Am" #\Esc (if true "0;32" "0"))
+                 ""))
 
+           (record-loop (function)
+             (loop :for (record . rest) :on (records format)
+                   :for n :upfrom 1
+                   :do (funcall function record n)
+                   :if rest :do (terpri stream)))
 
-(defun print-records (records &optional (stream *standard-output*))
-  (flet ((record-loop (function)
-           (loop :for (record . rest) :on records
-                 :for n :upfrom 1
-                 :do (funcall function record n)
-                 :if rest :do (terpri stream)))
+           (taglist (prefix record)
+             (format stream "~&~A~A" (term-color t) prefix)
+             (loop :with column-max := 78
+                   :with column-min := (length prefix)
+                   :with column := column-min
+                   :for (tag . rest) :on (tags record)
+                   :do
+                   (format stream " ~A" tag)
+                   (incf column (1+ (length tag)))
+                   (when (and rest (> (1+ (length (first rest)))
+                                      (- column-max column)))
+                     (setf column column-min)
+                     (format stream "~&~A~A" (term-color t) prefix))))
 
-         (taglist (prefix record)
-           (format stream "~&~A~A" (term-color t) prefix)
-           (loop :with column-max := 78
-                 :with column-min := (length prefix)
-                 :with column := column-min
-                 :for (tag . rest) :on (tags record)
-                 :do
-                 (format stream " ~A" tag)
-                 (incf column (1+ (length tag)))
-                 (when (and rest (> (1+ (length (first rest)))
-                                    (- column-max column)))
-                   (setf column column-min)
-                   (format stream "~&~A~A" (term-color t) prefix))))
-
-         (format-contents (string)
-           (if (and *output-short* (not *output-editor*))
-               (subseq string 0 (position #\Newline string))
-               string)))
+           (format-contents (string)
+             (if (and (short format) (not (typep format 'text-editor)))
+                 (subseq string 0 (position #\Newline string))
+                 string)))
 
     (record-loop
-     (cond (*output-editor*
+     (cond ((typep format 'text-editor)
             (lambda (record n)
               (taglist (format nil "# Id: ~A Tags:" (hash-record-id n)) record)
               (format stream "~%~%~A~&" (format-contents (content record)))))
 
-           (*output-verbose*
+           ((verbose format)
             (lambda (record n)
               (declare (ignore n))
               (format stream "~&~A# Created:  ~A~%"
@@ -541,7 +532,7 @@
               (format stream "~A~%~%~A~&" (term-color nil)
                       (format-contents (content record)))))
 
-           (*output-quiet*
+           ((quiet format)
             (lambda (record n)
               (declare (ignore n))
               (format stream "~&~A~A~&" (term-color nil)
@@ -562,8 +553,7 @@
 
 
 (defun print-tags (&optional tag-name)
-  (let ((tags (sort (db-find-tags tag-name) #'string-lessp :key #'second))
-        (*output-quiet* nil))
+  (let ((tags (sort (db-find-tags tag-name) #'string-lessp :key #'second)))
     (if tags
         (loop :with width := (length (princ-to-string
                                       (reduce #'max tags :key #'first)))
@@ -649,15 +639,13 @@
       (values (nth 2 words) (delete "" (nthcdr 4 words) :test #'string=)))))
 
 
-(defun find-and-edit-records (tag-names)
-  (let ((records (find-records tag-names)))
-
-    (with-temp-file tempname
-      (with-open-file (file tempname :direction :output :if-exists :overwrite)
-        (let ((already-seen (query "SELECT value FROM maintenance ~
+(defun edit-records (format)
+  (with-temp-file tempname
+    (with-open-file (file tempname :direction :output :if-exists :overwrite)
+      (let ((already-seen (query "SELECT value FROM maintenance ~
                                         WHERE key = 'seen edit message'")))
-          (when (or (not already-seen) *output-verbose*)
-            (format file "~
+        (when (or (not already-seen) (verbose format))
+          (format file "~
 
 # Here you can edit records' content and tags. You must not edit the
 # prefix part of records' header lines: \"# Id: 1 Tags: \". You can edit
@@ -668,128 +656,122 @@
 # Empty lines at the beginning and end of the record content are
 # ignored. If a record has empty content the record will be deleted from
 # the database.~%~%")
-            (unless already-seen
-              (format file "~
+          (unless already-seen
+            (format file "~
 # The above message will not show next time unless -v option is used.~%~%")
-              (query "INSERT INTO maintenance (key, value) ~
+            (query "INSERT INTO maintenance (key, value) ~
                         VALUES ('seen edit message', 1)")
-              (change-counter-add 1))))
-        (let ((*output-editor* t))
-          (print-records records file)))
+            (change-counter-add 1))))
+      (print-records format file))
 
-      (loop :named editor
-            :with hash-table
-            := (loop :with table := (make-hash-table :test #'equal)
-                     :for record :in records
-                     :for i :upfrom 1
-                     :do (setf (gethash (hash-record-id i) table) (id record))
-                     :finally (return table))
-            :with text := (make-array 10 :adjustable t :fill-pointer 0)
-            :do
-            (run-text-editor tempname)
+    (loop :named editor
+          :with hash-table
+          := (loop :with table := (make-hash-table :test #'equal)
+                   :for record :in (records format)
+                   :for i :upfrom 1
+                   :do (setf (gethash (hash-record-id i) table) (id record))
+                   :finally (return table))
+          :with text := (make-array 10 :adjustable t :fill-pointer 0)
+          :do
+          (run-text-editor tempname)
 
-            (flet ((valid-record-p (id-hash)
-                     (and id-hash (nth-value 1 (gethash id-hash hash-table)))))
-              (with-open-file (file tempname :direction :input)
-                (loop :named content
-                      :with start
-                      :with end
-                      :with last-id-hash := nil
-                      :with to-be-deleted := nil
-                      :for line := (read-line file nil)
-                      :for line-number :upfrom 1
+          (flet ((valid-record-p (id-hash)
+                   (and id-hash (nth-value 1 (gethash id-hash hash-table)))))
+            (with-open-file (file tempname :direction :input)
+              (loop :named content
+                    :with start
+                    :with end
+                    :with last-id-hash := nil
+                    :with to-be-deleted := nil
+                    :for line := (read-line file nil)
+                    :for line-number :upfrom 1
 
-                      :do
-                      (multiple-value-bind (id-hash tag-names)
-                          (parse-record-header line)
+                    :do
+                    (multiple-value-bind (id-hash tag-names)
+                        (parse-record-header line)
 
-                        (cond
-                          ;; This is a record header that adds more tags
-                          ;; for the same record.
-                          ((and (valid-record-p id-hash)
-                                (equal id-hash last-id-hash))
-                           (dolist (tag tag-names)
-                             (push tag (rest (aref text 0)))))
+                      (cond
+                        ;; This is a record header that adds more tags
+                        ;; for the same record.
+                        ((and (valid-record-p id-hash)
+                              (equal id-hash last-id-hash))
+                         (dolist (tag tag-names)
+                           (push tag (rest (aref text 0)))))
 
-                          ;; This is a new record header or end-of-file.
-                          ((or (valid-record-p id-hash) (not line))
-                           (when (integerp start)
-                             (let ((record-id (first (aref text 0)))
-                                   (tags (rest (aref text 0))))
-                               (cond
-                                 ;; Empty content.
-                                 ((= start 0)
-                                  (pushnew record-id to-be-deleted)
-                                  (message "No content; ~
+                        ;; This is a new record header or end-of-file.
+                        ((or (valid-record-p id-hash) (not line))
+                         (when (integerp start)
+                           (let ((record-id (first (aref text 0)))
+                                 (tags (rest (aref text 0))))
+                             (cond
+                               ;; Empty content.
+                               ((= start 0)
+                                (pushnew record-id to-be-deleted)
+                                (message "No content; ~
                                         deleting the record.~%"))
-                                 ;; There is content.
-                                 (t
-                                  (modify-record
-                                   record-id
-                                   (with-output-to-string (out)
-                                     (loop :for i :from start :upto end
-                                           :do (write-line (aref text i) out)))
-                                   tags)
-                                  (setf to-be-deleted
-                                        (delete record-id to-be-deleted))
-                                  (message "Updated.~%")))))
-                           (unless line
-                             ;; Everything done.
-                             (dolist (id to-be-deleted)
-                               (delete-record id))
-                             (message "~&All done.~%")
-                             (return-from editor))
-                           ;; Let's prepare for parsing a new record.
-                           (message "~&Id ~A: " id-hash)
-                           (let ((record-id (gethash id-hash hash-table)))
-                             (handler-case (assert-tag-names tag-names)
-                               (tagdb-error (c)
-                                 (message "Error!~%")
-                                 (error-message "~&~A~%" c)
-                                 (format *query-io* "Press ENTER to return to ~
+                               ;; There is content.
+                               (t
+                                (modify-record
+                                 record-id
+                                 (with-output-to-string (out)
+                                   (loop :for i :from start :upto end
+                                         :do (write-line (aref text i) out)))
+                                 tags)
+                                (setf to-be-deleted
+                                      (delete record-id to-be-deleted))
+                                (message "Updated.~%")))))
+                         (unless line
+                           ;; Everything done.
+                           (dolist (id to-be-deleted)
+                             (delete-record id))
+                           (message "~&All done.~%")
+                           (return-from editor))
+                         ;; Let's prepare for parsing a new record.
+                         (message "~&Id ~A: " id-hash)
+                         (let ((record-id (gethash id-hash hash-table)))
+                           (handler-case (assert-tag-names tag-names)
+                             (tagdb-error (c)
+                               (message "Error!~%")
+                               (error-message "~&~A~%" c)
+                               (format *query-io* "Press ENTER to return to ~
                                         text editor...")
-                                 (force-output *query-io*)
-                                 (read-line *query-io* nil)
-                                 (fresh-line *query-io*)
-                                 (return-from content)))
-                             (setf (fill-pointer text) 0 start 0 end 0)
-                             (vector-push-extend
-                              (cons record-id tag-names) text)))
+                               (force-output *query-io*)
+                               (read-line *query-io* nil)
+                               (fresh-line *query-io*)
+                               (return-from content)))
+                           (setf (fill-pointer text) 0 start 0 end 0)
+                           (vector-push-extend
+                            (cons record-id tag-names) text)))
 
-                          ;; Record header look-alike but no valid
-                          ;; header seen so far.
-                          ((and (not start) id-hash)
-                           (error-message "~&Line ~D: The line looks like a ~
+                        ;; Record header look-alike but no valid
+                        ;; header seen so far.
+                        ((and (not start) id-hash)
+                         (error-message "~&Line ~D: The line looks like a ~
                                 record header but has an unknown record id.~%~
                                 I'm ignoring it because no valid record has ~
                                 started in the file yet.~%" line-number))
 
-                          ;; This line is record's content.
-                          ((integerp start)
-                           (when id-hash
-                             (message "Warning!~%")
-                             (error-message "~&Line ~D: The line looks like a ~
+                        ;; This line is record's content.
+                        ((integerp start)
+                         (when id-hash
+                           (message "Warning!~%")
+                           (error-message "~&Line ~D: The line looks like a ~
                                 record header but has an unknown record id.~%~
                                 I'll take that it's record's content and ~
                                 indent the line by two spaces.~%" line-number)
-                             (setf line (concatenate 'string "  " line)))
-                           (vector-push-extend line text)
-                           (cond ((and (= start 0)
-                                       (not (empty-string-p line)))
-                                  (setf start (1- (length text))
-                                        end start))
-                                 ((not (empty-string-p line))
-                                  (setf end (1- (length text)))))))
+                           (setf line (concatenate 'string "  " line)))
+                         (vector-push-extend line text)
+                         (cond ((and (= start 0)
+                                     (not (empty-string-p line)))
+                                (setf start (1- (length text))
+                                      end start))
+                               ((not (empty-string-p line))
+                                (setf end (1- (length text)))))))
 
-                        (setf last-id-hash id-hash)))))))))
+                      (setf last-id-hash id-hash))))))))
 
 
 (defun command-help ()
-  ;; Help command doesn't use colors but user might combine it with
-  ;; --color=yes-default, for example.
-  (when *output-format*
-    (set-format-mode))
-
   (format t "~
 
 Usage: tagdb [options] [--] TAG ...
@@ -810,8 +792,9 @@ General options
   --format=MODE
 
         Set output format to MODE which can be \"text\" or
-        \"text-color\". You can also add suffix \"/default\" to MODE in
-        which case that mode will be saved as the default mode.
+        \"text-color\". You can add suffix \"/default\" to MODE in which
+        case the specified mode will be saved as the default output
+        mode.
 
 Command options
 
@@ -857,18 +840,17 @@ Command options
   (assert-tag-names tag-names)
   (with-transaction
     (assert-db-write-access)
-    (set-format-mode)
     (if (listen *standard-input*)
         (create-new-record-from-stream tag-names *standard-input*)
         (create-and-edit-new-record tag-names))))
 
 
-(defun command-edit (tag-names)
+(defun command-edit (format tag-names)
   (assert-tag-names tag-names)
+  (setf (records format) (find-records tag-names))
   (with-transaction
     (assert-db-write-access)
-    (set-format-mode)
-    (find-and-edit-records tag-names)
+    (edit-records format)
     (delete-unused-tags)))
 
 
@@ -878,7 +860,6 @@ Command options
     (setf (rest tag-names) nil))
   (when tag-names
     (assert-tag-names tag-names))
-  (set-format-mode)
   (print-tags (first tag-names)))
 
 
@@ -896,7 +877,6 @@ Command options
 
   (with-transaction
     (assert-db-write-access)
-    (set-format-mode)
     (let* ((old (nth 0 tag-names))
            (new (nth 1 tag-names))
            (old-id (query-1 "SELECT id FROM tags WHERE name = ~A"
@@ -932,10 +912,10 @@ Command options
            (change-counter-add 1))))))
 
 
-(defun command-print-records (tag-names)
+(defun command-print-records (format tag-names)
   (assert-tag-names tag-names)
-  (set-format-mode)
-  (print-records (find-records tag-names)))
+  (setf (records format) (find-records tag-names))
+  (print-records format))
 
 
 (defun parse-command-line (args)
@@ -1004,29 +984,48 @@ Command options
       (throw-error "Only one command option is allowed. ~
                         Use -h for help."))
 
-    (let ((*output-quiet* (getf options :quiet))
-          (*output-verbose* (getf options :verbose))
-          (*output-short* (getf options :short))
-          (*output-format* (getf options :format)))
+    (let ((path (getf options :db)))
+      (when path
+        (if (plusp (length path))
+            (setf *database-pathname* (sb-ext:parse-native-namestring path))
+            (throw-error "Invalid filename for option --db=FILE."))))
 
-      (let ((path (getf options :db)))
-        (when path
-          (if (plusp (length path))
-              (setf *database-pathname* (sb-ext:parse-native-namestring path))
-              (throw-error "Invalid filename for option --db=FILE."))))
+    (with-database
+      (let ((verbose (getf options :verbose))
+            (quiet (getf options :quiet))
+            (short (getf options :short))
+            (format (or (getf options :format) (get-format-default))))
 
-      (with-database
+        (cond ((equalp format "text")
+               (setf format 'text))
+              ((equalp format "text/default")
+               (set-format-default "text")
+               (setf format 'text))
+              ((equalp format "text-color")
+               (setf format 'text-color))
+              ((equalp format "text-color/default")
+               (set-format-default "text-color")
+               (setf format 'text-color))
+              (t (throw-error "~&Unknown format option \"~A\".~%" format)))
+
         (cond ((getf options :help) (command-help))
               ((getf options :create) (command-create tag-names))
-              ((getf options :edit) (command-edit tag-names))
+              ((getf options :edit)
+               (command-edit (make-instance 'text-editor :verbose verbose)
+                             tag-names))
               ((getf options :list) (command-list tag-names))
               ((getf options :reassociate) (command-reassociate tag-names))
               ((not tag-names) (throw-error "No tags given."))
               (t
-               (when (and *output-quiet* *output-verbose*)
+               (when (and quiet verbose)
                  (error-message "~&Option \"-q\" is ignored when ~
                                 combined with \"-v\".~%"))
-               (command-print-records tag-names)))))))
+               (command-print-records
+                (make-instance format
+                               :verbose verbose
+                               :quiet (if verbose nil quiet)
+                               :short short)
+                tag-names)))))))
 
 
 (defun main (&optional argv)
