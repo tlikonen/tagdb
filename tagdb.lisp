@@ -788,7 +788,7 @@
   ;; Help command doesn't use colors but user might combine it with
   ;; --color=yes-default, for example.
   (when *output-format*
-    (with-database (set-format-mode)))
+    (set-format-mode))
 
   (format t "~
 
@@ -855,23 +855,21 @@ Command options
 
 (defun command-create (tag-names)
   (assert-tag-names tag-names)
-  (with-database
-    (with-transaction
-      (assert-db-write-access)
-      (set-format-mode)
-      (if (listen *standard-input*)
-          (create-new-record-from-stream tag-names *standard-input*)
-          (create-and-edit-new-record tag-names)))))
+  (with-transaction
+    (assert-db-write-access)
+    (set-format-mode)
+    (if (listen *standard-input*)
+        (create-new-record-from-stream tag-names *standard-input*)
+        (create-and-edit-new-record tag-names))))
 
 
 (defun command-edit (tag-names)
   (assert-tag-names tag-names)
-  (with-database
-    (with-transaction
-      (assert-db-write-access)
-      (set-format-mode)
-      (find-and-edit-records tag-names)
-      (delete-unused-tags))))
+  (with-transaction
+    (assert-db-write-access)
+    (set-format-mode)
+    (find-and-edit-records tag-names)
+    (delete-unused-tags)))
 
 
 (defun command-list (tag-names)
@@ -880,9 +878,8 @@ Command options
     (setf (rest tag-names) nil))
   (when tag-names
     (assert-tag-names tag-names))
-  (with-database
-    (set-format-mode)
-    (print-tags (first tag-names))))
+  (set-format-mode)
+  (print-tags (first tag-names)))
 
 
 (defun command-reassociate (tag-names)
@@ -897,50 +894,48 @@ Command options
       (throw-error "OLD and NEW tag can't be the same.")))
   (assert-tag-names tag-names)
 
-  (with-database
-    (with-transaction
-      (assert-db-write-access)
-      (set-format-mode)
-      (let* ((old (nth 0 tag-names))
-             (new (nth 1 tag-names))
-             (old-id (query-1 "SELECT id FROM tags WHERE name = ~A"
-                              (sql-string-esc old)))
-             (new-id (query-1 "SELECT id FROM tags WHERE name = ~A"
-                              (sql-string-esc new))))
+  (with-transaction
+    (assert-db-write-access)
+    (set-format-mode)
+    (let* ((old (nth 0 tag-names))
+           (new (nth 1 tag-names))
+           (old-id (query-1 "SELECT id FROM tags WHERE name = ~A"
+                            (sql-string-esc old)))
+           (new-id (query-1 "SELECT id FROM tags WHERE name = ~A"
+                            (sql-string-esc new))))
 
-        (cond
-          ((not old-id)
-           (throw-error "Tag \"~A\" not found." old))
+      (cond
+        ((not old-id)
+         (throw-error "Tag \"~A\" not found." old))
 
-          (new-id
-           (loop :for changes :upfrom 1
-                 :for record-id
-                 :in (query-nconc "SELECT record_id FROM record_tag ~
+        (new-id
+         (loop :for changes :upfrom 1
+               :for record-id
+               :in (query-nconc "SELECT record_id FROM record_tag ~
                                 WHERE tag_id = ~D" old-id)
-                 :do
-                 (if (query "SELECT * FROM record_tag ~
+               :do
+               (if (query "SELECT * FROM record_tag ~
                                 WHERE record_id = ~D AND tag_id = ~D"
-                            record-id new-id)
-                     (query "DELETE FROM record_tag ~
+                          record-id new-id)
+                   (query "DELETE FROM record_tag ~
                                 WHERE record_id = ~D AND tag_id = ~D"
-                            record-id old-id)
-                     (query "UPDATE record_tag SET tag_id = ~D ~
+                          record-id old-id)
+                   (query "UPDATE record_tag SET tag_id = ~D ~
                                 WHERE record_id = ~D AND tag_id = ~D"
-                            new-id record-id old-id))
-                 :finally
-                 (change-counter-add changes)
-                 (delete-unused-tags)))
+                          new-id record-id old-id))
+               :finally
+               (change-counter-add changes)
+               (delete-unused-tags)))
 
-          (t (query "UPDATE tags SET name = ~A WHERE id = ~D"
-                    (sql-string-esc new) old-id)
-             (change-counter-add 1)))))))
+        (t (query "UPDATE tags SET name = ~A WHERE id = ~D"
+                  (sql-string-esc new) old-id)
+           (change-counter-add 1))))))
 
 
 (defun command-print-records (tag-names)
   (assert-tag-names tag-names)
-  (with-database
-    (set-format-mode)
-    (print-records (find-records tag-names))))
+  (set-format-mode)
+  (print-records (find-records tag-names)))
 
 
 (defun parse-command-line (args)
@@ -1020,17 +1015,18 @@ Command options
               (setf *database-pathname* (sb-ext:parse-native-namestring path))
               (throw-error "Invalid filename for option --db=FILE."))))
 
-      (cond ((getf options :help) (command-help))
-            ((getf options :create) (command-create tag-names))
-            ((getf options :edit) (command-edit tag-names))
-            ((getf options :list) (command-list tag-names))
-            ((getf options :reassociate) (command-reassociate tag-names))
-            ((not tag-names) (throw-error "No tags given."))
-            (t
-             (when (and *output-quiet* *output-verbose*)
-               (error-message "~&Option \"-q\" is ignored when ~
+      (with-database
+        (cond ((getf options :help) (command-help))
+              ((getf options :create) (command-create tag-names))
+              ((getf options :edit) (command-edit tag-names))
+              ((getf options :list) (command-list tag-names))
+              ((getf options :reassociate) (command-reassociate tag-names))
+              ((not tag-names) (throw-error "No tags given."))
+              (t
+               (when (and *output-quiet* *output-verbose*)
+                 (error-message "~&Option \"-q\" is ignored when ~
                                 combined with \"-v\".~%"))
-             (command-print-records tag-names))))))
+               (command-print-records tag-names)))))))
 
 
 (defun main (&optional argv)
