@@ -31,8 +31,8 @@
 (defvar *output-short* nil)
 (defvar *output-verbose* nil)
 (defvar *output-editor* nil)
-(defvar *output-color* nil)
-(defparameter *program-database-version* 5)
+(defvar *output-format* nil)
+(defparameter *program-database-version* 6)
 
 
 (define-condition tagdb-error (error)
@@ -151,16 +151,14 @@
     (if value (normalize-integer value) 1)))
 
 
-(defun get-color-default ()
-  (let ((value (query-1 "SELECT value FROM maintenance ~
-                                WHERE key = 'color'")))
-    (if (eql value 1) t nil)))
+(defun get-format-default ()
+  (query-1 "SELECT value FROM maintenance WHERE key = 'output format'"))
 
 
-(defun set-color-default (set)
-  (query "UPDATE maintenance SET value = ~D WHERE key = 'color'"
-         (if set 1 0))
-  set)
+(defun set-format-default (format)
+  (query "UPDATE maintenance SET value = ~A WHERE key = 'output format'"
+         (sql-string-esc format))
+  format)
 
 
 (defun assert-db-write-access ()
@@ -224,6 +222,20 @@
     (query "PRAGMA auto_vacuum = FULL")))
 
 
+(defmethod db-update ((version (eql 6)))
+  ;; Remove --color option and introduce --format.
+  (with-transaction
+    (let ((value (query-1 "SELECT value FROM maintenance ~
+                                WHERE key = 'color'")))
+      (if (eql value 1)
+          (query "INSERT INTO maintenance (key, value) ~
+                        VALUES ('output format', 'text-color')")
+          (query "INSERT INTO maintenance (key, value) ~
+                        VALUES ('output format', 'text')")))
+    (query "DELETE FROM maintenance WHERE key = 'color'")
+    (query "UPDATE maintenance SET value = 6 WHERE key = 'database version'")))
+
+
 (defun init-database ()
   (if (query-1 "SELECT 1 FROM sqlite_master ~
                 WHERE type = 'table' AND name = 'maintenance'")
@@ -257,7 +269,7 @@
         (query "INSERT INTO maintenance (key, value) ~
                 VALUES ('change counter', 0)")
         (query "INSERT INTO maintenance (key, value) ~
-                VALUES ('color', 0)")
+                VALUES ('output format', 'text')")
 
         (query "CREATE TABLE records (~
                 id INTEGER PRIMARY KEY, ~
@@ -461,22 +473,27 @@
              " " (:hour 2) ":" (:min 2) ":" (:sec 2) " " :gmt-offset)))
 
 
-(defun set-color-mode ()
-  (setf *output-color*
-        (cond ((equalp *output-color* "yes") t)
-              ((equalp *output-color* "no") nil)
-              ((equalp *output-color* "yes-default")
-               (set-color-default t))
-              ((equalp *output-color* "no-default")
-               (set-color-default nil))
-              (t (when (stringp *output-color*)
-                   (error-message "~&Unknown color option \"~A\".~%"
-                                  *output-color*))
-                 (get-color-default)))))
+(defun set-format-mode ()
+  (setf *output-format*
+        (cond ((equalp *output-format* "text")
+               *output-format*)
+              ((equalp *output-format* "text/default")
+               (set-format-default "text")
+               "text")
+              ((equalp *output-format* "text-color")
+               *output-format*)
+              ((equalp *output-format* "text-color/default")
+               (set-format-default "text-color")
+               "text-color")
+              (t (when (stringp *output-format*)
+                   (error-message "~&Unknown format option \"~A\".~%"
+                                  *output-format*))
+                 (get-format-default)))))
 
 
 (defun term-color (&optional true)
-  (if (and *output-color* (not *output-editor*))
+  (if (and (equalp *output-format* "text-color")
+           (not *output-editor*))
       (format nil "~C[~Am" #\Esc (if true "0;32" "0"))
       ""))
 
@@ -770,8 +787,8 @@
 (defun command-help ()
   ;; Help command doesn't use colors but user might combine it with
   ;; --color=yes-default, for example.
-  (when *output-color*
-    (with-database (set-color-mode)))
+  (when *output-format*
+    (with-database (set-format-mode)))
 
   (format t "~
 
@@ -790,11 +807,11 @@ General options
         Use FILE as the database file instead of the default
         ~~/.config/tagdb.db.
 
-  --color=MODE
+  --format=MODE
 
-        Set terminal color mode to MODE which can be \"yes\", \"no\",
-        \"yes-default\" or \"no-default\". The last two will save the
-        default color mode.
+        Set output format to MODE which can be \"text\" or
+        \"text-color\". You can also add suffix \"/default\" to MODE in
+        which case that mode will be saved as the default mode.
 
 Command options
 
@@ -841,7 +858,7 @@ Command options
   (with-database
     (with-transaction
       (assert-db-write-access)
-      (set-color-mode)
+      (set-format-mode)
       (if (listen *standard-input*)
           (create-new-record-from-stream tag-names *standard-input*)
           (create-and-edit-new-record tag-names)))))
@@ -852,7 +869,7 @@ Command options
   (with-database
     (with-transaction
       (assert-db-write-access)
-      (set-color-mode)
+      (set-format-mode)
       (find-and-edit-records tag-names)
       (delete-unused-tags))))
 
@@ -864,7 +881,7 @@ Command options
   (when tag-names
     (assert-tag-names tag-names))
   (with-database
-    (set-color-mode)
+    (set-format-mode)
     (print-tags (first tag-names))))
 
 
@@ -883,7 +900,7 @@ Command options
   (with-database
     (with-transaction
       (assert-db-write-access)
-      (set-color-mode)
+      (set-format-mode)
       (let* ((old (nth 0 tag-names))
              (new (nth 1 tag-names))
              (old-id (query-1 "SELECT id FROM tags WHERE name = ~A"
@@ -922,12 +939,12 @@ Command options
 (defun command-print-records (tag-names)
   (assert-tag-names tag-names)
   (with-database
-    (set-color-mode)
+    (set-format-mode)
     (print-records (find-records tag-names))))
 
 
 (defun parse-command-line (args)
-  (loop :with color :with short :with verbose :with help :with quiet
+  (loop :with format :with short :with verbose :with help :with quiet
         :with create :with edit :with list :with reassociate
         :with db :with unknown
         :with arg := nil
@@ -941,8 +958,8 @@ Command options
           ((and (> (length arg) 2)
                 (equal "--" (subseq arg 0 2)))
            (cond ((and (>= (length arg) 8)
-                       (equal "--color=" (subseq arg 0 8)))
-                  (setf color (subseq arg 8)))
+                       (equal "--format=" (subseq arg 0 9)))
+                  (setf format (subseq arg 9)))
                  ((and (>= (length arg) 5)
                        (equal "--db=" (subseq arg 0 5)))
                   (setf db (subseq arg 5)))
@@ -968,7 +985,7 @@ Command options
         :finally
         (return
           (values
-           (list :quiet quiet :verbose verbose :color color :db db
+           (list :quiet quiet :verbose verbose :format format :db db
                  :short short :edit edit :create create :list list
                  :reassociate reassociate :help help)
            args
@@ -995,7 +1012,7 @@ Command options
     (let ((*output-quiet* (getf options :quiet))
           (*output-verbose* (getf options :verbose))
           (*output-short* (getf options :short))
-          (*output-color* (getf options :color)))
+          (*output-format* (getf options :format)))
 
       (let ((path (getf options :db)))
         (when path
