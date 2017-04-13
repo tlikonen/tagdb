@@ -958,7 +958,7 @@ Command options
 
           ((and (> (length arg) 2)
                 (equal "--" (subseq arg 0 2)))
-           (cond ((and (>= (length arg) 8)
+           (cond ((and (>= (length arg) 9)
                        (equal "--format=" (subseq arg 0 9)))
                   (setf format (subseq arg 9)))
                  ((and (>= (length arg) 5)
