@@ -945,52 +945,57 @@ Command options
 
 
 (defun parse-command-line (args)
-  (loop :with format :with short :with verbose :with help :with quiet
-        :with create :with edit :with list :with reassociate
-        :with db :with unknown
-        :with arg := nil
-        :while args
-        :if (setf arg (pop args)) :do
+  (flet ((long-option-arg-p (option arg)
+           (let ((len (length option)))
+             (when (and (>= (length arg) len)
+                        (string= option (subseq arg 0 len)))
+               (subseq arg len)))))
 
-        (cond
-          ((equal "--" arg)
-           (loop-finish))
+    (loop :with format :with short :with verbose :with help :with quiet
+          :with create :with edit :with list :with reassociate
+          :with db :with unknown
+          :with arg := nil
+          :while args
+          :if (setf arg (pop args)) :do
 
-          ((and (> (length arg) 2)
-                (equal "--" (subseq arg 0 2)))
-           (cond ((and (>= (length arg) 9)
-                       (equal "--format=" (subseq arg 0 9)))
-                  (setf format (subseq arg 9)))
-                 ((and (>= (length arg) 5)
-                       (equal "--db=" (subseq arg 0 5)))
-                  (setf db (subseq arg 5)))
-                 (t (push arg unknown))))
+          (cond
+            ((equal "--" arg)
+             (loop-finish))
 
-          ((and (> (length arg) 1)
-                (equal "-" (subseq arg 0 1)))
-           (loop :for option :across (subseq arg 1)
-                 :do (case option
-                       (#\q (setf quiet t))
-                       (#\v (setf verbose t))
-                       (#\s (setf short t))
-                       (#\e (setf edit t))
-                       (#\c (setf create t))
-                       (#\l (setf list t))
-                       (#\r (setf reassociate t))
-                       (#\h (setf help t))
-                       (t (push (format nil "-~C" option) unknown)))))
+            ((and (> (length arg) 2)
+                  (equal "--" (subseq arg 0 2)))
+             (let ((lo nil))
+               (cond ((setf lo (long-option-arg-p "--format=" arg))
+                      (setf format lo))
+                     ((setf lo (long-option-arg-p "--db=" arg))
+                      (setf db lo))
+                     (t (push arg unknown)))))
 
-          (t (push arg args)
-             (loop-finish)))
+            ((and (> (length arg) 1)
+                  (equal "-" (subseq arg 0 1)))
+             (loop :for option :across (subseq arg 1)
+                   :do (case option
+                         (#\q (setf quiet t))
+                         (#\v (setf verbose t))
+                         (#\s (setf short t))
+                         (#\e (setf edit t))
+                         (#\c (setf create t))
+                         (#\l (setf list t))
+                         (#\r (setf reassociate t))
+                         (#\h (setf help t))
+                         (t (push (format nil "-~C" option) unknown)))))
 
-        :finally
-        (return
-          (values
-           (list :quiet quiet :verbose verbose :format format :db db
-                 :short short :edit edit :create create :list list
-                 :reassociate reassociate :help help)
-           args
-           (delete-duplicates (nreverse unknown)) :test #'equal))))
+            (t (push arg args)
+               (loop-finish)))
+
+          :finally
+          (return
+            (values
+             (list :quiet quiet :verbose verbose :format format :db db
+                   :short short :edit edit :create create :list list
+                   :reassociate reassociate :help help)
+             args
+             (delete-duplicates (nreverse unknown)) :test #'equal)))))
 
 
 (defun execute-command-line (args)
@@ -1037,7 +1042,7 @@ Command options
               ((equalp format "org-mode/default")
                (set-default-format "org-mode")
                (setf format 'org-mode))
-              (t (throw-error "Unknown format option \"~A\"." format)))
+              (t (throw-error "Invalid argument for option --format=MODE.")))
 
         (cond ((getf options :help) (command-help))
               ((getf options :create) (command-create tag-names))
