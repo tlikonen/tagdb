@@ -1019,7 +1019,7 @@ Command options
       (when path
         (if (plusp (length path))
             (setf *database-pathname* (sb-ext:parse-native-namestring path))
-            (throw-error "Invalid filename for option --db=FILE."))))
+            (throw-error "Invalid argument for option --db."))))
 
     (with-database
       (let ((verbose (getf options :verbose))
@@ -1042,7 +1042,7 @@ Command options
               ((string= format "org-mode/default")
                (set-default-format "org-mode")
                (setf format 'org-mode))
-              (t (throw-error "Invalid argument for option --format=MODE.")))
+              (t (throw-error "Invalid argument for option --format.")))
 
         (cond ((getf options :help) (command-help))
               ((getf options :create) (command-create tag-names))
