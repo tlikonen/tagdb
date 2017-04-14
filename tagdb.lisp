@@ -658,10 +658,10 @@
 
 (defun parse-record-header (line)
   (let ((words (split-sequence #\space line :remove-empty-subseqs nil)))
-    (when (and (equal "#" (nth 0 words))
-               (equal "Id:" (nth 1 words))
+    (when (and (string= "#" (nth 0 words))
+               (string= "Id:" (nth 1 words))
                (every #'alphanumericp (nth 2 words))
-               (equal "Tags:" (nth 3 words)))
+               (string= "Tags:" (nth 3 words)))
       (values (nth 2 words) (delete "" (nthcdr 4 words) :test #'string=)))))
 
 
@@ -720,7 +720,7 @@
                         ;; This is a record header that adds more tags
                         ;; for the same record.
                         ((and (valid-record-p id-hash)
-                              (equal id-hash last-id-hash))
+                              (string= id-hash last-id-hash))
                          (dolist (tag tag-names)
                            (push tag (rest (aref text 0)))))
 
@@ -897,7 +897,7 @@ Command options
     (when (> number-of-tags 2)
       (error-message "~&Only the first two tags are used.~%")
       (setf (rest (rest tag-names)) nil))
-    (when (equal (nth 0 tag-names) (nth 1 tag-names))
+    (when (string= (nth 0 tag-names) (nth 1 tag-names))
       (throw-error "OLD and NEW tag can't be the same.")))
   (assert-tag-names tag-names)
 
@@ -959,11 +959,11 @@ Command options
           :if (setf arg (pop args)) :do
 
           (cond
-            ((equal "--" arg)
+            ((string= "--" arg)
              (loop-finish))
 
             ((and (> (length arg) 2)
-                  (equal "--" (subseq arg 0 2)))
+                  (string= "--" (subseq arg 0 2)))
              (let ((lo nil))
                (cond ((setf lo (long-option-arg-p "--format=" arg))
                       (setf format lo))
@@ -972,7 +972,7 @@ Command options
                      (t (push arg unknown)))))
 
             ((and (> (length arg) 1)
-                  (equal "-" (subseq arg 0 1)))
+                  (char= #\- (aref arg 0)))
              (loop :for option :across (subseq arg 1)
                    :do (case option
                          (#\q (setf quiet t))
@@ -995,7 +995,7 @@ Command options
                    :short short :edit edit :create create :list list
                    :reassociate reassociate :help help)
              args
-             (delete-duplicates (nreverse unknown)) :test #'equal)))))
+             (delete-duplicates (nreverse unknown)) :test #'string=)))))
 
 
 (defun execute-command-line (args)
@@ -1027,19 +1027,19 @@ Command options
             (short (getf options :short))
             (format (or (getf options :format) (get-default-format))))
 
-        (cond ((equalp format "text")
+        (cond ((string= format "text")
                (setf format 'text))
-              ((equalp format "text/default")
+              ((string= format "text/default")
                (set-default-format "text")
                (setf format 'text))
-              ((equalp format "text-color")
+              ((string= format "text-color")
                (setf format 'text-color))
-              ((equalp format "text-color/default")
+              ((string= format "text-color/default")
                (set-default-format "text-color")
                (setf format 'text-color))
-              ((equalp format "org-mode")
+              ((string= format "org-mode")
                (setf format 'org-mode))
-              ((equalp format "org-mode/default")
+              ((string= format "org-mode/default")
                (set-default-format "org-mode")
                (setf format 'org-mode))
               (t (throw-error "Invalid argument for option --format=MODE.")))
