@@ -545,7 +545,21 @@
 
 
 (defmethod print-records ((format org-mode) &optional (stream *standard-output*))
-  (flet ((org-header-line-p (string)
+  (flet ((taglist (prefix record)
+           (format stream "~&~A" prefix)
+           (loop :with column-max := 78
+                 :with column-min := (length prefix)
+                 :with column := column-min
+                 :for (tag . rest) :on (tags record)
+                 :do
+                 (format stream " ~A" tag)
+                 (incf column (1+ (length tag)))
+                 (when (and rest (> (1+ (length (first rest)))
+                                    (- column-max column)))
+                   (setf column column-min)
+                   (format stream "~&~A" prefix))))
+
+         (org-header-line-p (string)
            (loop :with stars := 0
                  :for c :across string
                  :do (cond ((eql c #\space)
@@ -561,7 +575,9 @@
                         (cond ((not topic))
                               ((string= "* " (subseq topic 0 (min 2 (length topic))))
                                (format stream "~A~%" topic))
-                              (t (format stream "* ~A~%" topic))))
+                              (t (format stream "* ~A~%" topic)))
+                        (taglist "# Tags:" record)
+                        (terpri stream))
 
                       :for line := (read-line s nil)
                       :while line
