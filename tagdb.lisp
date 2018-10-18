@@ -534,8 +534,7 @@
            ((quiet format)
             (lambda (record n)
               (declare (ignore n))
-              (format stream "~&~A~A~&" (term-color nil)
-                      (format-contents (content record)))))
+              (format stream "~&~A~&" (format-contents (content record)))))
 
            (t (lambda (record n)
                 (declare (ignore n))
