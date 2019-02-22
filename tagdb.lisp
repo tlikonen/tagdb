@@ -1090,5 +1090,5 @@ Command options
       (sb-ext:exit :code 1))))
 
 
-#+script
+#-interactive
 (main sb-ext:*posix-argv*)

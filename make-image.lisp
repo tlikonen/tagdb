@@ -61,6 +61,8 @@
 (pushnew *default-pathname-defaults* ql:*local-project-directories*
          :test #'equal)
 
+(pushnew :interactive *features*)
+
 (handler-case (ql:quickload *system*)
   (sb-sys:interactive-interrupt ()
     (sb-ext:exit :code 1))
