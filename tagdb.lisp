@@ -1081,6 +1081,7 @@ Command options
 
 (defun main (&optional argv)
   (handler-case (execute-command-line (rest argv))
+    (sb-int:simple-stream-error () nil)
     (error (c)
       (error-message "~&~A~%" c)
       (sb-ext:exit :code 1))
