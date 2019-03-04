@@ -45,13 +45,17 @@ or similar distributions they are in packages `sbcl` and
 but the build process downloads and installs them automatically (with
 [Quicklisp][QL]).
 
-Here's the build and install process in short:
+Here's the build process:
 
-    $ sudo apt-get install build-essential git sbcl libsqlite3-dev
+    $ sudo apt install build-essential git sbcl libsqlite3-dev
     $ git clone https://github.com/tlikonen/tagdb
     $ cd tagdb
     $ make
-    $ make install          # Default target: ~/bin/tagdb
+
+Command `make install` will install `tagdb` executable to the default
+target directory `~/bin`. You can configure the target directory with
+Makefile variable `bindir`, for example: `sudo make install
+bindir=/usr/local/bin`.
 
 And you are ready to go. Start with `tagdb -h` command.
 

@@ -1079,8 +1079,8 @@ Command options
                 tag-names)))))))
 
 
-(defun main (&optional argv)
-  (handler-case (execute-command-line (rest argv))
+(defun main (&rest args)
+  (handler-case (execute-command-line args)
     (sb-int:simple-stream-error () nil)
     (error (c)
       (error-message "~&~A~%" c)
@@ -1088,7 +1088,3 @@ Command options
     (sb-sys:interactive-interrupt ()
       (format t "~%")
       (sb-ext:exit :code 1))))
-
-
-#-interactive
-(main sb-ext:*posix-argv*)

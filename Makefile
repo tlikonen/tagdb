@@ -1,31 +1,34 @@
+sbcl = sbcl
 bindir = $(HOME)/bin
-IMAGE = tagdb
-SYSTEM = tagdb
-MAKEIMG = make-image.lisp
-SBCL = sbcl
-LISPFILES = tagdb.asd tagdb.lisp
 
-$(IMAGE): $(MAKEIMG) $(LISPFILES)
-	@$(SBCL) --script $(MAKEIMG) $(SYSTEM) $(IMAGE)
+src = tagdb.asd tagdb.lisp
 
-README.md: README.template $(IMAGE)
+tagdb: quicklisp/setup.lisp $(src)
+	install -m 644 $(src) quicklisp/local-projects
+	$(sbcl) --script make-image.lisp
+
+quicklisp.lisp:
+	wget -O $@ "http://beta.quicklisp.org/quicklisp.lisp"
+
+quicklisp/setup.lisp: quicklisp.lisp
+	$(sbcl) --noinform --no-sysinit --no-userinit --non-interactive \
+		--load quicklisp.lisp \
+		--eval '(quicklisp-quickstart:install :path "quicklisp/")'
+
+README.md: README.template tagdb
 	sed '/^###USAGE###/,$$d' $< >$@
-	./$(IMAGE) -h | sed -r '/.+/s/^/    /' >>$@
+	./tagdb -h | sed -r '/.+/s/^/    /' >>$@
 	sed '1,/^###USAGE###/d' $< >>$@
 
-install: $(IMAGE)
-	install -d -- $(bindir)
-	install -m 755 -- $(IMAGE) $(bindir)
-
-uninstall:
-	rm -f -- $(bindir)/$(IMAGE)
+install:
+	install -d -m 755 $(bindir)
+	install -m 755 tagdb $(bindir)
 
 clean:
-	rm -f -- $(IMAGE) system-index.txt
+	rm -f tagdb
 
 clean-quicklisp:
-	rm -fr -- quicklisp
+	rm -fr quicklisp
+	rm -f quicklisp.lisp
 
-clean-all: clean clean-quicklisp
-
-.PHONY: clean clean-quicklisp clean-all install uninstall
+.PHONY: clean clean-quicklisp install

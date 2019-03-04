@@ -1,2 +1,3 @@
+quicklisp/
+quicklisp.lisp
 tagdb
-system-index.txt
