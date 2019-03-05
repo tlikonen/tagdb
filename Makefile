@@ -27,8 +27,8 @@ install:
 clean:
 	rm -f tagdb
 
-clean-quicklisp:
+clean-all: clean
 	rm -fr quicklisp
 	rm -f quicklisp.lisp
 
-.PHONY: clean clean-quicklisp install
+.PHONY: clean clean-all install
