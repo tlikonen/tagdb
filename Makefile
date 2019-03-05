@@ -4,6 +4,8 @@ bindir = $(HOME)/bin
 src = tagdb.asd tagdb.lisp
 src-ql = $(patsubst %,quicklisp/local-projects/%,$(src))
 
+all: tagdb README.md
+
 tagdb: quicklisp/setup.lisp $(src-ql)
 	$(sbcl) --script make-image.lisp
 
@@ -34,4 +36,4 @@ clean-all: clean
 	rm -fr quicklisp
 	rm -f quicklisp.lisp
 
-.PHONY: clean clean-all install
+.PHONY: all clean clean-all install
