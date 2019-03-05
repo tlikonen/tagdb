@@ -24,14 +24,14 @@ README.md: tagdb
 	@./tagdb -h | sed -r '/.+/s/^/    /' >> $@.tmp
 	@echo >> $@.tmp
 	@sed -n -e '/^Compile and Install$$/,$$p' $@ >> $@.tmp
-	@mv -f $@.tmp $@
+	@cp -f $@.tmp $@
 
 install:
 	install -d -m 755 $(bindir)
 	install -m 755 tagdb $(bindir)
 
 clean:
-	rm -f tagdb
+	rm -f tagdb README.md.tmp
 
 clean-all: clean
 	rm -fr quicklisp
