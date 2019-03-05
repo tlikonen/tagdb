@@ -19,7 +19,7 @@
 (defpackage #:tagdb
   (:use #:cl)
   (:import-from #:split-sequence #:split-sequence)
-  (:export #:main))
+  (:export #:main #:start))
 
 (in-package #:tagdb)
 
@@ -1088,3 +1088,6 @@ Command options
     (sb-sys:interactive-interrupt ()
       (format t "~%")
       (sb-ext:exit :code 1))))
+
+(defun start ()
+  (apply #'main (rest sb-ext:*posix-argv*)))

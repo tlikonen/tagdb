@@ -5,7 +5,6 @@
 (sb-ext:save-lisp-and-die
  "tagdb"
  :executable t
- :toplevel (lambda ()
-             (apply #'tagdb:main (rest sb-ext:*posix-argv*)))
+ :toplevel #'tagdb:start
  :save-runtime-options t
  :compression (if (member :sb-core-compression *features*) t))
