@@ -3,8 +3,6 @@ bindir = $(HOME)/bin
 
 src = tagdb.asd tagdb.lisp
 
-all: tagdb README.md
-
 tagdb: quicklisp/setup.lisp $(src)
 	$(sbcl) --script make-image.lisp
 
