@@ -2,15 +2,11 @@ sbcl = sbcl
 bindir = $(HOME)/bin
 
 src = tagdb.asd tagdb.lisp
-src-ql = $(patsubst %,quicklisp/local-projects/%,$(src))
 
 all: tagdb README.md
 
-tagdb: quicklisp/setup.lisp $(src-ql)
+tagdb: quicklisp/setup.lisp $(src)
 	$(sbcl) --script make-image.lisp
-
-$(src-ql): quicklisp/local-projects/%: %
-	cp $< $@
 
 quicklisp.lisp:
 	wget -O $@ "http://beta.quicklisp.org/quicklisp.lisp"
