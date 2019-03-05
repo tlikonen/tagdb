@@ -16,10 +16,15 @@ quicklisp/setup.lisp: quicklisp.lisp
 		--load quicklisp.lisp \
 		--eval '(quicklisp-quickstart:install :path "quicklisp/")'
 
-README.md: README.template tagdb
-	sed '/^###USAGE###/,$$d' $< >$@
-	./tagdb -h | sed -r '/.+/s/^/    /' >>$@
-	sed '1,/^###USAGE###/d' $< >>$@
+README.md: tagdb
+	@echo "Updating $@"
+	@sed -n -e '0,/^Usage$$/p' $@ > $@.tmp
+	@echo ----- >> $@.tmp
+	@echo >> $@.tmp
+	@./tagdb -h | sed -r '/.+/s/^/    /' >> $@.tmp
+	@echo >> $@.tmp
+	@sed -n -e '/^Compile and Install$$/,$$p' $@ >> $@.tmp
+	@mv -f $@.tmp $@
 
 install:
 	install -d -m 755 $(bindir)
