@@ -16,13 +16,13 @@ quicklisp/setup.lisp: quicklisp.lisp
 
 README.md: tagdb
 	@echo "Updating $@"
-	@sed -n -e '0,/^Usage$$/p' $@ > $@.tmp
-	@echo ----- >> $@.tmp
-	@echo >> $@.tmp
-	@./tagdb -h | sed -r '/.+/s/^/    /' >> $@.tmp
-	@echo >> $@.tmp
-	@sed -n -e '/^Compile and Install$$/,$$p' $@ >> $@.tmp
-	@cp -f $@.tmp $@
+	@mv -f $@ $@.tmp
+	@sed -n -e '0,/^Usage$$/p' $@.tmp > $@
+	@echo ----- >> $@
+	@echo >> $@
+	@./tagdb -h | sed -r '/.+/s/^/    /' >> $@
+	@echo >> $@
+	@sed -n -e '/^Compile and Install$$/,$$p' $@.tmp >> $@
 
 install:
 	install -d -m 755 $(bindir)
