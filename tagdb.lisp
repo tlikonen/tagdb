@@ -262,7 +262,7 @@
       ;; Database is missing
       (with-transaction
         (message "~&Preparing database file ~A.~%"
-                 (sb-ext:native-pathname *database-pathname*))
+                 (sb-ext:native-namestring *database-pathname*))
 
         (query "PRAGMA auto_vacuum = FULL")
 
@@ -299,7 +299,8 @@
 (defun connect ()
   (unless (typep *database* 'sqlite:sqlite-handle)
     (init-database-pathname)
-    (setf *database* (sqlite:connect *database-pathname*))
+    (setf *database* (sqlite:connect (sb-ext:native-namestring
+                                      *database-pathname*)))
     (init-database)
     *database*))
 
@@ -605,7 +606,7 @@
 (defmacro with-temp-file (file &body body)
   (let ((name (gensym "FILENAME")))
     `(handler-case
-         (let* ((,name (sb-ext:parse-native-namestring
+         (let* ((,name (sb-ext:native-pathname
                         (nth-value 1 (sb-posix:mkstemp "/tmp/tagdb-XXXXXX"))))
                 (,file ,name))
            (unwind-protect (progn ,@body)
@@ -625,9 +626,9 @@
      (first editor)
      (append (rest editor)
              (list (etypecase pathname
-                     (pathname (sb-ext:native-namestring pathname :as-file t))
+                     (pathname (sb-ext:native-namestring pathname))
                      (string pathname))))
-     :search t :wait t :pty nil :input t :output t :error :output)))
+     :search t :wait t :pty nil :input t :output t :error *error-output*)))
 
 
 (defun empty-string-p (string)
@@ -1032,7 +1033,7 @@ Command options
     (let ((path (getf options :db)))
       (when path
         (if (plusp (length path))
-            (setf *database-pathname* (sb-ext:parse-native-namestring path))
+            (setf *database-pathname* (sb-ext:native-pathname path))
             (throw-error "Invalid argument for option --db."))))
 
     (with-database
