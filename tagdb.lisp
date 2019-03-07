@@ -177,10 +177,9 @@
 (defun init-database-pathname ()
   (unless *database-pathname*
     (setf *database-pathname*
-          (make-pathname
-           :directory (append (pathname-directory (user-homedir-pathname))
-                              '(".config"))
-           :name "tagdb" :type "db")))
+          (merge-pathnames (make-pathname :directory '(:relative ".config")
+			                  :name "tagdb" :type "db")
+                           (user-homedir-pathname))))
   (ensure-directories-exist *database-pathname*))
 
 
