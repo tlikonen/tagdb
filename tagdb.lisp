@@ -1010,7 +1010,7 @@ Command options
                    :short short :edit edit :create create :list list
                    :reassociate reassociate :help help)
              args
-             (delete-duplicates (nreverse unknown)) :test #'string=)))))
+             (delete-duplicates (nreverse unknown) :test #'string=))))))
 
 
 (defun execute-command-line (args)
