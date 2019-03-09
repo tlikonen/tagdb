@@ -4,6 +4,3 @@
   :licence "The GNU General Public License version 3"
   :depends-on (:sqlite :split-sequence :local-time)
   :components ((:file "tagdb")))
-
-#-sbcl (error "Works only with the SBCL implementation.")
-(require :sb-posix)
