@@ -1,6 +1,6 @@
-(defsystem :tagdb
+(defsystem "tagdb"
   :description "Tag-based command-line database tool"
   :author "Teemu Likonen <tlikonen@iki.fi>"
   :licence "The GNU General Public License version 3"
-  :depends-on (:sqlite :split-sequence :local-time)
+  :depends-on ("sqlite" "split-sequence" "local-time")
   :components ((:file "tagdb")))
