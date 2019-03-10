@@ -7,8 +7,7 @@ be used to find the records. _Tagdb_ is useful for saving and finding
 personal notes quickly.
 
 
-Examples
---------
+## Examples
 
 A new record is created with `-c` option and with a list of tags that
 will be associated with the record. Normally the default text editor is
@@ -29,8 +28,7 @@ editor is launched and all matching records can be edited at once.
     tagdb -e John_Smith email
 
 
-Usage
------
+## Usage
 
     Usage: tagdb [options] [--] TAG ...
 
@@ -92,8 +90,7 @@ Usage
       -h    Print this help text.
 
 
-Compile and Install
--------------------
+## Compile and Install
 
 The build process is quite straightforward in GNU/Linux distributions.
 _Tagdb_ depends on [SBCL][] (a Common Lisp implementation) and
@@ -124,8 +121,7 @@ And you are ready to go. Start with `tagdb -h` command.
 [QL]:      http://www.quicklisp.org/
 
 
-The Source Code Repository
---------------------------
+## The Source Code Repository
 
 Github repository URL: <https://github.com/tlikonen/tagdb>
 
@@ -134,8 +130,7 @@ safe to use. New features and experimental code are developed in other
 branches and possibly merged to _master_ when they are ready.
 
 
-Copyright and License
----------------------
+## Copyright and License
 
 Copyright (C) 2014-2019 Teemu Likonen <<tlikonen@iki.fi>>
 

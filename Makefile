@@ -19,12 +19,11 @@ quicklisp/setup.lisp: quicklisp.lisp
 README.md: tagdb
 	@echo "Updating $@"
 	@mv -f $@ $@.tmp
-	@sed -n -e '0,/^Usage$$/p' $@.tmp > $@
-	@echo ----- >> $@
+	@sed -n -e '0,/^## Usage$$/p' $@.tmp > $@
 	@echo >> $@
 	@./tagdb -h | sed -r '/.+/s/^/    /' >> $@
 	@echo >> $@
-	@sed -n -e '/^Compile and Install$$/,$$p' $@.tmp >> $@
+	@sed -n -e '/^## Compile and Install$$/,$$p' $@.tmp >> $@
 
 install:
 	install -d -m 755 $(bindir)
