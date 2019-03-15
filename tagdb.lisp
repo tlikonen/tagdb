@@ -959,135 +959,103 @@ Command options
   (print-records format))
 
 
-(defun parse-command-line (args)
-  (flet ((long-option-arg-p (option arg)
-           (let ((len (length option)))
-             (when (and (>= (length arg) len)
-                        (string= option (subseq arg 0 len)))
-               (subseq arg len)))))
-
-    (loop :with format :with short :with verbose :with help :with quiet
-          :with create :with edit :with list :with reassociate
-          :with db :with unknown
-          :with arg := nil
-          :while args
-          :if (setf arg (pop args)) :do
-
-          (cond
-            ((string= "--" arg)
-             (loop-finish))
-
-            ((and (> (length arg) 2)
-                  (string= "--" (subseq arg 0 2)))
-             (let ((lo nil))
-               (cond ((setf lo (long-option-arg-p "--format=" arg))
-                      (setf format lo))
-                     ((setf lo (long-option-arg-p "--db=" arg))
-                      (setf db lo))
-                     (t (push arg unknown)))))
-
-            ((and (> (length arg) 1)
-                  (char= #\- (aref arg 0)))
-             (loop :for option :across (subseq arg 1)
-                   :do (case option
-                         (#\q (setf quiet t))
-                         (#\v (setf verbose t))
-                         (#\s (setf short t))
-                         (#\e (setf edit t))
-                         (#\c (setf create t))
-                         (#\l (setf list t))
-                         (#\r (setf reassociate t))
-                         (#\h (setf help t))
-                         (t (push (format nil "-~C" option) unknown)))))
-
-            (t (push arg args)
-               (loop-finish)))
-
-          :finally
-          (return
-            (values
-             (list :quiet quiet :verbose verbose :format format :db db
-                   :short short :edit edit :create create :list list
-                   :reassociate reassociate :help help)
-             args
-             (delete-duplicates (nreverse unknown) :test #'string=))))))
-
-
 (defun execute-command-line (args)
   (multiple-value-bind (options tag-names unknown)
-      (parse-command-line args)
+      (just-getopt-parser:getopt args '((:quiet #\q)
+                                        (:verbose #\v)
+                                        (:db "db" :required)
+                                        (:format "format" :required)
+                                        (:short #\s)
+                                        (:create #\c)
+                                        (:edit #\e)
+                                        (:list #\l)
+                                        (:reassociate #\r)
+                                        (:help #\h))
+                                 :error-on-unknown-option t
+                                 :error-on-argument-missing t)
+    (declare (ignore unknown))
 
-    (loop :for u :in unknown
-          :do (error-message "Unknown option \"~A\".~%" u))
-
-    (when (> (length (delete nil (list (getf options :short)
-                                       (getf options :create)
-                                       (getf options :edit)
-                                       (getf options :list)
-                                       (getf options :reassociate)
-                                       (getf options :help))))
+    (when (> (length (delete nil (list (assoc :short options)
+                                       (assoc :create options)
+                                       (assoc :edit options)
+                                       (assoc :list options)
+                                       (assoc :reassociate options)
+                                       (assoc :help options))))
              1)
       (throw-error "Only one command option is allowed. ~
-                        Use -h for help."))
+                        Use \"-h\" for help."))
 
-    (let ((path (getf options :db)))
+    (let ((path (cdr (assoc :db options))))
       (when path
         (if (plusp (length path))
             (setf *database-pathname* (sb-ext:native-pathname path))
-            (throw-error "Invalid argument for option --db."))))
+            (throw-error "Invalid argument for option \"--db\"."))))
 
     (with-database
-      (let ((verbose (getf options :verbose))
-            (quiet (getf options :quiet))
-            (short (getf options :short))
-            (format (or (getf options :format) (get-default-format))))
+        (let ((verbose (assoc :verbose options))
+              (quiet (assoc :quiet options))
+              (short (assoc :short options))
+              (format (or (cdr (assoc :format options)) (get-default-format))))
 
-        (cond ((string= format "text")
-               (setf format 'text))
-              ((string= format "text/default")
-               (set-default-format "text")
-               (setf format 'text))
-              ((string= format "text-color")
-               (setf format 'text-color))
-              ((string= format "text-color/default")
-               (set-default-format "text-color")
-               (setf format 'text-color))
-              ((string= format "org-mode")
-               (setf format 'org-mode))
-              ((string= format "org-mode/default")
-               (set-default-format "org-mode")
-               (setf format 'org-mode))
-              (t (throw-error "Invalid argument for option --format.")))
+          (cond ((string= format "text")
+                 (setf format 'text))
+                ((string= format "text/default")
+                 (set-default-format "text")
+                 (setf format 'text))
+                ((string= format "text-color")
+                 (setf format 'text-color))
+                ((string= format "text-color/default")
+                 (set-default-format "text-color")
+                 (setf format 'text-color))
+                ((string= format "org-mode")
+                 (setf format 'org-mode))
+                ((string= format "org-mode/default")
+                 (set-default-format "org-mode")
+                 (setf format 'org-mode))
+                (t (throw-error "Invalid argument for option \"--format\".")))
 
-        (cond ((getf options :help) (command-help))
-              ((getf options :create) (command-create tag-names))
-              ((getf options :edit)
-               (command-edit (make-instance 'text-editor :verbose verbose)
-                             tag-names))
-              ((getf options :list) (command-list tag-names))
-              ((getf options :reassociate) (command-reassociate tag-names))
-              ((not tag-names) (throw-error "No tags given."))
-              (t
-               (when (and quiet verbose)
-                 (error-message "~&Option \"-q\" is ignored when ~
+          (cond ((assoc :help options) (command-help))
+                ((assoc :create options) (command-create tag-names))
+                ((assoc :edit options)
+                 (command-edit (make-instance 'text-editor :verbose verbose)
+                               tag-names))
+                ((assoc :list options) (command-list tag-names))
+                ((assoc :reassociate options) (command-reassociate tag-names))
+                ((not tag-names) (throw-error "No tags given."))
+                (t
+                 (when (and quiet verbose)
+                   (error-message "~&Option \"-q\" is ignored when ~
                                 combined with \"-v\".~%"))
-               (command-print-records
-                (make-instance format
-                               :verbose verbose
-                               :quiet (if verbose nil quiet)
-                               :short short)
-                tag-names)))))))
+                 (command-print-records
+                  (make-instance format
+                                 :verbose verbose
+                                 :quiet (if verbose nil quiet)
+                                 :short short)
+                  tag-names)))))))
 
 
 (defun main (&rest args)
-  (handler-case (execute-command-line args)
-    (sb-int:simple-stream-error () nil)
-    (error (c)
-      (error-message "~&~A~%" c)
-      (sb-ext:exit :code 1))
-    (sb-sys:interactive-interrupt ()
-      (format t "~%")
-      (sb-ext:exit :code 1))))
+  (handler-bind
+      ((just-getopt-parser:unknown-option
+         (lambda (c)
+           (error-message "~A~%" c)
+           (invoke-restart 'just-getopt-parser:skip-option)))
+       (sb-int:simple-stream-error
+         (lambda (c)
+           (declare (ignore c))
+           (sb-ext:exit :code 0)))
+       (sb-sys:interactive-interrupt
+         (lambda (c)
+           (declare (ignore c))
+           (format t "~%")
+           (sb-ext:exit :code 1)))
+       (error
+         (lambda (c)
+           (error-message "~&~A~%" c)
+           (sb-ext:exit :code 1))))
+
+    (execute-command-line args)))
+
 
 (defun start ()
   (apply #'main (rest sb-ext:*posix-argv*)))
