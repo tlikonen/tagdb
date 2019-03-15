@@ -173,15 +173,15 @@ The second element _option-name_ is either
     character long.
 
 The third element _option-argument_ is optional but if it is non-nil it
-must be one of the following keyword symbols. `:required` means that
-this option requires an argument. `:optional` means that this option has
+must be one of the following keyword symbols: `:required` means that
+this option requires an argument; `:optional` means that this option has
 an optional argument. Example value for this function's
 _option-specification_ argument:
 
-    ((:HELP #\\h)     ; short option -h for help (no option argument)
-     (:HELP \"help\")  ; long option --help (no option argument)
-     (:FILE \"file\" :REQUIRED) ; --file option which requires argument
-     (:DEBUG #\\d :OPTIONAL))  ; -d option with optional argument
+    ((:help #\\h)     ; short option -h for help (no option argument)
+     (:help \"help\")  ; long option --help (no option argument)
+     (:file \"file\" :required) ; --file option which requires argument
+     (:debug #\\d :optional))  ; -d option with optional argument
 
 Note that several options may have the same identifier _symbol_. This
 makes sense when short and long option represent the same meaning. See
@@ -203,8 +203,8 @@ match. If there are more than one match the option is classified as
 unknown. If also key argument `error-on-ambiguous-option` is non-nil the
 function will signal error condition `ambiguous-option`. The condition
 object contains the option's name and it can be read with function
-call `(option-name <condition>)`. Function call `(option-matches
-<condition>)` returns a list of option matches (strings). Also, the
+call `(option-name condition)`. Function call `(option-matches
+condition)` returns a list of option matches (strings). Also, the
 condition object can be printed as an error message for user. There is
 also `skip-option` restart available. When it is invoked the ambiguous
 option is skipped and the function will continue parsing the command
@@ -216,7 +216,7 @@ If function's key argument `error-on-unknown-option` is non-nil and the
 function finds an uknown option on the command line the function signals
 error condition `unknown-option`. The condition object includes the name
 of the unknown option which can be read with function `(option-name
-<condition>)`. The return value is of type character or string for short
+condition)`. The return value is of type character or string for short
 or long options respectively. You can also just print the condition
 object: it gives a reasonable error message. There is also `skip-option`
 restart available. The invoked restart skips the unknown option and
@@ -226,7 +226,7 @@ Function's key argument `error-on-argument-missing`, if non-nil, causes
 the function to signal error condition `required-argument-missing` if it
 sees an option which required argument (keyword `:required`) but there
 is none. The condition object contains the name of the option which can
-be read with function `(option-name <condition>)`. You can also just
+be read with function `(option-name condition)`. You can also just
 print the condition object for user. It's the error message. There are
 two restarts available: `give-argument` restart can be invoked with a
 optional argument (string or nil) which will be passed as a new argument
@@ -239,7 +239,7 @@ argument for a long option which does not allow argument (--foo=...).
 Such option is always listed as unknown option with name \"foo=\" in
 function's return value. The condition object can be printed to user as
 error message. The object also contains the name of the option which can
-be read with `(option-name <condition>)` function call. There is
+be read with `(option-name condition)` function call. There is
 `skip-option` restart available. When the restart is invoked the
 function continues parsing the command line.
 
