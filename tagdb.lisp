@@ -261,7 +261,7 @@
 
       ;; Database is missing
       (with-transaction
-        (message "~&Preparing database file ~A.~%"
+        (message "~&Preparing database file \"~A\".~%"
                  (sb-ext:native-namestring *database-pathname*))
 
         (query "PRAGMA auto_vacuum = FULL")
