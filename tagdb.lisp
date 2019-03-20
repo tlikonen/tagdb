@@ -828,7 +828,8 @@ General options
   --db=FILE
 
         Use FILE as the database file instead of the default
-        ~~/.config/tagdb.db.
+        ~~/.config/tagdb.db. The program will try to create all the
+        necessary directories for FILE.
 
   --format=MODE
 

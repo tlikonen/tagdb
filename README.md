@@ -43,7 +43,8 @@ editor is launched and all matching records can be edited at once.
       --db=FILE
 
             Use FILE as the database file instead of the default
-            ~/.config/tagdb.db.
+            ~/.config/tagdb.db. The program will try to create all the
+            necessary directories for FILE.
 
       --format=MODE
 
