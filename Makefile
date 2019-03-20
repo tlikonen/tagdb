@@ -1,7 +1,7 @@
 sbcl = sbcl
 bindir = $(HOME)/bin
 
-src = tagdb.asd tagdb.lisp just-getopt-parser.lisp
+src = tagdb.asd tagdb.lisp just-getopt-parser.lisp pathname-conversion.lisp
 
 tagdb: quicklisp/setup.lisp $(src)
 	$(sbcl) --script make-image.lisp
