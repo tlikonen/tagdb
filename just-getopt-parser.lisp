@@ -2,11 +2,8 @@
 ;;
 ;; Author: Teemu Likonen <tlikonen@iki.fi>
 ;;
-;; No restrictions for use: this program is placed in the public domain.
-;;
-;; This program is distributed in the hope that it will be useful, but
-;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+;; License: Creative Commons CC0 (public domain dedication)
+;; https://creativecommons.org/publicdomain/zero/1.0/legalcode
 
 (defpackage #:just-getopt-parser
   (:use #:cl)
@@ -29,15 +26,16 @@
 (define-condition unknown-option (argument-error)
   ()
   (:documentation
-   "`getopt` function may signal this condition when it find an unknown
+   "`getopt` function may signal this condition when it finds an unknown
 condition. Function `option-name` can be used to read option's name from
 the condition object.")
   (:report
    (lambda (condition stream)
      (format stream "Unknown option \"~A\"."
-             (typecase (option-name condition)
-               (string (format nil "--~A" (option-name condition)))
-               (character (format nil "-~C" (option-name condition))))))))
+             (let ((name (option-name condition)))
+               (typecase name
+                 (string (format nil "--~A" name))
+                 (character (format nil "-~C" name))))))))
 
 (define-condition ambiguous-option (argument-error)
   ((matches :reader option-matches :initarg :matches))
@@ -62,9 +60,10 @@ be used to read option's name from the condition object.")
   (:report
    (lambda (condition stream)
      (format stream "Required argument missing for option \"~A\"."
-             (typecase (option-name condition)
-               (string (format nil "--~A" (option-name condition)))
-               (character (format nil "-~C" (option-name condition))))))))
+             (let ((name (option-name condition)))
+               (typecase name
+                 (string (format nil "--~A" name))
+                 (character (format nil "-~C" name))))))))
 
 (define-condition argument-not-allowed (argument-error)
   ()
@@ -166,11 +165,11 @@ option was present in the command line.
 The second element _option-name_ is either
 
  1. a character specifying a short option name (for example `#\\h`,
-    entered as \"-h\" from command line)
+    entered as `-h` in command line)
 
  2. a string specifying a long option (for example `\"help\"`, entered
-    as \"--help\" from command line). The string must be at least two
-    character long.
+    as `--help` in command line). The string must be at least two
+    characters long.
 
 The third element _option-argument_ is optional but if it is non-nil it
 must be one of the following keyword symbols: `:required` means that
@@ -193,8 +192,8 @@ option parsing stops when the first non-option argument is found. Rest
 of the command line is parsed as non-options. If `options-everywhere` is
 non-nil then options can be found anywhere in the command line, even
 after non-option arguments. In all cases the option parsing stops when
-the pseudo-option \"--\" is found in the command line. Then all
-remaining arguments are parsed as non-option arguments.
+the pseudo-option `--` is found in the command line. Then all remaining
+arguments are parsed as non-option arguments.
 
 If key argument `prefix-match-long-options` is non-nil then long options
 don't need to be written in full in the command line. They can be
@@ -206,37 +205,37 @@ object contains the option's name and it can be read with function
 call `(option-name condition)`. Function call `(option-matches
 condition)` returns a list of option matches (strings). Also, the
 condition object can be printed as an error message for user. There is
-also `skip-option` restart available. When it is invoked the ambiguous
-option is skipped and the function will continue parsing the command
-line. Ambiguous options are always also unknown options: if
-`ambiguous-option` condition is not signaled then the condition for
-unknown option can be signaled. See the next paragraph.
+`skip-option` restart available. When it is invoked the ambiguous option
+is skipped and the function will continue parsing the command line.
+Ambiguous options are always also unknown options: if `ambiguous-option`
+condition is not signaled then the condition for unknown option can be
+signaled. See the next paragraph.
 
 If function's key argument `error-on-unknown-option` is non-nil and the
-function finds an uknown option on the command line the function signals
-error condition `unknown-option`. The condition object includes the name
-of the unknown option which can be read with function `(option-name
-condition)`. The return value is of type character or string for short
-or long options respectively. You can also just print the condition
-object: it gives a reasonable error message. There is also `skip-option`
-restart available. The invoked restart skips the unknown option and
-continues parsing the command line.
+function finds an unknown option on the command line the function
+signals error condition `unknown-option`. The condition object includes
+the name of the unknown option which can be read with
+function `(option-name condition)`. The return value is of type
+character or string for short or long options respectively. You can also
+just print the condition object: it gives a reasonable error message.
+There is active `skip-option` restart. The invoked restart skips the
+unknown option and continues parsing the command line.
 
-Function's key argument `error-on-argument-missing`, if non-nil, causes
+Function's key argument `error-on-argument-missing` (if non-nil) causes
 the function to signal error condition `required-argument-missing` if it
-sees an option which required argument (keyword `:required`) but there
+sees an option which requires argument (keyword `:required`) but there
 is none. The condition object contains the name of the option which can
-be read with function `(option-name condition)`. You can also just
-print the condition object for user. It's the error message. There are
-two restarts available: `give-argument` restart can be invoked with a
+be read with function call `(option-name condition)`. You can also just
+print the condition object for user. It is an error message. There are
+two restarts available: `give-argument` restart can be invoked with an
 optional argument (string or nil) which will be passed as a new argument
 for the option; restart `skip-option` will just skip this option and
 continue parsing.
 
-Key argument `error-on-argument-not-allowed`, if non-nil, makes this
+Key argument `error-on-argument-not-allowed` (if non-nil) makes this
 function to signal error condition `argument-not-allowed` if there is an
-argument for a long option which does not allow argument (--foo=...).
-Such option is always listed as unknown option with name \"foo=\" in
+argument for a long option which does not allow argument (`--foo=...`).
+Such option is always listed as unknown option with name `\"foo=\"` in
 function's return value. The condition object can be printed to user as
 error message. The object also contains the name of the option which can
 be read with `(option-name condition)` function call. There is
@@ -256,48 +255,48 @@ The function returns three values:
  2. List of non-option arguments (strings).
 
  3. List of unknown options. List's items are either characters or
-    strings which represent command-line options which were not defined
-    in the _option-specification_.
+    strings which represent unknown short or long command-line options
+    which were not defined in the _option-specification_.
 
-In all return values the list's items are in the same order as they were
-in the original command line.
+In all three return values the list's items are in the same order as
+they were in the original command line.
 
 
 #### Parsing rules for short options
 
-Short options in the command line start with the \"-\" character and the
-option character follows (-c).
+Short options in the command line start with the `-` character and the
+option character follows (`-c`).
 
 If option requires an argument (keyword `:required`) the argument must
-be entered either directly after the option character (-cARG) or as the
-next command-line argument (-c ARG). In the latter case anything that
-follows -c will be parsed as option's argument.
+be entered either directly after the option character (`-cARG`) or as
+the next command-line argument (`-c ARG`). In the latter case anything
+that follows `-c` will be parsed as option's argument.
 
 If option has optional argument (keyword `:optional`) it must always be
-entered directly after the option character (-cARG). Otherwise there is
-no argument for this option.
+entered directly after the option character (`-cARG`). Otherwise there
+is no argument for this option.
 
-Several short options can be entered together after one \"-\"
-character (-abc) but then only the last option in the series may have
+Several short options can be entered together after one `-`
+character (`-abc`) but then only the last option in the series may have
 required or optional argument.
 
 
 #### Parsing rules for long options
 
-Long options start with \"--\" characters and the option name comes
-directly after it (--foo).
+Long options start with `--` characters and the option name comes
+directly after it (`--foo`).
 
 If option requires an argument (keyword `:required`) it must be entered
-either directly after the option name and \"=\" character (--foo=ARG) or
-as the next command-line argument (--foo ARG). In the latter case
-anything that follows --foo will be parsed as its argument.
+either directly after the option name and `=` character (`--foo=ARG`) or
+as the next command-line argument (`--foo ARG`). In the latter case
+anything that follows `--foo` will be parsed as its argument.
 
 If option has optional argument (keyword `:optional`) the argument must
-always be entered directly after the option name and \"=\"
-character (--foo=ARG). Otherwise (like in --foo) there is no argument
-for this option.
+always be entered directly after the option name and `=`
+character (`--foo=ARG`). Otherwise (like in `--foo`) there is no
+argument for this option.
 
-Option --foo= is valid format when option has required or optional
+Option `--foo=` is valid format when option has required or optional
 argument. It means that the argument is empty string."
 
   (check-option-specification option-specification)
@@ -333,6 +332,7 @@ argument. It means that the argument is empty string."
                                              :test #'equal)))
                             (if match (list match)))))
                     (osymbol (first (first option-spec)))
+                    (oname (second (first option-spec)))
                     (oargument (third (first option-spec))))
 
                (cond
@@ -353,9 +353,9 @@ argument. It means that the argument is empty string."
 
                  ((and (not oargument)
                        opt-arg)
-                  (push (format nil "~A=" opt-name) unknown-options)
+                  (push (format nil "~A=" oname) unknown-options)
                   (when error-on-argument-not-allowed
-                    (error 'argument-not-allowed :option opt-name)))
+                    (error 'argument-not-allowed :option oname)))
 
                  ((and (not oargument)
                        (not opt-arg))
@@ -367,7 +367,7 @@ argument. It means that the argument is empty string."
                       (let ((arg (pop arguments)))
                         (when (and (null arg) error-on-argument-missing)
                           (error 'required-argument-missing
-                                 :option opt-name))
+                                 :option oname))
                         (push (cons osymbol arg) parsed-options))
                     (give-argument (&optional argument)
                       :report "Give argument for the option."
@@ -404,7 +404,7 @@ argument. It means that the argument is empty string."
                          (oargument (third option-spec)))
 
                     (cond
-                      ((not option-spec)
+                      ((null option-spec)
                        (push character unknown-options)
                        (when error-on-unknown-option
                          (error 'unknown-option :option character)))
