@@ -961,7 +961,7 @@ Command options
 
 
 (defun execute-command-line (args)
-  (multiple-value-bind (options tag-names unknown)
+  (multiple-value-bind (options tag-names)
       (just-getopt-parser:getopt args '((:quiet #\q)
                                         (:verbose #\v)
                                         (:db "db" :required)
@@ -974,7 +974,6 @@ Command options
                                         (:help #\h))
                                  :error-on-unknown-option t
                                  :error-on-argument-missing t)
-    (declare (ignore unknown))
 
     (when (> (length (delete nil (list (assoc :short options)
                                        (assoc :create options)
