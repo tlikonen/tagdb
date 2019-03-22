@@ -961,7 +961,7 @@ Command options
 
 
 (defun execute-command-line (args)
-  (multiple-value-bind (options tag-names)
+  (multiple-value-bind (options tag-names unknown)
       (just-getopt-parser:getopt args '((:quiet #\q)
                                         (:verbose #\v)
                                         (:db "db" :required)
@@ -975,6 +975,9 @@ Command options
                                  :error-on-unknown-option t
                                  :error-on-argument-missing t)
 
+    (when unknown
+      (throw-error "Use option \"-h\" for help."))
+
     (when (> (length (delete nil (list (assoc :short options)
                                        (assoc :create options)
                                        (assoc :edit options)
@@ -983,7 +986,7 @@ Command options
                                        (assoc :help options))))
              1)
       (throw-error "Only one command option is allowed. ~
-                        Use \"-h\" for help."))
+                        Use option \"-h\" for help."))
 
     (let ((path (cdr (assoc :db options))))
       (when path
