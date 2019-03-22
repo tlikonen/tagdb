@@ -682,7 +682,7 @@
 
 (defun edit-records (format)
   (with-temp-file tempname
-    (with-open-file (file tempname :direction :output :if-exists :overwrite)
+    (with-open-file (file tempname :direction :output :if-exists :supersede)
       (let ((already-seen (query "SELECT value FROM maintenance ~
                                         WHERE key = 'seen edit message'")))
         (when (or (not already-seen) (verbose format))
