@@ -619,15 +619,15 @@
   (let ((editor (split-sequence #\space (sb-posix:getenv "EDITOR")
                                 :remove-empty-subseqs t)))
 
+    (check-type pathname (or pathname string))
+
     (unless (every #'stringp editor)
       (throw-error "Please set EDITOR variable."))
 
     (sb-ext:run-program
      (first editor)
      (append (rest editor)
-             (list (etypecase pathname
-                     (pathname (pathconv:namestring pathname))
-                     (string pathname))))
+             (list (pathconv:namestring pathname)))
      :search t :wait t :pty nil :input t :output t :error *error-output*)))
 
 
