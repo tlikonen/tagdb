@@ -122,15 +122,6 @@ And you are ready to go. Start with `tagdb -h` command.
 [QL]:      http://www.quicklisp.org/
 
 
-## The Source Code Repository
-
-Github repository URL: <https://github.com/tlikonen/tagdb>
-
-The branch named _master_ is the release branch and it should always be
-safe to use. New features and experimental code are developed in other
-branches and possibly merged to _master_ when they are ready.
-
-
 ## Copyright and License
 
 Copyright (C) 2014-2019 Teemu Likonen <<tlikonen@iki.fi>>
@@ -148,5 +139,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 The license text: <http://www.gnu.org/licenses/gpl-3.0.html>
+
+The source code repository: <https://github.com/tlikonen/tagdb>
 
 [PGP]: http://www.iki.fi/tlikonen/pgp-key.asc
