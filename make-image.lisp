@@ -1,11 +1,11 @@
-(require 'asdf)
+(load "quicklisp/setup.lisp")
+
 (asdf:disable-output-translations)
 (asdf:initialize-source-registry
  (list :source-registry
        :ignore-inherited-configuration
-       (list :directory *default-pathname-defaults*)))
+       (list :directory (merge-pathnames "src/"))))
 
-(load "quicklisp/setup.lisp")
 (ql:quickload "tagdb")
 
 (sb-ext:save-lisp-and-die

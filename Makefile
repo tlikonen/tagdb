@@ -1,7 +1,7 @@
 sbcl = sbcl
 bindir = $(HOME)/bin
 
-src = tagdb.asd tagdb.lisp just-getopt-parser.lisp pathname-conversion.lisp
+src = src/*.asd src/*.lisp
 
 tagdb: quicklisp/setup.lisp $(src)
 	$(sbcl) --script make-image.lisp
@@ -12,8 +12,6 @@ quicklisp.lisp:
 quicklisp/setup.lisp: quicklisp.lisp
 	$(sbcl) --noinform --no-sysinit --no-userinit --non-interactive \
 		--load quicklisp.lisp \
-		--eval '(require "asdf")' \
-		--eval '(asdf:disable-output-translations)' \
 		--eval '(quicklisp-quickstart:install :path "quicklisp/")'
 
 README.md: tagdb
@@ -30,7 +28,7 @@ install:
 	install -m 755 tagdb $(bindir)
 
 clean:
-	rm -f tagdb README.md.tmp *.fasl
+	rm -f tagdb README.md.tmp src/*.fasl
 
 clean-all: clean
 	rm -fr quicklisp
