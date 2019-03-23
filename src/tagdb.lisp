@@ -313,7 +313,9 @@
 
 (defmacro with-database (&body body)
   `(let ((*database* nil))
-     (unwind-protect (progn (connect) ,@body (vacuum-check))
+     (unwind-protect (multiple-value-prog1
+                         (progn (connect) ,@body)
+                       (vacuum-check))
        (disconnect))))
 
 
