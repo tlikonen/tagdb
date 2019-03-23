@@ -106,7 +106,7 @@
     (princ #\' out)))
 
 
-(defun sql-like-esc (str &optional wild-start wild-end)
+(defun sql-like-esc (str &key wild-start wild-end)
   (with-output-to-string (out)
     (format out "'~A" (if wild-start "%" ""))
     (loop :for char :across (typecase str
@@ -433,7 +433,9 @@
                                 FROM record_tag AS j ~
                                 LEFT JOIN tags AS t ON j.tag_id = t.id ~
                                 WHERE t.name LIKE ~A"
-                                       (sql-like-esc tag t t))
+                                       (sql-like-esc tag
+                                                     :wild-start t
+                                                     :wild-end t))
                           :into collection
                           :finally
                           (return (delete-duplicates
@@ -590,7 +592,9 @@
   (query "SELECT count(t.id) AS count, t.name FROM tags AS t ~
         JOIN record_tag AS j ON t.id = j.tag_id ~
         WHERE t.name LIKE ~A GROUP BY t.name"
-         (sql-like-esc (or tag-name "") t t)))
+         (sql-like-esc (or tag-name "")
+                       :wild-start t
+                       :wild-end t)))
 
 
 (defun print-tags (&optional tag-name)
