@@ -476,7 +476,7 @@
 (defun format-time (universal-time)
   (local-time:format-timestring
    nil (local-time:universal-to-timestamp universal-time)
-   :format '(:year "-" (:month 2) "-" (:day 2)
+   :format '((:year 4) "-" (:month 2) "-" (:day 2)
              " " (:hour 2) ":" (:min 2) ":" (:sec 2) " " :gmt-offset)))
 
 
