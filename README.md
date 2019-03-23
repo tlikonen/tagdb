@@ -126,7 +126,7 @@ And you are ready to go. Start with `tagdb -h` command.
 
 Copyright (C) 2014-2019 Teemu Likonen <<tlikonen@iki.fi>>
 
-PGP: [4E10 55DC 84E9 DFF6 13D7 8557 719D 69D3 2453 9450][PGP]
+OpenPGP key: [4E10 55DC 84E9 DFF6 13D7 8557 719D 69D3 2453 9450][PGP]
 
 This program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
