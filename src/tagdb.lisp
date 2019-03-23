@@ -106,13 +106,13 @@
     (princ #\' out)))
 
 
-(defun sql-like-esc (str &key wild-start wild-end)
+(defun sql-like-esc (thing &key wild-start wild-end)
   (with-output-to-string (out)
     (format out "'~A" (if wild-start "%" ""))
-    (loop :for char :across (typecase str
-                              (string str)
-                              (character (string str))
-                              (integer (princ-to-string str))
+    (loop :for char :across (typecase thing
+                              (string thing)
+                              (character (string thing))
+                              (integer (princ-to-string thing))
                               (t ""))
           :do (princ (cond ((char= char #\') "''")
                            ((find char "_%\\") (format nil "\\~A" char))
