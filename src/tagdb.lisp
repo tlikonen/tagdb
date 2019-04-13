@@ -832,13 +832,11 @@ General options
   -v    Verbose output.
 
   --db=FILE
-
         Use FILE as the database file instead of the default
         ~~/.config/tagdb.db. The program will try to create all the
         necessary directories for FILE.
 
   --format=MODE
-
         Set output format to MODE which can be \"text\", \"text-color\"
         or \"org-mode\" (Emacs). You can add suffix \"/default\" to MODE
         in which case the specified mode will be saved as the default
@@ -847,13 +845,11 @@ General options
 Command options
 
   -s TAG ...
-
         Short output. This is like the default operation but only prints
         the first line of records' content. The first line could be used
         as record's title.
 
   -c TAG ...
-
         Create a new database record associated with the given tags. If
         there seems to be data coming from the standard input it will be
         saved as the record's content. Otherwise the default text editor
@@ -861,7 +857,6 @@ Command options
         and end are ignored.
 
   -e TAG ...
-
         Find all records that match the given tags and launch the
         default text editor for editing the records' contents and tags.
         Empty lines at the beginning and end of the record content are
@@ -869,12 +864,10 @@ Command options
         deleted from the database.
 
   -l [STRING]
-
         List tags that match the given string. If no string is given
         list all tags.
 
   -r OLD NEW
-
         Reassociate records. All database records associated with the
         old tag will be associated with the new tag. The old tag is then
         removed.
