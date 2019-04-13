@@ -88,12 +88,10 @@
 
 (defgeneric enough-namestring (pathspec &optional defaults))
 
-(defmethod enough-namestring ((pathspec cl:pathname)
-                              &optional
-                                (defaults *default-pathname-defaults*))
+(defmethod enough-namestring
+    ((pathspec cl:pathname) &optional (defaults *default-pathname-defaults*))
   (cl:enough-namestring (namestring pathspec) defaults))
 
-(defmethod enough-namestring ((pathspec string)
-                              &optional
-                                (defaults *default-pathname-defaults*))
+(defmethod enough-namestring
+    ((pathspec string) &optional (defaults *default-pathname-defaults*))
   (cl:enough-namestring pathspec defaults))
