@@ -130,20 +130,26 @@ condition object.")
             (check-option-argument (third option-spec)))
   (check-duplicate-names specification))
 
-(defun prefix-match-long-option (name specification)
-  (loop :for opt-spec :in specification
+(defun match-long-option (name specification &key prefix)
+  (loop :with matches
+        :for opt-spec :in specification
         :for option-name := (second opt-spec)
-        :if (and (stringp option-name)
-                 (string= name option-name
-                          :end2 (min (length name)
-                                     (length option-name))))
-          :collect opt-spec))
+        :if (stringp option-name)
+          :do (cond ((string= name option-name)
+                     (return (list opt-spec)))
+                    ((and prefix
+                          (string= name option-name
+                                   :end2 (min (length name)
+                                              (length option-name))))
+                     (push opt-spec matches)))
+        :finally
+           (return (sort matches #'string< :key #'second))))
 
 (defun getopt (arguments option-specification
                &key options-everywhere
                  prefix-match-long-options error-on-ambiguous-option
                  error-on-unknown-option error-on-argument-missing
-                 error-on-argument-not-allowed )
+                 error-on-argument-not-allowed)
 
   "Parse command-line arguments like getopt.
 
@@ -322,14 +328,9 @@ argument. It means that the argument is empty string."
                     (equal-pos (position #\= name-arg))
                     (opt-name (subseq name-arg 0 equal-pos))
                     (opt-arg (if equal-pos (subseq name-arg (1+ equal-pos))))
-                    (option-spec
-                      (if prefix-match-long-options
-                          (prefix-match-long-option
-                           opt-name option-specification)
-                          (let ((match (find opt-name option-specification
-                                             :key #'second
-                                             :test #'equal)))
-                            (if match (list match)))))
+                    (option-spec (match-long-option
+                                  opt-name option-specification
+                                  :prefix prefix-match-long-options))
                     (osymbol (first (first option-spec)))
                     (oname (second (first option-spec)))
                     (oargument (third (first option-spec))))
