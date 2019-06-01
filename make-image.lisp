@@ -3,7 +3,7 @@
 (asdf:initialize-source-registry
  (list :source-registry
        :ignore-inherited-configuration
-       (list :directory (merge-pathnames "src/"))
+       (list :directory *default-pathname-defaults*)
        (list :tree (merge-pathnames "quicklisp/dists/"))))
 
 (asdf:load-system "tagdb")

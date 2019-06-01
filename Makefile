@@ -1,6 +1,6 @@
 sbcl = sbcl
 bindir = $(HOME)/bin
-src = src/*.asd src/*.lisp
+src = tagdb.asd tagdb.lisp pathname-conversion.lisp
 
 tagdb: quicklisp/setup.lisp $(src)
 	$(sbcl) --script make-quickload.lisp
@@ -30,7 +30,7 @@ install:
 	install -m 755 tagdb $(bindir)
 
 clean:
-	rm -f tagdb README.md.tmp src/*.fasl
+	rm -f tagdb README.md.tmp *.fasl
 
 clean-all: clean
 	rm -fr quicklisp
