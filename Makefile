@@ -1,9 +1,9 @@
 sbcl = sbcl
 bindir = $(HOME)/bin
-
 src = src/*.asd src/*.lisp
 
 tagdb: quicklisp/setup.lisp $(src)
+	$(sbcl) --script make-quickload.lisp
 	$(sbcl) --script make-image.lisp
 
 quicklisp.lisp:

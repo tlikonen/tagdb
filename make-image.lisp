@@ -3,10 +3,10 @@
 (asdf:initialize-source-registry
  (list :source-registry
        :ignore-inherited-configuration
-       (list :directory (merge-pathnames "src/"))))
+       (list :directory (merge-pathnames "src/"))
+       (list :tree (merge-pathnames "quicklisp/dists/"))))
 
-(load "quicklisp/setup.lisp")
-(ql:quickload "tagdb")
+(asdf:load-system "tagdb")
 
 (sb-ext:save-lisp-and-die
  "tagdb"
