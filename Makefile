@@ -1,6 +1,6 @@
 sbcl = sbcl
 bindir = $(HOME)/bin
-src = tagdb.asd tagdb.lisp pathname-conversion.lisp
+src = tagdb.asd tagdb.lisp pathconv.lisp
 
 tagdb: quicklisp/setup.lisp $(src)
 	$(sbcl) --script make-quickload.lisp

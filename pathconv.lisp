@@ -3,8 +3,7 @@
 ;; License: Creative Commons CC0 (public domain dedication)
 ;; https://creativecommons.org/publicdomain/zero/1.0/legalcode
 
-(defpackage #:pathname-conversion
-  (:nicknames #:pathconv)
+(defpackage #:pathconv
   (:use #:cl)
   (:shadow #:pathname
            #:namestring
@@ -17,7 +16,7 @@
            #:directory-namestring
            #:enough-namestring))
 
-(in-package #:pathname-conversion)
+(in-package #:pathconv)
 
 (defun pathname-as-file (pathname)
   (cond

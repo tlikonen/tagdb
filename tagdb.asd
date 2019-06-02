@@ -3,5 +3,5 @@
   :author "Teemu Likonen <tlikonen@iki.fi>"
   :licence "The GNU General Public License version 3"
   :depends-on ("sqlite" "split-sequence" "local-time" "just-getopt-parser")
-  :components ((:file "tagdb" :depends-on ("pathname-conversion"))
-               (:file "pathname-conversion")))
+  :components ((:file "tagdb" :depends-on ("pathconv"))
+               (:file "pathconv")))
