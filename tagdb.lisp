@@ -989,31 +989,33 @@ Command options
                                  :error-on-unknown-option t
                                  :error-on-argument-missing t)
 
-    (when (and unknown (not (assoc :help options)))
-      (tagdb-error "Use option \"-h\" for help."))
+    (flet ((optionp (id)
+             (assoc id options))
+           (option-arg (id)
+             (cdr (assoc id options))))
 
-    (when (> (length (delete nil (list (assoc :short options)
-                                       (assoc :number options)
-                                       (assoc :create options)
-                                       (assoc :edit options)
-                                       (assoc :list options)
-                                       (assoc :reassociate options)
-                                       (assoc :help options))))
-             1)
-      (tagdb-error "Only one command option is allowed. ~
+      (when (and unknown (not (optionp :help)))
+        (tagdb-error "Use option \"-h\" for help."))
+
+      (when (> (length (delete nil (list (optionp :short)
+                                         (optionp :number)
+                                         (optionp :create)
+                                         (optionp :edit)
+                                         (optionp :list)
+                                         (optionp :reassociate)
+                                         (optionp :help))))
+               1)
+        (tagdb-error "Only one command option is allowed. ~
                         Use option \"-h\" for help."))
 
-    (let ((path (cdr (assoc :db options))))
-      (when path
-        (if (plusp (length path))
-            (setf *database-pathname* (pathconv:pathname path))
-            (tagdb-error "Invalid argument for option \"--db\"."))))
+      (let ((path (option-arg :db)))
+        (when path
+          (if (plusp (length path))
+              (setf *database-pathname* (pathconv:pathname path))
+              (tagdb-error "Invalid argument for option \"--db\"."))))
 
-    (with-database
-        (let ((verbose (assoc :verbose options))
-              (quiet (assoc :quiet options))
-              (short (assoc :short options))
-              (format (or (cdr (assoc :format options)) (get-default-format))))
+      (with-database
+        (let ((format (or (option-arg :format) (get-default-format))))
 
           (cond ((string= format "text")
                  (setf format 'text))
@@ -1032,25 +1034,28 @@ Command options
                  (setf format 'org-mode))
                 (t (tagdb-error "Invalid argument for option \"--format\".")))
 
-          (cond ((assoc :help options) (command-help))
-                ((assoc :create options) (command-create other-args))
-                ((assoc :edit options)
-                 (command-edit (make-instance 'text-editor :verbose verbose)
+          (cond ((optionp :help) (command-help))
+                ((optionp :create) (command-create other-args))
+                ((optionp :edit)
+                 (command-edit (make-instance 'text-editor
+                                              :verbose (optionp :verbose))
                                other-args))
-                ((assoc :list options) (command-list other-args))
-                ((assoc :reassociate options) (command-reassociate other-args))
+                ((optionp :list) (command-list other-args))
+                ((optionp :reassociate) (command-reassociate other-args))
                 ((not other-args) (tagdb-error "No tags given."))
-                ((assoc :number options) (command-number other-args))
+                ((optionp :number) (command-number other-args))
                 (t
-                 (when (and quiet verbose)
+                 (when (and (optionp :quiet) (optionp :verbose))
                    (error-message "~&Option \"-q\" is ignored when ~
                                 combined with \"-v\".~%"))
                  (command-print-records
                   (make-instance format
-                                 :verbose verbose
-                                 :quiet (if verbose nil quiet)
-                                 :short short)
-                  other-args)))))))
+                                 :verbose (optionp :verbose)
+                                 :quiet (if (optionp :verbose)
+                                            nil
+                                            (optionp :quiet))
+                                 :short (optionp :short))
+                  other-args))))))))
 
 
 (defun main (&rest args)
