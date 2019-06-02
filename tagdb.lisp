@@ -974,7 +974,7 @@ Command options
 
 
 (defun execute-command-line (args)
-  (multiple-value-bind (options tag-names unknown)
+  (multiple-value-bind (options other-args unknown)
       (just-getopt-parser:getopt args '((:quiet #\q)
                                         (:verbose #\v)
                                         (:db "db" :required)
@@ -1033,14 +1033,14 @@ Command options
                 (t (tagdb-error "Invalid argument for option \"--format\".")))
 
           (cond ((assoc :help options) (command-help))
-                ((assoc :create options) (command-create tag-names))
+                ((assoc :create options) (command-create other-args))
                 ((assoc :edit options)
                  (command-edit (make-instance 'text-editor :verbose verbose)
-                               tag-names))
-                ((assoc :list options) (command-list tag-names))
-                ((assoc :reassociate options) (command-reassociate tag-names))
-                ((not tag-names) (tagdb-error "No tags given."))
-                ((assoc :number options) (command-number tag-names))
+                               other-args))
+                ((assoc :list options) (command-list other-args))
+                ((assoc :reassociate options) (command-reassociate other-args))
+                ((not other-args) (tagdb-error "No tags given."))
+                ((assoc :number options) (command-number other-args))
                 (t
                  (when (and quiet verbose)
                    (error-message "~&Option \"-q\" is ignored when ~
@@ -1050,7 +1050,7 @@ Command options
                                  :verbose verbose
                                  :quiet (if verbose nil quiet)
                                  :short short)
-                  tag-names)))))))
+                  other-args)))))))
 
 
 (defun main (&rest args)
