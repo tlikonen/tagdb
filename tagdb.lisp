@@ -36,7 +36,7 @@
              (format stream "~A" (tagdb-error-text condition)))))
 
 
-(defun throw-error (fmt &rest args)
+(defun tagdb-error (fmt &rest args)
   (error 'tagdb-error :text (apply #'format nil fmt args)))
 
 
@@ -75,7 +75,7 @@
   (if (typep *database* 'sqlite:sqlite-handle)
       (sqlite:execute-to-list *database*
                               (apply #'format nil format-string parameters))
-      (throw-error "No connection to the database.")))
+      (tagdb-error "No connection to the database.")))
 
 
 (defun query-1 (format-string &rest parameters)
@@ -171,7 +171,7 @@
 (defun assert-db-write-access ()
   (handler-case (change-counter-add 0)
     (sqlite:sqlite-error ()
-      (throw-error "Couldn't access the database. It's probably locked."))))
+      (tagdb-error "Couldn't access the database. It's probably locked."))))
 
 
 (defun init-database-pathname ()
@@ -254,7 +254,7 @@
                      :do (db-update target))
                (vacuum-check t))
               ((> version *program-database-version*)
-               (throw-error "The database is of version ~D ~
+               (tagdb-error "The database is of version ~D ~
                 but this program can only handle versions upto ~D.~%~
                 Please update the program."
                             version *program-database-version*))))
@@ -395,12 +395,12 @@
 
 (defun assert-tag-names (tag-names)
   (unless tag-names
-    (throw-error "No tags. At least one tag is required."))
+    (tagdb-error "No tags. At least one tag is required."))
   (loop :for tag-name :in (etypecase tag-names
                             (list tag-names)
                             (string (list tag-names)))
         :unless (valid-tag-name-p tag-name)
-        :do (throw-error "\"~A\" is not a valid tag name." tag-name)
+          :do (tagdb-error "\"~A\" is not a valid tag name." tag-name)
         :finally (return t)))
 
 
@@ -446,7 +446,7 @@
         (records-error-msg "No records found."))
 
     (unless record-ids
-      (throw-error records-error-msg))
+      (tagdb-error records-error-msg))
 
     (loop :for record-id :in record-ids
           :for record-tag-names := (query-nconc "SELECT t.name ~
@@ -456,7 +456,7 @@
           :collect (cons record-id (sort record-tag-names #'string-lessp))
           :into collection
           :finally (unless (setf tags collection)
-                     (throw-error records-error-msg)))
+                     (tagdb-error records-error-msg)))
 
     (loop :for (id . names) :in tags
           :for (created modified content) := (first (query "~
@@ -606,7 +606,7 @@
                                       (reduce #'max tags :key #'first)))
               :for (count tag) :in tags
               :do (message "~V<~D~> ~A~%" width count tag))
-        (throw-error "No tags found."))))
+        (tagdb-error "No tags found."))))
 
 
 (defmacro with-temp-file (file &body body)
@@ -618,7 +618,7 @@
            (unwind-protect (progn ,@body)
              (delete-file ,name)))
        (sb-posix:syscall-error ()
-         (throw-error "Couldn't create a temporary file.")))))
+         (tagdb-error "Couldn't create a temporary file.")))))
 
 
 (defun run-text-editor (pathname)
@@ -628,7 +628,7 @@
     (check-type pathname (or pathname string))
 
     (unless (every #'stringp editor)
-      (throw-error "Please set EDITOR variable."))
+      (tagdb-error "Please set EDITOR variable."))
 
     (sb-ext:run-program
      (first editor)
@@ -667,7 +667,7 @@
                           (loop :for i :from start :upto end
                                 :do (write-line (aref text i) out)))
                         tag-names)
-            (throw-error "Empty file. Aborting."))))
+            (tagdb-error "Empty file. Aborting."))))
 
 
 (defun create-and-edit-new-record (tag-names)
@@ -907,13 +907,13 @@ Command options
 (defun command-reassociate (tag-names)
   (let ((number-of-tags (length tag-names)))
     (case number-of-tags
-      (0 (throw-error "Must give OLD and NEW tag."))
-      (1 (throw-error "Must also give NEW tag.")))
+      (0 (tagdb-error "Must give OLD and NEW tag."))
+      (1 (tagdb-error "Must also give NEW tag.")))
     (when (> number-of-tags 2)
       (error-message "~&Only the first two tags are used.~%")
       (setf (rest (rest tag-names)) nil))
     (when (string= (nth 0 tag-names) (nth 1 tag-names))
-      (throw-error "OLD and NEW tag can't be the same.")))
+      (tagdb-error "OLD and NEW tag can't be the same.")))
   (assert-tag-names tag-names)
 
   (with-transaction
@@ -927,7 +927,7 @@ Command options
 
       (cond
         ((not old-id)
-         (throw-error "Tag \"~A\" not found." old))
+         (tagdb-error "Tag \"~A\" not found." old))
 
         (new-id
          (loop :for changes :upfrom 1
@@ -975,7 +975,7 @@ Command options
                                  :error-on-argument-missing t)
 
     (when unknown
-      (throw-error "Use option \"-h\" for help."))
+      (tagdb-error "Use option \"-h\" for help."))
 
     (when (> (length (delete nil (list (assoc :short options)
                                        (assoc :create options)
@@ -984,14 +984,14 @@ Command options
                                        (assoc :reassociate options)
                                        (assoc :help options))))
              1)
-      (throw-error "Only one command option is allowed. ~
+      (tagdb-error "Only one command option is allowed. ~
                         Use option \"-h\" for help."))
 
     (let ((path (cdr (assoc :db options))))
       (when path
         (if (plusp (length path))
             (setf *database-pathname* (pathconv:pathname path))
-            (throw-error "Invalid argument for option \"--db\"."))))
+            (tagdb-error "Invalid argument for option \"--db\"."))))
 
     (with-database
         (let ((verbose (assoc :verbose options))
@@ -1014,7 +1014,7 @@ Command options
                 ((string= format "org-mode/default")
                  (set-default-format "org-mode")
                  (setf format 'org-mode))
-                (t (throw-error "Invalid argument for option \"--format\".")))
+                (t (tagdb-error "Invalid argument for option \"--format\".")))
 
           (cond ((assoc :help options) (command-help))
                 ((assoc :create options) (command-create tag-names))
@@ -1023,7 +1023,7 @@ Command options
                                tag-names))
                 ((assoc :list options) (command-list tag-names))
                 ((assoc :reassociate options) (command-reassociate tag-names))
-                ((not tag-names) (throw-error "No tags given."))
+                ((not tag-names) (tagdb-error "No tags given."))
                 (t
                  (when (and quiet verbose)
                    (error-message "~&Option \"-q\" is ignored when ~
