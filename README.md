@@ -58,6 +58,9 @@ editor is launched and all matching records can be edited at once.
             the first line of records' content. The first line could be used
             as record's title.
 
+      -n TAG ...
+            Count and print how many records match the given TAG(s).
+
       -c TAG ...
             Create a new database record associated with the given tags. If
             there seems to be data coming from the standard input it will be

@@ -35,6 +35,8 @@
   (:report (lambda (condition stream)
              (format stream "~A" (tagdb-error-text condition)))))
 
+(define-condition records-not-found (tagdb-error) nil)
+
 
 (defun tagdb-error (fmt &rest args)
   (error 'tagdb-error :text (apply #'format nil fmt args)))
@@ -446,7 +448,7 @@
         (records-error-msg "No records found."))
 
     (unless record-ids
-      (tagdb-error records-error-msg))
+      (error 'records-not-found :text records-error-msg))
 
     (loop :for record-id :in record-ids
           :for record-tag-names := (query-nconc "SELECT t.name ~
@@ -456,7 +458,7 @@
           :collect (cons record-id (sort record-tag-names #'string-lessp))
           :into collection
           :finally (unless (setf tags collection)
-                     (tagdb-error records-error-msg)))
+                     (error 'records-not-found :text records-error-msg)))
 
     (loop :for (id . names) :in tags
           :for (created modified content) := (first (query "~
@@ -849,6 +851,9 @@ Command options
         the first line of records' content. The first line could be used
         as record's title.
 
+  -n TAG ...
+        Count and print how many records match the given TAG(s).
+
   -c TAG ...
         Create a new database record associated with the given tags. If
         there seems to be data coming from the standard input it will be
@@ -902,6 +907,13 @@ Command options
   (when tag-names
     (assert-tag-names tag-names))
   (print-tags (first tag-names)))
+
+
+(defun command-number (tag-names)
+  (assert-tag-names tag-names)
+  (handler-case (format t "~D~%" (length (find-records tag-names)))
+    (records-not-found ()
+      (format t "0~%"))))
 
 
 (defun command-reassociate (tag-names)
@@ -966,6 +978,7 @@ Command options
                                         (:db "db" :required)
                                         (:format "format" :required)
                                         (:short #\s)
+                                        (:number #\n)
                                         (:create #\c)
                                         (:edit #\e)
                                         (:list #\l)
@@ -974,10 +987,11 @@ Command options
                                  :error-on-unknown-option t
                                  :error-on-argument-missing t)
 
-    (when unknown
+    (when (and unknown (not (assoc :help options)))
       (tagdb-error "Use option \"-h\" for help."))
 
     (when (> (length (delete nil (list (assoc :short options)
+                                       (assoc :number options)
                                        (assoc :create options)
                                        (assoc :edit options)
                                        (assoc :list options)
@@ -1024,6 +1038,7 @@ Command options
                 ((assoc :list options) (command-list tag-names))
                 ((assoc :reassociate options) (command-reassociate tag-names))
                 ((not tag-names) (tagdb-error "No tags given."))
+                ((assoc :number options) (command-number tag-names))
                 (t
                  (when (and quiet verbose)
                    (error-message "~&Option \"-q\" is ignored when ~
