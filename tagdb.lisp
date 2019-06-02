@@ -549,7 +549,8 @@
                         (format-contents (content record)))))))))
 
 
-(defmethod print-records ((format org-mode) &optional (stream *standard-output*))
+(defmethod print-records ((format org-mode) &optional
+                                              (stream *standard-output*))
   (flet ((taglist (prefix record)
            (format stream "~&~A" prefix)
            (loop :with column-max := 78
@@ -578,7 +579,8 @@
                 (loop :initially
                       (let ((topic (read-line s nil)))
                         (cond ((not topic))
-                              ((string= "* " (subseq topic 0 (min 2 (length topic))))
+                              ((string= "* " (subseq topic
+                                                     0 (min 2 (length topic))))
                                (format stream "~A~%" topic))
                               (t (format stream "* ~A~%" topic)))
                         (taglist "# Tags:" record)
