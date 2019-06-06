@@ -104,12 +104,14 @@ Here's the build process:
     $ cd tagdb
     $ make
 
-Command `make install` will install `tagdb` executable to the default
-target directory `~/bin`. You can configure the target directory with
-Makefile variable `bindir`, for example: `sudo make install
-bindir=/usr/local/bin`.
+Command `make install` will install `tagdb` files under `/usr/local`
+directories. You can configure move the location with makefile variable
+`prefix` or separately executable file directory with `bindir` or
+library directory with `libdir`. Variable `sbcl` defines the path for
+SBCL. For example: `make sbcl=... prefix=...`. Use the same variables
+with build and install.
 
-And you are ready to go. Start with `tagdb -h` command.
+When the program is installed start with `tagdb -h` command.
 
 
 [SBCL]:    http://www.sbcl.org/
