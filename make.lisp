@@ -14,17 +14,17 @@
     (let ((*print-pretty* t)
           (*print-right-margin* 78)
           (*print-case* :downcase))
-      (format f "#!~A --script~%" *sbcl*)
-      (format f "~{~S~%~}"
-              (list '(require "asdf")
-                    '(require "sb-posix")
-                    (list 'asdf:initialize-source-registry
-                          (list 'quote
-                                (list :source-registry
-                                      :ignore-inherited-configuration
-                                      (list :directory *lib*))))
-                    '(asdf:operate 'asdf:monolithic-load-bundle-op "tagdb")
-                    '(tagdb:start))))))
+      (format f "#!~A --script~%~@{~S~%~}"
+              *sbcl*
+              '(require "asdf")
+              '(require "sb-posix")
+              (list 'asdf:initialize-source-registry
+                    (list 'quote
+                          (list :source-registry
+                                :ignore-inherited-configuration
+                                (list :directory *lib*))))
+              '(asdf:operate 'asdf:monolithic-load-bundle-op "tagdb")
+              '(tagdb:start)))))
 
 (with-open-file (*standard-output* "build/help.txt"
                                    :direction :output
