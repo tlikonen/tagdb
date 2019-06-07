@@ -25,7 +25,7 @@ config.mk:
 	@echo "bindir = $(bindir)" > $@
 	@echo "libdir = $(libdir)" >> $@
 	@echo "sbcl = $(sbcl)" >> $@
-	@echo "Write $@"
+	@cat $@
 
 README.md: build/tagdb
 	@echo "Updating $@"
