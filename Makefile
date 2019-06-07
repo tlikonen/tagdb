@@ -50,8 +50,8 @@ clean:
 	rm -fr build
 	rm -f README.md.tmp
 
-clean-all: clean
+distclean: clean
 	rm -fr quicklisp
 	rm -f config.mk
 
-.PHONY: all clean clean-all install uninstall
+.PHONY: all clean distclean install uninstall
