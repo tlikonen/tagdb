@@ -2,3 +2,4 @@ quicklisp/
 build/
 tagdb
 README.md.tmp
+config.mk

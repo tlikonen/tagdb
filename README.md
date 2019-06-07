@@ -97,19 +97,19 @@ or similar distributions they are in packages `sbcl` and
 but the build process downloads and installs them automatically (with
 [Quicklisp][QL]).
 
-Here's the build process:
+Here's the build and install process:
 
     $ sudo apt install build-essential git sbcl libsqlite3-dev
     $ git clone https://github.com/tlikonen/tagdb
     $ cd tagdb
     $ make
+    $ sudo make install
 
-Command `make install` will install `tagdb` files under `/usr/local`
-directories. You can configure move the location with makefile variable
-`prefix` or separately executable file directory with `bindir` or
-library directory with `libdir`. Variable `sbcl` defines the path for
-SBCL. For example: `make sbcl=... prefix=...`. Use the same variables
-with build and install.
+By default program's files are installed under `/usr/local` directories.
+You can move the location with makefile variable `prefix` or separately
+executable file directory with `bindir` or library directory with
+`libdir`. Variable `sbcl` defines the path for SBCL. Variables are
+stored in `config.mk` file.
 
 When the program is installed start with `tagdb -h` command.
 

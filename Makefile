@@ -4,6 +4,8 @@ libdir = $(prefix)/lib
 sbcl = /usr/bin/sbcl
 src = tagdb.asd tagdb.lisp pathconv.lisp
 
+-include config.mk
+
 all: build/tagdb
 
 build/tagdb: quicklisp/setup.lisp $(src)
@@ -18,6 +20,12 @@ quicklisp/setup.lisp: quicklisp/install.lisp
 		--load asdf.conf \
 		--load quicklisp/install.lisp \
 		--eval '(quicklisp-quickstart:install :path "quicklisp/")'
+
+config.mk:
+	@echo "bindir = $(bindir)" > $@
+	@echo "libdir = $(libdir)" >> $@
+	@echo "sbcl = $(sbcl)" >> $@
+	@echo "Write $@"
 
 README.md: build/tagdb
 	@echo "Updating $@"
@@ -44,5 +52,6 @@ clean:
 
 clean-all: clean
 	rm -fr quicklisp
+	rm -f config.mk
 
 .PHONY: all clean clean-all install uninstall
