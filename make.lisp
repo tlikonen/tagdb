@@ -30,4 +30,4 @@
                                    :direction :output
                                    :if-does-not-exist :create
                                    :if-exists :supersede)
-  (tagdb:main "-h"))
+  (tagdb:command-help))

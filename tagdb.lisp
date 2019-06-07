@@ -19,7 +19,7 @@
 (defpackage #:tagdb
   (:use #:cl)
   (:import-from #:split-sequence #:split-sequence)
-  (:export #:main #:start))
+  (:export #:main #:start #:command-help))
 
 (in-package #:tagdb)
 
@@ -1008,6 +1008,10 @@ Command options
         (tagdb-error "Only one command option is allowed. ~
                         Use option \"-h\" for help."))
 
+      (when (optionp :help)
+        (command-help)
+        (sb-ext:exit :code 0))
+
       (let ((path (option-arg :db)))
         (when path
           (if (plusp (length path))
@@ -1034,8 +1038,7 @@ Command options
                  (setf format 'org-mode))
                 (t (tagdb-error "Invalid argument for option \"--format\".")))
 
-          (cond ((optionp :help) (command-help))
-                ((optionp :create) (command-create other-args))
+          (cond ((optionp :create) (command-create other-args))
                 ((optionp :edit)
                  (command-edit (make-instance 'text-editor
                                               :verbose (optionp :verbose))
