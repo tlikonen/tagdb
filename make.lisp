@@ -26,8 +26,8 @@
                     '(asdf:operate 'asdf:monolithic-load-bundle-op "tagdb")
                     '(tagdb:start))))))
 
-(with-open-file (f "build/help.txt" :direction :output
-                                    :if-does-not-exist :create
-                                    :if-exists :supersede)
-  (with-open-stream (*standard-output* (make-broadcast-stream f))
-    (tagdb:main "-h")))
+(with-open-file (*standard-output* "build/help.txt"
+                                   :direction :output
+                                   :if-does-not-exist :create
+                                   :if-exists :supersede)
+  (tagdb:main "-h"))
