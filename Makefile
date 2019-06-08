@@ -2,7 +2,7 @@ prefix = /usr/local
 bindir = $(prefix)/bin
 libdir = $(prefix)/lib
 sbcl = /usr/bin/sbcl
-src = tagdb.asd tagdb.lisp pathconv.lisp
+src = src/*.asd src/*.lisp
 
 -include config.mk
 
@@ -39,8 +39,8 @@ README.md: build/tagdb
 install:
 	install -d -m 755 "$(bindir)" "$(libdir)/tagdb"
 	install -m 755 build/tagdb "$(bindir)"
-	install -m 644 build/tagdb.asd "$(libdir)/tagdb"
-	install -m 644 build/tagdb--all-systems.fasl "$(libdir)/tagdb"
+	install -m 644 build/src/tagdb.asd "$(libdir)/tagdb"
+	install -m 644 build/src/tagdb--all-systems.fasl "$(libdir)/tagdb"
 
 uninstall:
 	rm -f -- "$(bindir)/tagdb"
