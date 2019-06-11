@@ -520,33 +520,38 @@
                  (subseq string 0 (position #\Newline string))
                  string)))
 
-    (record-loop
-     (cond ((typep format 'text-editor)
-            (lambda (record n)
-              (taglist (format nil "# Id: ~A Tags:" (hash-record-id n)) record)
-              (format stream "~%~%~A~&" (format-contents (content record)))))
+    (let ((fn (cond
+                ((typep format 'text-editor)
+                 (lambda (record n)
+                   (taglist (format nil "# Id: ~A Tags:"
+                                    (hash-record-id n)) record)
+                   (format stream "~%~%~A~&" (format-contents
+                                              (content record)))))
 
-           ((verbose format)
-            (lambda (record n)
-              (declare (ignore n))
-              (format stream "~&~A# Created:  ~A~%"
-                      (term-color t) (format-time (created record)))
-              (format stream "~&~A# Modified: ~A~%"
-                      (term-color t) (format-time (modified record)))
-              (taglist "# Tags:" record)
-              (format stream "~A~%~%~A~&" (term-color nil)
-                      (format-contents (content record)))))
+                ((verbose format)
+                 (lambda (record n)
+                   (declare (ignore n))
+                   (format stream "~&~A# Created:  ~A~%"
+                           (term-color t) (format-time (created record)))
+                   (format stream "~&~A# Modified: ~A~%"
+                           (term-color t) (format-time (modified record)))
+                   (taglist "# Tags:" record)
+                   (format stream "~A~%~%~A~&" (term-color nil)
+                           (format-contents (content record)))))
 
-           ((quiet format)
-            (lambda (record n)
-              (declare (ignore n))
-              (format stream "~&~A~&" (format-contents (content record)))))
+                ((quiet format)
+                 (lambda (record n)
+                   (declare (ignore n))
+                   (format stream "~&~A~&" (format-contents
+                                            (content record)))))
 
-           (t (lambda (record n)
-                (declare (ignore n))
-                (taglist "# Tags:" record)
-                (format stream "~A~%~%~A~&" (term-color nil)
-                        (format-contents (content record)))))))))
+                (t (lambda (record n)
+                     (declare (ignore n))
+                     (taglist "# Tags:" record)
+                     (format stream "~A~%~%~A~&" (term-color nil)
+                             (format-contents (content record))))))))
+
+      (record-loop fn))))
 
 
 (defmethod print-records ((format org-mode) &optional
