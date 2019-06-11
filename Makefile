@@ -27,14 +27,14 @@ config.mk:
 	@echo "sbcl = $(sbcl)" >> $@
 	@cat $@
 
-README.md: build/tagdb
+README.md: build/tagdb build/help.txt
 	@echo "Updating $@"
-	@mv -f $@ $@.tmp
-	@sed -n -e '0,/^## Usage$$/p' $@.tmp > $@
+	@mv -f $@ build/readme.tmp
+	@sed -n -e '0,/^## Usage$$/p' build/readme.tmp > $@
 	@echo >> $@
 	@sed -r '/.+/s/^/    /' build/help.txt >> $@
 	@echo >> $@
-	@sed -n -e '/^## Compile and Install$$/,$$p' $@.tmp >> $@
+	@sed -n -e '/^## Compile and Install$$/,$$p' build/readme.tmp >> $@
 
 install:
 	install -d -m 755 "$(bindir)" "$(libdir)/tagdb"
@@ -48,7 +48,6 @@ uninstall:
 
 clean:
 	rm -fr build
-	rm -f README.md.tmp
 
 distclean: clean
 	rm -fr quicklisp
