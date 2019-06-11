@@ -23,7 +23,11 @@
                           (list :source-registry
                                 :ignore-inherited-configuration
                                 (list :directory *lib*))))
-              '(asdf:operate 'asdf:monolithic-load-bundle-op "tagdb")
+              '(handler-case
+                (asdf:operate 'asdf:monolithic-load-bundle-op "tagdb")
+                (serious-condition (c)
+                 (format *error-output* "~A~%" c)
+                 (sb-ext:exit :code 1)))
               '(tagdb:start)))))
 
 (with-open-file (*standard-output* "build/help.txt"
