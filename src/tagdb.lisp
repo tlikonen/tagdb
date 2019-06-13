@@ -37,7 +37,9 @@
   (:report (lambda (condition stream)
              (format stream "~A" (tagdb-error-text condition)))))
 
-(define-condition records-not-found (tagdb-error) nil)
+(define-condition records-not-found (tagdb-error)
+  nil
+  (:report "Records not found."))
 
 
 (defun tagdb-error (fmt &rest args)
@@ -446,11 +448,10 @@
                           :finally
                           (return (delete-duplicates
                                    (reduce #'nintersection collection)))))
-        (tags nil)
-        (records-error-msg "No records found."))
+        (tags nil))
 
     (unless record-ids
-      (error 'records-not-found :text records-error-msg))
+      (error 'records-not-found))
 
     (loop :for record-id :in record-ids
           :for record-tag-names := (query-nconc "SELECT t.name ~
@@ -460,7 +461,7 @@
           :collect (cons record-id (sort record-tag-names #'string-lessp))
           :into collection
           :finally (unless (setf tags collection)
-                     (error 'records-not-found :text records-error-msg)))
+                     (error 'records-not-found)))
 
     (loop :for (id . names) :in tags
           :for (created modified content) := (first (query "~
