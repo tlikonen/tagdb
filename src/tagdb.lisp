@@ -1069,28 +1069,26 @@ Command options
 
 
 (defun main (&rest args)
-  (handler-case (execute-command-line args)
-    (exit-program () nil)))
-
-
-(defun start ()
   (handler-bind
       ((just-getopt-parser:unknown-option
          (lambda (c)
            (error-message "~A~%" c)
            (invoke-restart 'just-getopt-parser:skip-option)))
-       (sb-int:simple-stream-error
+       (exit-program
          (lambda (c)
            (declare (ignore c))
-           (sb-ext:exit :code 0)))
-       (sb-sys:interactive-interrupt
-         (lambda (c)
-           (declare (ignore c))
-           (format t "~%")
-           (sb-ext:exit :code 1)))
-       (error
-         (lambda (c)
-           (error-message "~&~A~%" c)
-           (sb-ext:exit :code 1))))
+           (return-from main))))
 
-    (apply #'main (rest sb-ext:*posix-argv*))))
+    (execute-command-line args)))
+
+
+(defun start ()
+  (handler-case (apply #'main (rest sb-ext:*posix-argv*))
+    (sb-int:simple-stream-error ()
+      (sb-ext:exit :code 0))
+    (sb-sys:interactive-interrupt ()
+      (terpri)
+      (sb-ext:exit :code 1))
+    (error (c)
+      (error-message "~&~A~%" c)
+      (sb-ext:exit :code 1))))
