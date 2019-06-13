@@ -30,6 +30,8 @@
 (defparameter *program-database-version* 6)
 
 
+(define-condition exit-program () nil)
+
 (define-condition tagdb-error (error)
   ((text :reader tagdb-error-text :initarg :text))
   (:report (lambda (condition stream)
@@ -1015,7 +1017,7 @@ Command options
 
       (when (optionp :help)
         (command-help)
-        (sb-ext:exit :code 0))
+        (error 'exit-program))
 
       (let ((path (option-arg :db)))
         (when path
@@ -1067,6 +1069,11 @@ Command options
 
 
 (defun main (&rest args)
+  (handler-case (execute-command-line args)
+    (exit-program () nil)))
+
+
+(defun start ()
   (handler-bind
       ((just-getopt-parser:unknown-option
          (lambda (c)
@@ -1086,8 +1093,4 @@ Command options
            (error-message "~&~A~%" c)
            (sb-ext:exit :code 1))))
 
-    (execute-command-line args)))
-
-
-(defun start ()
-  (apply #'main (rest sb-ext:*posix-argv*)))
+    (apply #'main (rest sb-ext:*posix-argv*))))
