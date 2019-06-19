@@ -348,11 +348,11 @@
 
 
 (defun print-tags (&optional tag-name)
-  (let ((tags (sort (db-find-tags tag-name) #'string-lessp :key #'second)))
+  (let ((tags (db-find-tags tag-name)))
     (if tags
         (loop :with width := (length (princ-to-string
                                       (reduce #'max tags :key #'first)))
-              :for (count tag) :in tags
+              :for (count tag) :in (sort tags #'string-lessp :key #'second)
               :do (message "~V<~D~> ~A~%" width count tag))
         (tagdb-error "No tags found."))))
 
