@@ -262,8 +262,8 @@
     (let ((fn (cond
                 ((typep format 'text-editor)
                  (lambda (record n)
-                   (taglist (format nil "# Id: ~A Tags:"
-                                    (hash-record-id n)) record)
+                   (taglist (format nil "# Id: ~A Tags:" (hash-record-id n))
+                            record)
                    (format stream "~%~%~A~&" (format-contents
                                               (content record)))))
 
