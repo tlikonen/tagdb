@@ -663,16 +663,17 @@ Command options
 
 
 (defun command-reassociate (tag-names)
-  (let ((number-of-tags (length tag-names)))
-    (case number-of-tags
-      (0 (tagdb-error "Must give OLD and NEW tag."))
-      (1 (tagdb-error "Must also give NEW tag.")))
-    (when (> number-of-tags 2)
-      (error-message "~&Only the first two tags are used.~%")
-      (setf tag-names (list (first tag-names)
-                            (second tag-names))))
-    (when (string= (nth 0 tag-names) (nth 1 tag-names))
-      (tagdb-error "OLD and NEW tag can't be the same.")))
+  (case (length tag-names)
+    (0 (tagdb-error "Must give OLD and NEW tag."))
+    (1 (tagdb-error "Must also give NEW tag."))
+    (2)
+    (t
+     (error-message "~&Only the first two tags are used.~%")
+     (setf tag-names (list (first tag-names)
+                           (second tag-names)))))
+  (when (string= (first tag-names) (second tag-names))
+    (tagdb-error "OLD and NEW tag can't be the same."))
+
   (assert-tag-names tag-names)
 
   (with-transaction
