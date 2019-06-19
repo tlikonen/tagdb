@@ -913,7 +913,7 @@ Command options
 (defun command-list (tag-names)
   (when (rest tag-names)
     (error-message "~&Note: Only the first string is used.~%")
-    (setf (rest tag-names) nil))
+    (setf tag-names (list (first tag-names))))
   (when tag-names
     (assert-tag-names tag-names))
   (print-tags (first tag-names)))
@@ -933,7 +933,8 @@ Command options
       (1 (tagdb-error "Must also give NEW tag.")))
     (when (> number-of-tags 2)
       (error-message "~&Only the first two tags are used.~%")
-      (setf (rest (rest tag-names)) nil))
+      (setf tag-names (list (first tag-names)
+                            (second tag-names))))
     (when (string= (nth 0 tag-names) (nth 1 tag-names))
       (tagdb-error "OLD and NEW tag can't be the same.")))
   (assert-tag-names tag-names)
