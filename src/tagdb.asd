@@ -4,5 +4,7 @@
   :licence "The GNU General Public License version 3"
   :depends-on ((:require "sb-posix")
                "sqlite" "split-sequence" "local-time" "just-getopt-parser")
-  :components ((:file "tagdb" :depends-on ("pathconv"))
+  :components ((:file "tagdb" :depends-on ("common" "database" "pathconv"))
+               (:file "common")
+               (:file "database" :depends-on ("common" "pathconv"))
                (:file "pathconv")))
