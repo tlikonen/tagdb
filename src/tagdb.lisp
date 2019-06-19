@@ -790,7 +790,6 @@ Command options
                                other-args))
                 ((optionp :list) (command-list other-args))
                 ((optionp :reassociate) (command-reassociate other-args))
-                ((not other-args) (tagdb-error "No tags given."))
                 ((optionp :number) (command-number other-args))
                 (t
                  (when (and (optionp :quiet) (optionp :verbose))
