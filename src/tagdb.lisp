@@ -36,7 +36,8 @@
   ((records :accessor records :initarg :records :initform nil)
    (verbose :reader verbose :initarg :verbose :initform nil)
    (quiet :reader quiet :initarg :quiet :initform nil)
-   (short :reader short :initarg :short :initform nil)))
+   (short :reader short :initarg :short :initform nil)
+   (utc :reader utc :initarg :utc :initform nil)))
 
 
 (defclass text (output-format) nil)
@@ -218,11 +219,14 @@
     (princ-to-string id)))
 
 
-(defun format-time (universal-time)
+(defun format-time (universal-time &optional utc)
   (local-time:format-timestring
    nil (local-time:universal-to-timestamp universal-time)
    :format '((:year 4) "-" (:month 2) "-" (:day 2) " "
-             (:hour 2) ":" (:min 2) ":" (:sec 2) :gmt-offset)))
+             (:hour 2) ":" (:min 2) ":" (:sec 2) :gmt-offset-or-z)
+   :timezone (if utc
+                 local-time:+utc-zone+
+                 local-time:*default-timezone*)))
 
 
 (defgeneric print-records (format &optional stream))
@@ -271,9 +275,11 @@
                  (lambda (record n)
                    (declare (ignore n))
                    (format stream "~&~A# Created:  ~A~%"
-                           (term-color t) (format-time (created record)))
+                           (term-color t) (format-time (created record)
+                                                       (utc format)))
                    (format stream "~&~A# Modified: ~A~%"
-                           (term-color t) (format-time (modified record)))
+                           (term-color t) (format-time (modified record)
+                                                       (utc format)))
                    (taglist "# Tags:" record)
                    (format stream "~A~%~%~A~&" (term-color nil)
                            (format-contents (content record)))))
@@ -579,6 +585,10 @@ General options
   -q    Quiet output.
   -v    Verbose output.
 
+  --utc
+        Print timestamps in UTC time instead of local time zone. This
+        applies only to verbose (-v) output.
+
   --db=FILE
         Use FILE as the database file instead of the default
         ~~/.config/tagdb.db. The program will try to create all the
@@ -725,6 +735,7 @@ Command options
                                         (:verbose #\v)
                                         (:db "db" :required)
                                         (:format "format" :required)
+                                        (:utc "utc")
                                         (:short #\s)
                                         (:number #\n)
                                         (:create #\c)
@@ -802,7 +813,8 @@ Command options
                                  :quiet (if (optionp :verbose)
                                             nil
                                             (optionp :quiet))
-                                 :short (optionp :short))
+                                 :short (optionp :short)
+                                 :utc (optionp :utc))
                   other-args))))))))
 
 
