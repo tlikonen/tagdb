@@ -61,30 +61,21 @@
 
 
 (defun sql-string-esc (thing)
-  (with-output-to-string (out)
-    (princ #\' out)
-    (loop :for char :across (typecase thing
-                              (string thing)
-                              (character (string thing))
-                              (integer (princ-to-string thing))
-                              (t ""))
-          :do (princ (if (char= char #\') "''" char) out))
-    (princ #\' out)))
+  (string-io:sql-string (typecase thing
+                          (string thing)
+                          (character (string thing))
+                          (integer (princ-to-string thing))
+                          (t ""))))
 
 
 (defun sql-like-esc (thing &key wild-start wild-end)
-  (with-output-to-string (out)
-    (format out "'~A" (if wild-start "%" ""))
-    (loop :for char :across (typecase thing
-                              (string thing)
-                              (character (string thing))
-                              (integer (princ-to-string thing))
-                              (t ""))
-          :do (princ (cond ((char= char #\') "''")
-                           ((find char "_%\\") (format nil "\\~A" char))
-                           (t char))
-                     out))
-    (format out "~A' escape '\\'" (if wild-end "%" ""))))
+  (string-io:sql-escape-like (typecase thing
+                               (string thing)
+                               (character (string thing))
+                               (integer (princ-to-string thing))
+                               (t ""))
+                             :wild-before wild-start
+                             :wild-after wild-end))
 
 
 (defun normalize-integer (thing)
