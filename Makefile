@@ -1,7 +1,7 @@
 prefix = /usr/local
 bindir = $(prefix)/bin
 libdir = $(prefix)/lib
-sbcl = $(shell which sbcl)
+sbcl = $(shell command -v sbcl)
 src = src/*.asd src/*.lisp
 
 -include config.mk
