@@ -34,7 +34,7 @@
 (defvar *database-pathname* nil)
 (defvar *database* nil)
 (defvar *changes-before-vacuum* 1000)
-(defparameter *program-database-version* 6)
+(defparameter *program-database-version* 7)
 
 
 (defun query (format-string &rest parameters)
@@ -183,6 +183,12 @@
     (query "UPDATE maintenance SET value = 6 WHERE key = 'database version'")))
 
 
+(defmethod db-update ((version (eql 7)))
+  (with-transaction
+    (query "CREATE INDEX idx_record_tag_tag_id ON record_tag (tag_id)")
+    (query "UPDATE maintenance SET value = 7 WHERE key = 'database version'")))
+
+
 (defun init-database ()
   (if (query-1 "SELECT 1 FROM sqlite_master ~
                 WHERE type = 'table' AND name = 'maintenance'")
@@ -229,9 +235,13 @@
                 name TEXT UNIQUE)")
 
         (query "CREATE TABLE record_tag (~
-        record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE, ~
-        tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE, ~
-        PRIMARY KEY (record_id, tag_id))")))
+                record_id INTEGER NOT NULL ~
+                        REFERENCES records(id) ON DELETE CASCADE, ~
+                tag_id INTEGER NOT NULL ~
+                        REFERENCES tags(id) ON DELETE CASCADE, ~
+                PRIMARY KEY (record_id, tag_id))")
+
+        (query "CREATE INDEX idx_record_tag_tag_id ON record_tag (tag_id)")))
 
   (query "PRAGMA foreign_keys = ON")
   (query "PRAGMA case_sensitive_like = ON"))
