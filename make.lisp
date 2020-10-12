@@ -16,8 +16,8 @@
           (*print-case* :downcase))
       (format f "#!~A --script~%~@{~S~%~}"
               *sbcl*
-              '(require "asdf")
               '(require "sb-posix")
+              '(require "asdf")
               (list 'asdf:initialize-source-registry
                     (list 'quote
                           (list :source-registry
