@@ -129,7 +129,7 @@ When the program is installed start with `tagdb -h` command.
 
 ## Copyright and License
 
-Copyright (C) 2014-2020 Teemu Likonen <<tlikonen@iki.fi>>
+Copyright (C) 2014-2021 Teemu Likonen <<tlikonen@iki.fi>>
 
 OpenPGP key: [4E10 55DC 84E9 DFF6 13D7 8557 719D 69D3 2453 9450][PGP]
 
