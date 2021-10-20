@@ -90,6 +90,9 @@ editor is launched and all matching records can be edited at once.
 
       -h    Print this help text.
 
+      --version
+            Print program's version and copyright information.
+
 
 ## Compile and Install
 
