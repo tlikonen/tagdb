@@ -31,7 +31,7 @@ config.mk:
 version.txt:
 	if v=$$(git describe --always --dirty); \
 		then echo "$$v" > $@; \
-		else echo "$(versio)" > $@; \
+		else echo "$(version)" > $@; \
 		fi
 
 README.md: build/tagdb build/help.txt
