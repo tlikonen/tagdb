@@ -2,3 +2,4 @@ quicklisp/
 build/
 README.md.tmp
 config.mk
+version.txt

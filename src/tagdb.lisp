@@ -24,6 +24,9 @@
 (in-package #:tagdb)
 
 
+(defparameter *program-version* "DEVELOPMENT")
+
+
 (defclass record ()
   ((id :reader id :initarg :id)
    (created :reader created :initarg :created)
@@ -635,7 +638,19 @@ Command options
 
   -h    Print this help text.
 
+  --version
+        Print program version and copyright information.
+
 "))
+
+
+(defun command-version ()
+  (format t "~
+tagdb ~A
+Author:  Teemu Likonen <tlikonen@iki.fi>
+License: GNU General Public License 3
+         <https://www.gnu.org/licenses/gpl-3.0.html>
+" *program-version*))
 
 
 (defun command-create (tag-names)
@@ -742,7 +757,8 @@ Command options
                                         (:edit #\e)
                                         (:list #\l)
                                         (:reassociate #\r)
-                                        (:help #\h))
+                                        (:help #\h)
+                                        (:version "version"))
                                  :error-on-unknown-option t
                                  :error-on-argument-missing t)
 
@@ -760,13 +776,18 @@ Command options
                                          (optionp :edit)
                                          (optionp :list)
                                          (optionp :reassociate)
-                                         (optionp :help))))
+                                         (optionp :help)
+                                         (optionp :version))))
                1)
         (tagdb-error "Only one command option is allowed. ~
                         Use option \"-h\" for help."))
 
       (when (optionp :help)
         (command-help)
+        (error 'exit-program))
+
+      (when (optionp :version)
+        (command-version)
         (error 'exit-program))
 
       (let ((path (option-arg :db)))
@@ -832,8 +853,9 @@ Command options
     (execute-command-line args)))
 
 
-(defun start ()
-  (handler-case (apply #'main (rest sb-ext:*posix-argv*))
+(defun start (&key version)
+  (handler-case (let ((*program-version* (or version *program-version*)))
+                  (apply #'main (rest sb-ext:*posix-argv*)))
     (sb-int:simple-stream-error ()
       (sb-ext:exit :code 0))
     (sb-sys:interactive-interrupt ()

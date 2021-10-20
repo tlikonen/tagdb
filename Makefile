@@ -1,3 +1,4 @@
+version = 2021
 prefix = /usr/local
 bindir = $(prefix)/bin
 libdir = $(prefix)/lib
@@ -8,7 +9,7 @@ src = src/*.asd src/*.lisp
 
 all: build/tagdb
 
-build/tagdb: quicklisp/setup.lisp $(src)
+build/tagdb: quicklisp/setup.lisp $(src) version.txt
 	$(sbcl) --script make.lisp "$(libdir)/tagdb/"
 
 quicklisp/install.lisp:
@@ -26,6 +27,12 @@ config.mk:
 	@echo "libdir = $(libdir)" >> $@
 	@echo "sbcl = $(sbcl)" >> $@
 	@cat $@
+
+version.txt:
+	if v=$$(git describe --always --dirty); \
+		then echo "$$v" > $@; \
+		else echo "$(versio)" > $@; \
+		fi
 
 README.md: build/tagdb build/help.txt
 	@echo "Updating $@"
@@ -47,6 +54,7 @@ uninstall:
 	rm -fr -- "$(libdir)/tagdb"
 
 clean:
+	rm -f version.txt
 	rm -fr build
 
 distclean: clean

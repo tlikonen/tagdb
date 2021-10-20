@@ -1,5 +1,7 @@
 (defparameter *sbcl* (nth 0 sb-ext:*posix-argv*))
 (defparameter *lib* (sb-ext:native-pathname (nth 1 sb-ext:*posix-argv*)))
+(defparameter *version* (with-open-file (v "version.txt" :direction :input)
+                          (read-line v)))
 
 (load "asdf.conf")
 (load "quicklisp/setup.lisp")
@@ -28,7 +30,7 @@
                 (serious-condition (c)
                  (format *error-output* "~A~%" c)
                  (sb-ext:exit :code 1)))
-              '(tagdb:start)))))
+              (list 'tagdb:start :version *version*)))))
 
 (with-open-file (*standard-output* "build/help.txt"
                                    :direction :output
