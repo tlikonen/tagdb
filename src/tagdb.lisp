@@ -639,7 +639,7 @@ Command options
   -h    Print this help text.
 
   --version
-        Print program version and copyright information.
+        Print program's version and copyright information.
 
 "))
 
