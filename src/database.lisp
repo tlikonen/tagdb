@@ -117,16 +117,8 @@
 
 (defun init-database-pathname ()
   (unless *database-pathname*
-    (let ((xdg-config-home (sb-posix:getenv "XDG_CONFIG_HOME")))
-      (setf *database-pathname*
-            (if xdg-config-home
-                (merge-pathnames (make-pathname :name "tagdb" :type "db")
-                                 (pathconv:pathname xdg-config-home
-                                                    :type :directory))
-                (merge-pathnames (make-pathname
-                                  :directory '(:relative ".config")
-			          :name "tagdb" :type "db")
-                                 (user-homedir-pathname))))))
+    (setf *database-pathname* (xdg-dirs:config-home
+                               (make-pathname :name "tagdb" :type "db"))))
   (ensure-directories-exist *database-pathname*))
 
 

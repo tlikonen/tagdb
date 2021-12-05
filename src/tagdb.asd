@@ -6,6 +6,8 @@
                "sqlite" "split-sequence" "local-time" "just-getopt-parser")
   :components ((:file "tagdb" :depends-on ("common" "database" "pathconv"))
                (:file "common")
-               (:file "database" :depends-on ("common" "pathconv" "string-io"))
+               (:file "database" :depends-on ("common" "pathconv" "string-io"
+                                                       "xdg-dirs"))
                (:file "pathconv")
-               (:file "string-io")))
+               (:file "string-io")
+               (:file "xdg-dirs" :depends-on ("pathconv"))))
