@@ -116,10 +116,19 @@
 
 
 (defun init-database-pathname ()
-  (unless *database-pathname*
-    (setf *database-pathname* (xdg-dirs:config-home
-                               (make-pathname :name "tagdb" :type "db"))))
-  (ensure-directories-exist *database-pathname*))
+  (if *database-pathname*
+      (ensure-directories-exist *database-pathname*)
+      (let ((old (xdg-dirs:config-home (make-pathname :name "tagdb"
+                                                      :type "db"))))
+        (setf *database-pathname* (xdg-dirs:data-home
+                                   (make-pathname :name "tagdb" :type "sqlite")))
+        (ensure-directories-exist *database-pathname*)
+
+        (when (and (probe-file old)
+                   (not (probe-file *database-pathname*)))
+          (error-message "Moving database file to new location:~%~A~%"
+                         (pathconv:namestring *database-pathname*))
+          (fstools:move-file old *database-pathname*)))))
 
 
 (defgeneric db-update (version))

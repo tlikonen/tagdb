@@ -593,9 +593,9 @@ General options
         applies only to verbose (-v) output.
 
   --db=FILE
-        Use FILE as the database file instead of the default
-        ~~/.config/tagdb.db. The program will try to create all the
-        necessary directories for FILE.
+        Use FILE as the database file instead of the default. The
+        program will try to create all the necessary directories for
+        FILE.
 
   --format=MODE
         Set output format to MODE which can be \"text\", \"text-color\"
@@ -789,6 +789,8 @@ License: GNU General Public License 3
       (when (optionp :version)
         (command-version)
         (error 'exit-program))
+
+      (setf *database-pathname* nil)
 
       (let ((path (option-arg :db)))
         (when path
