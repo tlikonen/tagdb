@@ -256,6 +256,7 @@
 
 (defun connect ()
   (unless (typep *database* 'sqlite:sqlite-handle)
+    (sb-posix:umask #o0077)
     (init-database-pathname)
     (setf *database* (sqlite:connect (pathconv:namestring
                                       *database-pathname*)))
