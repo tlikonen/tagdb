@@ -1,4 +1,4 @@
-version = 2021.12
+version = 2021.12.27
 prefix = /usr/local
 bindir = $(prefix)/bin
 libdir = $(prefix)/lib
