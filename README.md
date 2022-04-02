@@ -41,8 +41,8 @@ editor is launched and all matching records can be edited at once.
       -v    Verbose output.
 
       --utc
-            Print timestamps in UTC time instead of local time zone. This
-            applies only to verbose (-v) output.
+            Print timestamps in UTC time instead of local time zone. This is
+            relevant only with verbose (-v) output.
 
       --db=FILE
             Use FILE as the database file instead of the default. The
