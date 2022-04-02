@@ -596,7 +596,7 @@ General options
         Use FILE as the database file instead of the default. The
         program will try to create all the necessary directories for
         FILE. The default database location is defined by variable
-        $XDG_DATA_HOME or \"~~/.local/share\".
+        $XDG_DATA_HOME (default: \"~~/.local/share\").
 
   --format=MODE
         Set output format to MODE which can be \"text\", \"text-color\"
