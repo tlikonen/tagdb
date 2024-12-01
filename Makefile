@@ -1,4 +1,3 @@
-version = 2022.8
 prefix = /usr/local
 bindir = $(prefix)/bin
 libdir = $(prefix)/lib
@@ -29,10 +28,7 @@ config.mk:
 	@cat $@
 
 version.txt:
-	if v=$$(git describe --always --dirty); \
-		then echo "$$v" > $@; \
-		else echo "$(version)" > $@; \
-		fi
+	v=$$(git describe --always --dirty) || v="unknown"; echo "$$v" > $@
 
 README.md: build/tagdb build/help.txt
 	@echo "Updating $@"
