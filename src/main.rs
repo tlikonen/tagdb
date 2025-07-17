@@ -34,7 +34,7 @@ async fn main() -> ExitCode {
     if args.option_exists("help") {
         println!(
             "Usage: {PROGRAM_NAME} [options] [--] TAG ...\n\n{txt}",
-            txt = include_str!("../help/usage.txt")
+            txt = include_str!("usage.txt")
         );
         return ExitCode::SUCCESS;
     }
