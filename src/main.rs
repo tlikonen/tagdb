@@ -1,5 +1,6 @@
 use just_getopt::{Args, OptFlags, OptSpecs, OptValue};
 use std::{error::Error, process::ExitCode};
+use tagdb::Modes;
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -9,6 +10,8 @@ static PROGRAM_LICENSE: &str = env!("CARGO_PKG_LICENSE");
 #[tokio::main]
 async fn main() -> ExitCode {
     let args = OptSpecs::new()
+        .option("quiet", "q", OptValue::None)
+        .option("verbose", "v", OptValue::None)
         .option("help", "h", OptValue::None)
         .option("version", "version", OptValue::None)
         .flag(OptFlags::PrefixMatchLongOptions)
@@ -57,7 +60,11 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn config_stage(_args: Args) -> Result<(), Box<dyn Error>> {
-    eprintln!("config_stage");
-    Ok(())
+async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
+    let modes = Modes {
+        verbose: args.option_exists("verbose"),
+        quiet: args.option_exists("quiet"),
+    };
+
+    tagdb::run(modes, &args.other).await
 }
