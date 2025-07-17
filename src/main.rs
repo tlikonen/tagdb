@@ -1,5 +1,5 @@
-use just_getopt::{OptFlags, OptSpecs, OptValue};
-use std::process::ExitCode;
+use just_getopt::{Args, OptFlags, OptSpecs, OptValue};
+use std::{error::Error, process::ExitCode};
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -48,13 +48,16 @@ async fn main() -> ExitCode {
         return ExitCode::SUCCESS;
     }
 
-    // match tagdb::run(args).await {
-    //     Ok(_) => ExitCode::SUCCESS,
-    //     Err(e) => {
-    //         eprintln!("{e}");
-    //         ExitCode::FAILURE
-    //     }
-    // }
+    match config_stage(args).await {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("{e}");
+            ExitCode::FAILURE
+        }
+    }
+}
 
-    ExitCode::SUCCESS
+async fn config_stage(_args: Args) -> Result<(), Box<dyn Error>> {
+    eprintln!("config_stage");
+    Ok(())
 }
