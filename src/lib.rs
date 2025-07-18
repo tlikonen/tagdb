@@ -17,7 +17,11 @@ pub enum Operation {
     Version,
 }
 
-pub async fn run(_modes: Modes, _op: Operation, _args: &[String]) -> Result<(), Box<dyn Error>> {
+pub async fn command_stage(
+    _modes: Modes,
+    _op: Operation,
+    _args: &[String],
+) -> Result<(), Box<dyn Error>> {
     eprintln!("run");
     Ok(())
 }

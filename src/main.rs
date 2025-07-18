@@ -120,6 +120,6 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             Ok(())
         }
 
-        operation => tagdb::run(modes, operation, &args.other).await,
+        operation => tagdb::command_stage(modes, operation, &args.other).await,
     }
 }
