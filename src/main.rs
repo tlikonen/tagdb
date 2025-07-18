@@ -85,35 +85,35 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
     };
 
     let mut commands = 0;
-    let mut op = Operation::Normal;
+    let mut op = Operation::Normal(&args.other);
 
     if args.option_exists("short") {
-        op = Operation::Short;
+        op = Operation::Short(&args.other);
         commands += 1;
     }
 
     if args.option_exists("count") {
-        op = Operation::Count;
+        op = Operation::Count(&args.other);
         commands += 1;
     }
 
     if args.option_exists("create") {
-        op = Operation::Create;
+        op = Operation::Create(&args.other);
         commands += 1;
     }
 
     if args.option_exists("edit") {
-        op = Operation::Edit;
+        op = Operation::Edit(&args.other);
         commands += 1;
     }
 
     if args.option_exists("list") {
-        op = Operation::List;
+        op = Operation::List(&args.other);
         commands += 1;
     }
 
     if args.option_exists("reassociate") {
-        op = Operation::Reassociate;
+        op = Operation::Reassociate(&args.other);
         commands += 1;
     }
 
@@ -149,6 +149,6 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             Ok(())
         }
 
-        operation => tagdb::command_stage(config, operation, &args.other).await,
+        operation => tagdb::command_stage(config, operation).await,
     }
 }

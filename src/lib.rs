@@ -15,23 +15,19 @@ pub enum Format {
     Emacs,
 }
 
-pub enum Operation {
-    Normal,
-    Short,
-    Count,
-    Create,
-    Edit,
-    List,
-    Reassociate,
+pub enum Operation<'a> {
+    Normal(&'a [String]),
+    Short(&'a [String]),
+    Count(&'a [String]),
+    Create(&'a [String]),
+    Edit(&'a [String]),
+    List(&'a [String]),
+    Reassociate(&'a [String]),
     Help,
     Version,
 }
 
-pub async fn command_stage(
-    _config: Config,
-    _op: Operation,
-    _args: &[String],
-) -> Result<(), Box<dyn Error>> {
+pub async fn command_stage(_config: Config, _op: Operation<'_>) -> Result<(), Box<dyn Error>> {
     eprintln!("run");
     Ok(())
 }
