@@ -1,6 +1,6 @@
 use just_getopt::{Args, OptFlags, OptSpecs, OptValue};
 use std::{error::Error, process::ExitCode};
-use tagdb::{Format, Modes, Operation};
+use tagdb::{Config, Format, Operation};
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -53,7 +53,7 @@ async fn main() -> ExitCode {
 }
 
 async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
-    let modes = {
+    let config = {
         let mut format = None;
         let mut format_save = false;
 
@@ -74,7 +74,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             };
         }
 
-        Modes {
+        Config {
             verbose: args.option_exists("verbose"),
             quiet: args.option_exists("quiet"),
             utc: args.option_exists("utc"),
@@ -149,6 +149,6 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             Ok(())
         }
 
-        operation => tagdb::command_stage(modes, operation, &args.other).await,
+        operation => tagdb::command_stage(config, operation, &args.other).await,
     }
 }

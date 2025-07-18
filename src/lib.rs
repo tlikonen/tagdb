@@ -1,6 +1,6 @@
 use std::error::Error;
 
-pub struct Modes {
+pub struct Config {
     pub verbose: bool,
     pub quiet: bool,
     pub utc: bool,
@@ -28,7 +28,7 @@ pub enum Operation {
 }
 
 pub async fn command_stage(
-    _modes: Modes,
+    _config: Config,
     _op: Operation,
     _args: &[String],
 ) -> Result<(), Box<dyn Error>> {
