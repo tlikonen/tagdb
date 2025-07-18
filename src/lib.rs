@@ -27,7 +27,15 @@ pub enum Operation<'a> {
     Version,
 }
 
-pub async fn command_stage(_config: Config, _op: Operation<'_>) -> Result<(), Box<dyn Error>> {
-    eprintln!("run");
-    Ok(())
+pub async fn command_stage(_config: Config, op: Operation<'_>) -> Result<(), Box<dyn Error>> {
+    match op {
+        Operation::Normal(_args) => todo!(),
+        Operation::Short(_args) => todo!(),
+        Operation::Count(_args) => todo!(),
+        Operation::Create(_args) => todo!(),
+        Operation::Edit(_args) => todo!(),
+        Operation::List(_args) => todo!(),
+        Operation::Reassociate(_args) => todo!(),
+        Operation::Help | Operation::Version => panic!("help and version not here"),
+    }
 }
