@@ -3,6 +3,16 @@ use std::error::Error;
 pub struct Modes {
     pub verbose: bool,
     pub quiet: bool,
+    pub utc: bool,
+    pub database: Option<String>,
+    pub format: Option<Format>,
+    pub format_save: bool,
+}
+
+pub enum Format {
+    Text,
+    TextColor,
+    Emacs,
 }
 
 pub enum Operation {

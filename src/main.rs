@@ -1,6 +1,6 @@
 use just_getopt::{Args, OptFlags, OptSpecs, OptValue};
 use std::{error::Error, process::ExitCode};
-use tagdb::{Modes, Operation};
+use tagdb::{Format, Modes, Operation};
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -12,6 +12,9 @@ async fn main() -> ExitCode {
     let args = OptSpecs::new()
         .option("quiet", "q", OptValue::None)
         .option("verbose", "v", OptValue::None)
+        .option("utc", "utc", OptValue::None)
+        .option("db", "db", OptValue::RequiredNonEmpty)
+        .option("format", "format", OptValue::RequiredNonEmpty)
         .option("short", "s", OptValue::None)
         .option("count", "n", OptValue::None)
         .option("create", "c", OptValue::None)
@@ -50,9 +53,35 @@ async fn main() -> ExitCode {
 }
 
 async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
-    let modes = Modes {
-        verbose: args.option_exists("verbose"),
-        quiet: args.option_exists("quiet"),
+    let modes = {
+        let mut format = None;
+        let mut format_save = false;
+
+        if let Some(value) = args.options_value_last("format") {
+            let prefix = match value.strip_suffix("/default") {
+                Some(v) => {
+                    format_save = true;
+                    v
+                }
+                None => value,
+            };
+
+            format = match prefix {
+                "text" => Some(Format::Text),
+                "text-color" => Some(Format::TextColor),
+                "emacs" => Some(Format::Emacs),
+                _ => Err(format!("Invalid value for option “--format={value}”."))?,
+            };
+        }
+
+        Modes {
+            verbose: args.option_exists("verbose"),
+            quiet: args.option_exists("quiet"),
+            utc: args.option_exists("utc"),
+            database: args.options_value_last("db").cloned(),
+            format,
+            format_save,
+        }
     };
 
     let mut commands = 0;
