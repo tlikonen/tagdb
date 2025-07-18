@@ -1,6 +1,6 @@
 use just_getopt::{Args, OptFlags, OptSpecs, OptValue};
 use std::{error::Error, process::ExitCode};
-use tagdb::{Config, Format, Operation};
+use tagdb::{Cmd, Config, Format};
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -85,30 +85,30 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
     };
 
     let mut command_option = false;
-    let mut operation = Operation::Normal(&args.other);
+    let mut command = Cmd::Normal(&args.other);
 
     for o in [
-        ("short", Operation::Short(&args.other)),
-        ("count", Operation::Count(&args.other)),
-        ("create", Operation::Create(&args.other)),
-        ("edit", Operation::Edit(&args.other)),
-        ("list", Operation::List(&args.other)),
-        ("reassociate", Operation::Reassociate(&args.other)),
-        ("help", Operation::Help),
-        ("version", Operation::Version),
+        ("short", Cmd::Short(&args.other)),
+        ("count", Cmd::Count(&args.other)),
+        ("create", Cmd::Create(&args.other)),
+        ("edit", Cmd::Edit(&args.other)),
+        ("list", Cmd::List(&args.other)),
+        ("reassociate", Cmd::Reassociate(&args.other)),
+        ("help", Cmd::Help),
+        ("version", Cmd::Version),
     ] {
         if args.option_exists(o.0) {
             if command_option {
                 Err("Only one command option is allowed. Use option “-h” alone for help.")?;
             } else {
                 command_option = true;
-                operation = o.1;
+                command = o.1;
             }
         }
     }
 
-    match operation {
-        Operation::Help => {
+    match command {
+        Cmd::Help => {
             println!(
                 "Usage: {PROGRAM_NAME} [options] [--] TAG ...\n\n{txt}",
                 txt = include_str!("usage.txt")
@@ -116,7 +116,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             Ok(())
         }
 
-        Operation::Version => {
+        Cmd::Version => {
             println!(
                 "{PROGRAM_NAME} v{PROGRAM_VERSION}\n\
                  Author:  {PROGRAM_AUTHORS}\n\
@@ -125,6 +125,6 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             Ok(())
         }
 
-        op => tagdb::command_stage(config, op).await,
+        cmd => tagdb::command_stage(config, cmd).await,
     }
 }

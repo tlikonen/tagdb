@@ -15,7 +15,7 @@ pub enum Format {
     Emacs,
 }
 
-pub enum Operation<'a> {
+pub enum Cmd<'a> {
     Normal(&'a [String]),
     Short(&'a [String]),
     Count(&'a [String]),
@@ -27,15 +27,15 @@ pub enum Operation<'a> {
     Version,
 }
 
-pub async fn command_stage(_config: Config, op: Operation<'_>) -> Result<(), Box<dyn Error>> {
-    match op {
-        Operation::Normal(_args) => todo!(),
-        Operation::Short(_args) => todo!(),
-        Operation::Count(_args) => todo!(),
-        Operation::Create(_args) => todo!(),
-        Operation::Edit(_args) => todo!(),
-        Operation::List(_args) => todo!(),
-        Operation::Reassociate(_args) => todo!(),
-        Operation::Help | Operation::Version => panic!("help and version not here"),
+pub async fn command_stage(_config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn Error>> {
+    match cmd {
+        Cmd::Normal(_args) => todo!(),
+        Cmd::Short(_args) => todo!(),
+        Cmd::Count(_args) => todo!(),
+        Cmd::Create(_args) => todo!(),
+        Cmd::Edit(_args) => todo!(),
+        Cmd::List(_args) => todo!(),
+        Cmd::Reassociate(_args) => todo!(),
+        Cmd::Help | Cmd::Version => panic!("help and version not here"),
     }
 }
