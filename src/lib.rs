@@ -28,6 +28,10 @@ pub enum Cmd<'a> {
 }
 
 pub async fn command_stage(_config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn Error>> {
+    unsafe {
+        libc::umask(0o077);
+    }
+
     match cmd {
         Cmd::Normal(_args) => todo!(),
         Cmd::Short(_args) => todo!(),

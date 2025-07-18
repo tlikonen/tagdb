@@ -160,6 +160,7 @@ name = "tagdb"
 version = "0.1.0"
 dependencies = [
  "just-getopt",
+ "libc",
  "tokio",
 ]
 
