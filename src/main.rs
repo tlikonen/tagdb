@@ -84,54 +84,30 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let mut commands = 0;
-    let mut op = Operation::Normal(&args.other);
+    let mut command_option = false;
+    let mut operation = Operation::Normal(&args.other);
 
-    if args.option_exists("short") {
-        op = Operation::Short(&args.other);
-        commands += 1;
+    for o in [
+        ("short", Operation::Short(&args.other)),
+        ("count", Operation::Count(&args.other)),
+        ("create", Operation::Create(&args.other)),
+        ("edit", Operation::Edit(&args.other)),
+        ("list", Operation::List(&args.other)),
+        ("reassociate", Operation::Reassociate(&args.other)),
+        ("help", Operation::Help),
+        ("version", Operation::Version),
+    ] {
+        if args.option_exists(o.0) {
+            if command_option {
+                Err("Only one command option is allowed. Use option “-h” alone for help.")?;
+            } else {
+                command_option = true;
+                operation = o.1;
+            }
+        }
     }
 
-    if args.option_exists("count") {
-        op = Operation::Count(&args.other);
-        commands += 1;
-    }
-
-    if args.option_exists("create") {
-        op = Operation::Create(&args.other);
-        commands += 1;
-    }
-
-    if args.option_exists("edit") {
-        op = Operation::Edit(&args.other);
-        commands += 1;
-    }
-
-    if args.option_exists("list") {
-        op = Operation::List(&args.other);
-        commands += 1;
-    }
-
-    if args.option_exists("reassociate") {
-        op = Operation::Reassociate(&args.other);
-        commands += 1;
-    }
-
-    if args.option_exists("help") {
-        op = Operation::Help;
-        commands += 1;
-    }
-
-    if args.option_exists("version") {
-        op = Operation::Version;
-        commands += 1;
-    }
-
-    if commands > 1 {
-        Err("Only one command option is allowed. Use option “-h” alone for help.")?;
-    }
-
-    match op {
+    match operation {
         Operation::Help => {
             println!(
                 "Usage: {PROGRAM_NAME} [options] [--] TAG ...\n\n{txt}",
@@ -149,6 +125,6 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             Ok(())
         }
 
-        operation => tagdb::command_stage(config, operation).await,
+        op => tagdb::command_stage(config, op).await,
     }
 }
