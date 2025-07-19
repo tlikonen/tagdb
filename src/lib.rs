@@ -1,3 +1,5 @@
+mod database;
+
 use std::error::Error;
 
 pub struct Config {
@@ -12,7 +14,7 @@ pub struct Config {
 pub enum Format {
     Text,
     TextColor,
-    Emacs,
+    OrgMode,
 }
 
 pub enum Cmd<'a> {
@@ -27,10 +29,12 @@ pub enum Cmd<'a> {
     Version,
 }
 
-pub async fn command_stage(_config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn Error>> {
+pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn Error>> {
     unsafe {
         libc::umask(0o077);
     }
+
+    let _db = database::connect(&config).await?;
 
     match cmd {
         Cmd::Normal(_args) => todo!(),

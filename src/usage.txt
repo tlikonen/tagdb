@@ -14,12 +14,12 @@ General options
         Use FILE as the database file instead of the default. The
         program will try to create all the necessary directories for
         FILE. The default database location is defined by variable
-        $XDG_DATA_HOME (default: "$HOME/.local/share").
+        $XDG_DATA_HOME (default: “$HOME/.local/share”).
 
   --format=MODE
-        Set output format to MODE which can be "text", "text-color" or
-        "emacs". You can add suffix "/default" to MODE in which case the
-        specified mode will be saved as the default output mode.
+        Set output format to MODE which can be “text”, “text-color” or
+        “org-mode”. You can add suffix “/default” to MODE in which case
+        the specified mode will be saved as the default output mode.
 
 Command options
 
