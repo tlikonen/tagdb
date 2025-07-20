@@ -75,6 +75,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
         }
 
         Config {
+            short: args.option_exists("short"),
             verbose: args.option_exists("verbose"),
             quiet: args.option_exists("quiet"),
             utc: args.option_exists("utc"),

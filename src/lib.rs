@@ -3,6 +3,7 @@ mod database;
 use std::error::Error;
 
 pub struct Config {
+    pub short: bool,
     pub verbose: bool,
     pub quiet: bool,
     pub utc: bool,
