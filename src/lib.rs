@@ -38,13 +38,86 @@ pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn E
     let _db = database::connect(&config).await?;
 
     match cmd {
-        Cmd::Normal(_args) => todo!(),
-        Cmd::Short(_args) => todo!(),
+        Cmd::Normal(args) | Cmd::Short(args) => {
+            assert_tag_names(args)?;
+            Ok(())
+        }
+
         Cmd::Count(_args) => todo!(),
         Cmd::Create(_args) => todo!(),
         Cmd::Edit(_args) => todo!(),
         Cmd::List(_args) => todo!(),
         Cmd::Reassociate(_args) => todo!(),
-        Cmd::Help | Cmd::Version => panic!("help and version not here"),
+        Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
+    }
+}
+
+fn assert_tag_names(tags: &[String]) -> Result<(), Box<dyn Error>> {
+    if tags.is_empty() {
+        Err("No tags. At least one tag is required.")?;
+    }
+
+    let mut invalid = String::new();
+
+    for t in tags {
+        if !is_valid_tag_name(t) {
+            if !invalid.is_empty() {
+                invalid.push_str(", ");
+            }
+            invalid.push('“');
+            invalid.push_str(t);
+            invalid.push('”');
+        }
+    }
+
+    if invalid.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("Not valid tag names: {invalid}."))?
+    }
+}
+
+fn is_valid_tag_name(tag: &str) -> bool {
+    // This used to be Common Lisp's (and (graphic-char-p x) (not (eql
+    // #\space x))). Maybe change it to !x.is_whitespace(). The change
+    // requires a new database version. The version update must convert
+    // tags' whitespace characters to valid characters like "_" and
+    // print information for user about changed tag names.
+    !tag.is_empty() && tag.chars().all(|c| !" \n\r".contains(c))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t_is_valid_tag_name() {
+        assert_eq!(false, is_valid_tag_name(""));
+        assert_eq!(false, is_valid_tag_name(" "));
+        assert_eq!(true, is_valid_tag_name("\t"));
+        assert_eq!(false, is_valid_tag_name("\n"));
+        assert_eq!(false, is_valid_tag_name("abc "));
+        assert_eq!(false, is_valid_tag_name("ab cd"));
+        assert_eq!(true, is_valid_tag_name("ab\t"));
+        assert_eq!(false, is_valid_tag_name("ab\n"));
+        assert_eq!(true, is_valid_tag_name("a"));
+        assert_eq!(true, is_valid_tag_name("€ä"));
+        assert_eq!(true, is_valid_tag_name("–"));
+    }
+
+    #[test]
+    fn t_assert_tag_names() {
+        fn atn(tags: impl IntoIterator<Item = impl ToString>) -> Result<(), Box<dyn Error>> {
+            let vec = tags
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>();
+            assert_tag_names(&vec)
+        }
+
+        assert_eq!(true, atn(["a", "ab", "öljyä", "–fas", "ab\tcd"]).is_ok());
+        assert_eq!(false, atn(Vec::<String>::new()).is_ok());
+        assert_eq!(false, atn([""]).is_ok());
+        assert_eq!(false, atn(["", "a"]).is_ok());
     }
 }
