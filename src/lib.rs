@@ -28,7 +28,6 @@ impl Default for Format {
 
 pub enum Cmd<'a> {
     Normal(&'a [String]),
-    Short(&'a [String]),
     Count(&'a [String]),
     Create(&'a [String]),
     Edit(&'a [String]),
@@ -46,7 +45,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
     let mut db = database::connect(&mut config).await?;
 
     match cmd {
-        Cmd::Normal(tags) | Cmd::Short(tags) => {
+        Cmd::Normal(tags) => {
             assert_tag_names(tags)?;
 
             if config.quiet & config.verbose {

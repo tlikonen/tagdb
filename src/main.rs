@@ -89,7 +89,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
     let mut command = Cmd::Normal(&args.other);
 
     for o in [
-        ("short", Cmd::Short(&args.other)),
+        ("short", Cmd::Normal(&args.other)),
         ("count", Cmd::Count(&args.other)),
         ("create", Cmd::Create(&args.other)),
         ("edit", Cmd::Edit(&args.other)),
