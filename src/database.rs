@@ -16,7 +16,7 @@ const PROGRAM_DB_VERSION: i32 = 7;
 pub async fn list_matching_records(
     db: &mut SqliteConnection,
     tags: &[String],
-) -> Result<Option<HashSet<i32>>, Box<dyn Error>> {
+) -> Result<Option<HashSet<i32>>, sqlx::Error> {
     let mut sets = Vec::with_capacity(5);
 
     for tag in tags {
@@ -56,7 +56,7 @@ pub struct Record {
 pub async fn list_records(
     db: &mut SqliteConnection,
     record_ids: HashSet<i32>,
-) -> Result<Vec<Record>, Box<dyn Error>> {
+) -> Result<Vec<Record>, sqlx::Error> {
     let mut records = Vec::with_capacity(5);
 
     for id in record_ids {
