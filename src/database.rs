@@ -53,8 +53,8 @@ pub async fn list_matching_records(
 
 pub struct Record {
     pub id: i32,
-    pub created: u64,
-    pub modified: u64,
+    pub created: i64,
+    pub modified: i64,
     pub tags: Vec<String>,
     pub content: String,
 }

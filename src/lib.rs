@@ -15,7 +15,9 @@ pub struct Config {
     pub format_save: bool,
 }
 
+#[derive(Default)]
 pub enum Format {
+    #[default]
     Text,
     TextColor,
     OrgMode,
@@ -33,7 +35,7 @@ pub enum Cmd<'a> {
     Version,
 }
 
-pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn Error>> {
+pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn Error>> {
     unsafe {
         libc::umask(0o077);
     }
@@ -43,7 +45,19 @@ pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn E
     match cmd {
         Cmd::Normal(tags) | Cmd::Short(tags) => {
             assert_tag_names(tags)?;
+
+            if config.quiet & config.verbose {
+                eprintln!("Note: Option “-q” is ignored when combined with “-v”.");
+                config.quiet = false;
+            }
+
+            let mut first = true;
             for record in find_records(&mut db, tags).await? {
+                if first {
+                    first = false;
+                } else {
+                    println!();
+                }
                 record.print(&config);
             }
             Ok(())
