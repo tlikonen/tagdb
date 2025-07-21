@@ -41,14 +41,22 @@ pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn E
     let mut db = database::connect(&config).await?;
 
     match cmd {
-        Cmd::Normal(args) | Cmd::Short(args) => {
-            assert_tag_names(args)?;
-            print_records(&config, &mut db, args).await
+        Cmd::Normal(tags) | Cmd::Short(tags) => {
+            assert_tag_names(tags)?;
+            for record in find_records(&mut db, tags).await? {
+                record.print(&config);
+            }
+            Ok(())
         }
 
-        Cmd::Count(args) => {
-            assert_tag_names(args)?;
-            count_records(&mut db, args).await
+        Cmd::Count(tags) => {
+            assert_tag_names(tags)?;
+            let ids = database::list_matching_records(&mut db, tags).await?;
+            match ids {
+                Some(set) => println!("{}", set.len()),
+                None => println!("0"),
+            }
+            Ok(())
         }
 
         Cmd::Create(_args) => todo!(),
@@ -57,26 +65,6 @@ pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn E
         Cmd::Reassociate(_args) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
-}
-
-async fn print_records(
-    config: &Config,
-    db: &mut SqliteConnection,
-    tags: &[String],
-) -> Result<(), Box<dyn Error>> {
-    for record in find_records(db, tags).await? {
-        record.print(config);
-    }
-    Ok(())
-}
-
-async fn count_records(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
-    let ids = database::list_matching_records(db, tags).await?;
-    match ids {
-        Some(set) => println!("{}", set.len()),
-        None => println!("0"),
-    }
-    Ok(())
 }
 
 async fn find_records(
