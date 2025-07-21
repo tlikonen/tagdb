@@ -9,8 +9,7 @@ impl Record {
         };
 
         match format {
-            Format::Text => self.print_text(config),
-            Format::TextColor => todo!(),
+            Format::Text { .. } => self.print_text(config),
             Format::OrgMode => todo!(),
         }
     }

@@ -15,12 +15,15 @@ pub struct Config {
     pub format_save: bool,
 }
 
-#[derive(Default)]
 pub enum Format {
-    #[default]
-    Text,
-    TextColor,
+    Text { color: bool },
     OrgMode,
+}
+
+impl Default for Format {
+    fn default() -> Self {
+        Format::Text { color: false }
+    }
 }
 
 pub enum Cmd<'a> {

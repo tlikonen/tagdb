@@ -67,8 +67,8 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             };
 
             format = match prefix {
-                "text" => Some(Format::Text),
-                "text-color" => Some(Format::TextColor),
+                "text" => Some(Format::Text { color: false }),
+                "text-color" => Some(Format::Text { color: true }),
                 "org-mode" => Some(Format::OrgMode),
                 _ => Err(format!("Invalid value for option “--format={value}”."))?,
             };

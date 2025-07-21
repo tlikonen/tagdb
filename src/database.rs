@@ -138,8 +138,8 @@ pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Er
         Some(format) if config.format_save => {
             sqlx::query("UPDATE maintenance SET value = $1 WHERE key = 'output format'")
                 .bind(match format {
-                    Format::Text => "text",
-                    Format::TextColor => "text-color",
+                    Format::Text { color: false } => "text",
+                    Format::Text { color: true } => "text-color",
                     Format::OrgMode => "org-mode",
                 })
                 .execute(&mut db)
@@ -157,8 +157,8 @@ pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Er
                 let format: &str = value.try_get("value")?;
 
                 let fmt = match format {
-                    "text" => Format::Text,
-                    "text-color" => Format::TextColor,
+                    "text" => Format::Text { color: false },
+                    "text-color" => Format::Text { color: true },
                     "org-mode" => Format::OrgMode,
                     _ => Default::default(),
                 };
