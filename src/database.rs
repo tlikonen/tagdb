@@ -83,13 +83,14 @@ pub async fn list_records(
                 .fetch_one(&mut *db)
                 .await?;
 
-            tags.sort_by_key(|tag| tag.to_lowercase());
-
             records.push(Record {
                 id,
                 created: row.try_get("created")?,
                 modified: row.try_get("modified")?,
-                tags,
+                tags: {
+                    tags.sort_by_key(|tag| tag.to_lowercase());
+                    tags
+                },
                 content: row.try_get("content")?,
             });
         }
