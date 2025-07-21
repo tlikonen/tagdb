@@ -41,8 +41,7 @@ pub async fn list_matching_records(
         .reduce(|acc, set| acc.intersection(&set).cloned().collect())
     {
         Some(records) if !records.is_empty() => Ok(Some(records)),
-        Some(_) => Ok(None),
-        None => Err("Records not found.")?,
+        _ => Ok(None),
     }
 }
 
