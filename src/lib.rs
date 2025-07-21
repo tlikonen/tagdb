@@ -46,7 +46,11 @@ pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn E
             print_records(&config, &mut db, args).await
         }
 
-        Cmd::Count(_args) => todo!(),
+        Cmd::Count(args) => {
+            assert_tag_names(args)?;
+            count_records(&mut db, args).await
+        }
+
         Cmd::Create(_args) => todo!(),
         Cmd::Edit(_args) => todo!(),
         Cmd::List(_args) => todo!(),
@@ -66,13 +70,27 @@ async fn print_records(
     Ok(())
 }
 
+async fn count_records(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
+    let ids = database::list_matching_records(db, tags).await?;
+    match ids {
+        Some(set) => println!("{}", set.len()),
+        None => println!("0"),
+    }
+    Ok(())
+}
+
 async fn find_records(
     db: &mut SqliteConnection,
     tags: &[String],
 ) -> Result<Vec<Record>, Box<dyn Error>> {
     let record_ids = database::list_matching_records(db, tags).await?;
-    let records = database::list_records(db, record_ids).await?;
-    Ok(records)
+    match record_ids {
+        Some(ids) => {
+            let records = database::list_records(db, ids).await?;
+            Ok(records)
+        }
+        None => Err("Records not found.")?,
+    }
 }
 
 fn assert_tag_names(tags: &[String]) -> Result<(), Box<dyn Error>> {

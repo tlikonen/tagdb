@@ -16,7 +16,7 @@ const PROGRAM_DB_VERSION: i32 = 7;
 pub async fn list_matching_records(
     db: &mut SqliteConnection,
     tags: &[String],
-) -> Result<HashSet<i32>, Box<dyn Error>> {
+) -> Result<Option<HashSet<i32>>, Box<dyn Error>> {
     let mut sets = Vec::with_capacity(5);
 
     for tag in tags {
@@ -40,8 +40,9 @@ pub async fn list_matching_records(
         .into_iter()
         .reduce(|acc, set| acc.intersection(&set).cloned().collect())
     {
-        Some(records) if !records.is_empty() => Ok(records),
-        _ => Err("Records not found.")?,
+        Some(records) if !records.is_empty() => Ok(Some(records)),
+        Some(_) => Ok(None),
+        None => Err("Records not found.")?,
     }
 }
 
