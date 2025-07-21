@@ -1,15 +1,102 @@
 use crate::{Config, Format};
+use futures::TryStreamExt; // STREAM.try_next()
 use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
 use std::{
     cmp::Ordering,
+    collections::HashSet,
     error::Error,
     fs,
     path::{Path, PathBuf},
 };
 
-//static DB_FILE: &str = env!("CARGO_PKG_NAME");
-static DB_FILE: &str = "tagdb2";
+static DB_FILE: &str = env!("CARGO_PKG_NAME");
+//static DB_FILE: &str = "tagdb2";
 const PROGRAM_DB_VERSION: i32 = 7;
+
+pub async fn list_matching_records(
+    db: &mut SqliteConnection,
+    tags: &[String],
+) -> Result<HashSet<i32>, Box<dyn Error>> {
+    let mut sets = Vec::with_capacity(5);
+
+    for tag in tags {
+        let mut rows = sqlx::query(
+            "SELECT j.record_id FROM record_tag AS j \
+             LEFT JOIN tags AS t ON j.tag_id = t.id \
+             WHERE t.name LIKE $1",
+        )
+        .bind(like_esc_wild(tag))
+        .fetch(&mut *db);
+
+        let mut set = HashSet::new();
+        while let Some(row) = rows.try_next().await? {
+            let id: i32 = row.try_get("record_id")?;
+            set.insert(id);
+        }
+        sets.push(set);
+    }
+
+    match sets
+        .into_iter()
+        .reduce(|acc, set| acc.intersection(&set).cloned().collect())
+    {
+        Some(records) if !records.is_empty() => Ok(records),
+        _ => Err("Records not found.")?,
+    }
+}
+
+pub struct Record {
+    pub id: i32,
+    pub created: u64,
+    pub modified: u64,
+    pub tags: Vec<String>,
+    pub content: String,
+}
+
+pub async fn list_records(
+    db: &mut SqliteConnection,
+    record_ids: HashSet<i32>,
+) -> Result<Vec<Record>, Box<dyn Error>> {
+    let mut record_tag_names = Vec::with_capacity(5);
+
+    for record_id in record_ids {
+        let mut tags = Vec::with_capacity(5);
+
+        {
+            let mut rows = sqlx::query(
+                "SELECT t.name FROM record_tag AS j \
+                 LEFT JOIN tags AS t ON j.tag_id = t.id \
+                 WHERE j.record_id = $1",
+            )
+            .bind(record_id)
+            .fetch(&mut *db);
+
+            while let Some(row) = rows.try_next().await? {
+                let tag: String = row.try_get("name")?;
+                tags.push(tag);
+            }
+        }
+
+        if !tags.is_empty() {
+            let row = sqlx::query("SELECT created, modified, content FROM records WHERE id = $1")
+                .bind(record_id)
+                .fetch_one(&mut *db)
+                .await?;
+
+            tags.sort_by_key(|tag| tag.to_lowercase());
+            record_tag_names.push(Record {
+                id: record_id,
+                created: row.try_get("created")?,
+                modified: row.try_get("modified")?,
+                tags,
+                content: row.try_get("content")?,
+            });
+        }
+    }
+
+    record_tag_names.sort_by_key(|rtn| rtn.tags.join(" ").to_lowercase());
+    Ok(record_tag_names)
+}
 
 pub async fn connect(config: &Config) -> Result<SqliteConnection, Box<dyn Error>> {
     let path;
@@ -341,4 +428,38 @@ async fn change_counter_reset(db: &mut SqliteConnection) -> Result<(), sqlx::Err
         .execute(&mut *db)
         .await?;
     Ok(())
+}
+
+fn like_esc_wild(string: &str) -> String {
+    let mut new = String::with_capacity(string.len() + 3);
+    new.push('%');
+
+    for c in string.chars() {
+        match c {
+            '%' | '_' | '\\' => {
+                new.push('\\');
+                new.push(c);
+            }
+            '*' => new.push('%'),
+            _ => new.push(c),
+        }
+    }
+
+    new.push('%');
+    new
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t_like_esc_wild() {
+        assert_eq!("%abcd%", like_esc_wild("abcd"));
+        assert_eq!("%a\\%b\\_cd%", like_esc_wild("a%b_cd"));
+        assert_eq!("%ab\\\\cd%", like_esc_wild("ab\\cd"));
+        assert_eq!("%abcd%", like_esc_wild("abcd"));
+        assert_eq!("%\\_\\%\\\\%", like_esc_wild("_%\\"));
+        assert_eq!("%ab%cd%", like_esc_wild("ab*cd"));
+    }
 }

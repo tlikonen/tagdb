@@ -1,5 +1,8 @@
 mod database;
+mod print;
 
+use crate::database::Record;
+use sqlx::SqliteConnection;
 use std::error::Error;
 
 pub struct Config {
@@ -35,12 +38,12 @@ pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn E
         libc::umask(0o077);
     }
 
-    let _db = database::connect(&config).await?;
+    let mut db = database::connect(&config).await?;
 
     match cmd {
         Cmd::Normal(args) | Cmd::Short(args) => {
             assert_tag_names(args)?;
-            Ok(())
+            print_records(&config, &mut db, args).await
         }
 
         Cmd::Count(_args) => todo!(),
@@ -50,6 +53,26 @@ pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn E
         Cmd::Reassociate(_args) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
+}
+
+async fn print_records(
+    config: &Config,
+    db: &mut SqliteConnection,
+    tags: &[String],
+) -> Result<(), Box<dyn Error>> {
+    for record in find_records(db, tags).await? {
+        record.print(config);
+    }
+    Ok(())
+}
+
+async fn find_records(
+    db: &mut SqliteConnection,
+    tags: &[String],
+) -> Result<Vec<Record>, Box<dyn Error>> {
+    let record_ids = database::list_matching_records(db, tags).await?;
+    let records = database::list_records(db, record_ids).await?;
+    Ok(records)
 }
 
 fn assert_tag_names(tags: &[String]) -> Result<(), Box<dyn Error>> {
@@ -73,7 +96,7 @@ fn assert_tag_names(tags: &[String]) -> Result<(), Box<dyn Error>> {
     if invalid.is_empty() {
         Ok(())
     } else {
-        Err(format!("Not valid tag names: {invalid}."))?
+        Err(format!("Invalid tag names: {invalid}."))?
     }
 }
 
