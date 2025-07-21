@@ -83,10 +83,10 @@ async fn find_records(
     db: &mut SqliteConnection,
     tags: &[String],
 ) -> Result<Vec<Record>, Box<dyn Error>> {
-    let record_ids = database::list_matching_records(db, tags).await?;
-    match record_ids {
-        Some(ids) => {
-            let records = database::list_records(db, ids).await?;
+    let ids = database::list_matching_records(db, tags).await?;
+    match ids {
+        Some(set) => {
+            let records = database::list_records(db, set).await?;
             Ok(records)
         }
         None => Err("Records not found.")?,
