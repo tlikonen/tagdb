@@ -17,7 +17,9 @@ pub async fn list_matching_records(
     db: &mut SqliteConnection,
     tags: &[String],
 ) -> Result<Option<HashSet<i32>>, sqlx::Error> {
-    let mut sets = Vec::with_capacity(5);
+    let mut intersect = HashSet::with_capacity(10);
+    let mut set = HashSet::with_capacity(10);
+    let mut first = true;
 
     for tag in tags {
         let mut rows = sqlx::query(
@@ -28,20 +30,24 @@ pub async fn list_matching_records(
         .bind(like_esc_wild(tag))
         .fetch(&mut *db);
 
-        let mut set = HashSet::new();
+        set.clear();
         while let Some(row) = rows.try_next().await? {
             let id: i32 = row.try_get("record_id")?;
             set.insert(id);
         }
-        sets.push(set);
+
+        if first {
+            intersect.clone_from(&set);
+            first = false;
+        } else {
+            intersect = intersect.intersection(&set).cloned().collect();
+        }
     }
 
-    match sets
-        .into_iter()
-        .reduce(|acc, set| acc.intersection(&set).cloned().collect())
-    {
-        Some(records) if !records.is_empty() => Ok(Some(records)),
-        _ => Ok(None),
+    if intersect.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(intersect))
     }
 }
 
