@@ -40,7 +40,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
         libc::umask(0o077);
     }
 
-    let mut db = database::connect(&config).await?;
+    let mut db = database::connect(&mut config).await?;
 
     match cmd {
         Cmd::Normal(tags) | Cmd::Short(tags) => {

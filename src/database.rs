@@ -106,7 +106,7 @@ pub async fn list_records(
     Ok(records)
 }
 
-pub async fn connect(config: &Config) -> Result<SqliteConnection, Box<dyn Error>> {
+pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Error>> {
     let path;
 
     if let Some(db) = &config.database {
@@ -134,8 +134,8 @@ pub async fn connect(config: &Config) -> Result<SqliteConnection, Box<dyn Error>
     let mut db = SqliteConnection::connect_with(&opts).await?;
     init(&mut db, &path).await?;
 
-    if config.format_save {
-        if let Some(format) = &config.format {
+    match &config.format {
+        Some(format) if config.format_save => {
             sqlx::query("UPDATE maintenance SET value = $1 WHERE key = 'output format'")
                 .bind(match format {
                     Format::Text => "text",
@@ -144,6 +144,27 @@ pub async fn connect(config: &Config) -> Result<SqliteConnection, Box<dyn Error>
                 })
                 .execute(&mut db)
                 .await?;
+        }
+
+        Some(_) => (),
+
+        None => {
+            let row = sqlx::query("SELECT value FROM maintenance WHERE key = 'output format'")
+                .fetch_optional(&mut db)
+                .await?;
+
+            if let Some(value) = row {
+                let format: &str = value.try_get("value")?;
+
+                let fmt = match format {
+                    "text" => Format::Text,
+                    "text-color" => Format::TextColor,
+                    "org-mode" => Format::OrgMode,
+                    _ => Default::default(),
+                };
+
+                config.format = Some(fmt);
+            }
         }
     }
 
