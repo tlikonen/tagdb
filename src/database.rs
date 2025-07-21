@@ -57,9 +57,9 @@ pub async fn list_records(
     db: &mut SqliteConnection,
     record_ids: HashSet<i32>,
 ) -> Result<Vec<Record>, Box<dyn Error>> {
-    let mut record_tag_names = Vec::with_capacity(5);
+    let mut records = Vec::with_capacity(5);
 
-    for record_id in record_ids {
+    for id in record_ids {
         let mut tags = Vec::with_capacity(5);
 
         {
@@ -68,7 +68,7 @@ pub async fn list_records(
                  LEFT JOIN tags AS t ON j.tag_id = t.id \
                  WHERE j.record_id = $1",
             )
-            .bind(record_id)
+            .bind(id)
             .fetch(&mut *db);
 
             while let Some(row) = rows.try_next().await? {
@@ -79,13 +79,14 @@ pub async fn list_records(
 
         if !tags.is_empty() {
             let row = sqlx::query("SELECT created, modified, content FROM records WHERE id = $1")
-                .bind(record_id)
+                .bind(id)
                 .fetch_one(&mut *db)
                 .await?;
 
             tags.sort_by_key(|tag| tag.to_lowercase());
-            record_tag_names.push(Record {
-                id: record_id,
+
+            records.push(Record {
+                id,
                 created: row.try_get("created")?,
                 modified: row.try_get("modified")?,
                 tags,
@@ -94,8 +95,8 @@ pub async fn list_records(
         }
     }
 
-    record_tag_names.sort_by_key(|rtn| rtn.tags.join(" ").to_lowercase());
-    Ok(record_tag_names)
+    records.sort_by_key(|r| r.tags.join(" ").to_lowercase());
+    Ok(records)
 }
 
 pub async fn connect(config: &Config) -> Result<SqliteConnection, Box<dyn Error>> {
