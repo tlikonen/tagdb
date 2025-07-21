@@ -59,10 +59,10 @@ pub async fn command_stage(config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn E
             Ok(())
         }
 
-        Cmd::Create(_args) => todo!(),
-        Cmd::Edit(_args) => todo!(),
-        Cmd::List(_args) => todo!(),
-        Cmd::Reassociate(_args) => todo!(),
+        Cmd::Create(_tags) => todo!(),
+        Cmd::Edit(_tags) => todo!(),
+        Cmd::List(_tags) => todo!(),
+        Cmd::Reassociate(_tags) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
 }
