@@ -9,23 +9,53 @@ impl Record {
         };
 
         match format {
-            Format::Text { .. } => self.print_text(config),
+            Format::Text { color } => self.print_text(config, *color),
             Format::OrgMode => todo!(),
         }
     }
 
-    fn print_text(&self, config: &Config) {
+    fn print_text(&self, config: &Config, color: bool) {
+        const TAGS_MAX_WIDTH: usize = 70;
+
+        const ESC: char = '\u{001B}';
+        const GREEN: &str = "0;32";
+        const YELLOW: &str = "0;33";
+        const CYAN: &str = "0;36";
+        const OFF: &str = "0";
+
+        let colors = |code| {
+            if color {
+                format!("{ESC}[{code}m")
+            } else {
+                String::new()
+            }
+        };
+
         if config.verbose {
             println!(
-                "# Created:  {}\n\
-                 # Modified: {}",
+                "{}# Created:  {}{}\n\
+                 {}# Modified: {}{}{}",
+                colors(GREEN),
+                colors(CYAN),
                 format_time(self.created, config.utc),
-                format_time(self.modified, config.utc)
+                colors(GREEN),
+                colors(CYAN),
+                format_time(self.modified, config.utc),
+                colors(OFF)
             );
         }
 
         if !config.quiet || config.verbose {
-            println!("# Tags: {:?}\n", self.tags);
+            for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
+                println!(
+                    "{}# Tags: {}{}{}",
+                    colors(GREEN),
+                    colors(YELLOW),
+                    line,
+                    colors(OFF)
+                );
+            }
+            println!();
         }
 
         if config.short {
@@ -63,4 +93,61 @@ fn format_time(ut: i64, utc: bool) -> String {
 
 fn current_time() -> i64 {
     Utc::now().timestamp() + CL_TIME_EPOCH
+}
+
+fn into_lines<I, S>(words: I, max: usize) -> Vec<String>
+where
+    I: IntoIterator<Item = S>,
+    S: ToString,
+{
+    let mut lines = Vec::with_capacity(2);
+    let mut line = String::with_capacity(70);
+
+    for word in words {
+        let word = word.to_string();
+
+        if line.is_empty() {
+            line.push_str(&word);
+        } else if line.chars().count() + word.chars().count() < max {
+            line.push(' ');
+            line.push_str(&word);
+        } else {
+            let l = line.len();
+            lines.push(line);
+            line = String::with_capacity(l);
+            line.push_str(&word);
+        }
+    }
+
+    lines.push(line);
+    lines
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t_into_lines() {
+        for i in 0..8 {
+            assert_eq!(
+                vec!["€ka", "tøka", "kølmas"],
+                into_lines(["€ka", "tøka", "kølmas"], i)
+            );
+        }
+
+        for i in 8..15 {
+            assert_eq!(
+                vec!["€ka tøka", "kølmas"],
+                into_lines(["€ka", "tøka", "kølmas"], i)
+            );
+        }
+
+        assert_eq!(
+            vec!["€ka tøka kølmas"],
+            into_lines(["€ka", "tøka", "kølmas"], 15)
+        );
+
+        assert_eq!(vec![""], into_lines([""], 15));
+    }
 }
