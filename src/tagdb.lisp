@@ -236,9 +236,14 @@
 
 
 (defmethod print-records ((format text) &optional (stream *standard-output*))
-  (labels ((term-color (&optional true)
+  (labels ((term-color (code)
              (if (typep format 'text-color)
-                 (format nil "~C[~Am" #\Esc (if true "0;32" "0"))
+                 (let ((color (ecase code
+                                (:green "0;32")
+                                (:yellow "0;33")
+                                (:cyan "0;36")
+                                (:off "0"))))
+                   (format nil "~C[~Am" #\Esc color))
                  ""))
 
            (record-loop (function)
@@ -248,18 +253,24 @@
                    :if rest :do (terpri stream)))
 
            (taglist (prefix record)
-             (format stream "~&~A~A" (term-color t) prefix)
+             (format stream "~&~A~A~A"
+                     (term-color :green)
+                     prefix
+                     (term-color :yellow))
              (loop :with column-max := 78
                    :with column-min := (length prefix)
                    :with column := column-min
                    :for (tag . rest) :on (tags record)
                    :do
-                   (format stream " ~A" tag)
-                   (incf column (1+ (length tag)))
-                   (when (and rest (> (1+ (length (first rest)))
-                                      (- column-max column)))
-                     (setf column column-min)
-                     (format stream "~&~A~A" (term-color t) prefix))))
+                      (format stream " ~A" tag)
+                      (incf column (1+ (length tag)))
+                      (when (and rest (> (1+ (length (first rest)))
+                                         (- column-max column)))
+                        (setf column column-min)
+                        (format stream "~&~A~A~A"
+                                (term-color :green)
+                                prefix
+                                (term-color :yellow)))))
 
            (format-contents (string)
              (if (and (short format) (not (typep format 'text-editor)))
@@ -277,14 +288,18 @@
                 ((verbose format)
                  (lambda (record n)
                    (declare (ignore n))
-                   (format stream "~&~A# Created:  ~A~%"
-                           (term-color t) (format-time (created record)
-                                                       (utc format)))
-                   (format stream "~&~A# Modified: ~A~%"
-                           (term-color t) (format-time (modified record)
-                                                       (utc format)))
+                   (format stream "~&~A# Created:  ~A~A~%"
+                           (term-color :green)
+                           (term-color :cyan)
+                           (format-time (created record)
+                                        (utc format)))
+                   (format stream "~&~A# Modified: ~A~A~%"
+                           (term-color :green)
+                           (term-color :cyan)
+                           (format-time (modified record)
+                                        (utc format)))
                    (taglist "# Tags:" record)
-                   (format stream "~A~%~%~A~&" (term-color nil)
+                   (format stream "~A~%~%~A~&" (term-color :off)
                            (format-contents (content record)))))
 
                 ((quiet format)
@@ -296,7 +311,7 @@
                 (t (lambda (record n)
                      (declare (ignore n))
                      (taglist "# Tags:" record)
-                     (format stream "~A~%~%~A~&" (term-color nil)
+                     (format stream "~A~%~%~A~&" (term-color :off)
                              (format-contents (content record))))))))
 
       (record-loop fn))))
