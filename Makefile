@@ -8,7 +8,7 @@ src = src/*.asd src/*.lisp
 
 all: build/tagdb
 
-build/tagdb: quicklisp/setup.lisp $(src) version.txt
+build/tagdb: quicklisp/setup.lisp $(src)
 	$(sbcl) --script make.lisp "$(libdir)/tagdb/"
 
 quicklisp/install.lisp:
@@ -26,9 +26,6 @@ config.mk:
 	@echo "libdir = $(libdir)" >> $@
 	@echo "sbcl = $(sbcl)" >> $@
 	@cat $@
-
-version.txt:
-	v=$$(git describe --always --dirty) || v="unknown"; echo "$$v" > $@
 
 README.md: build/tagdb build/help.txt
 	@echo "Updating $@"
@@ -50,7 +47,6 @@ uninstall:
 	rm -fr -- "$(libdir)/tagdb"
 
 clean:
-	rm -f version.txt
 	rm -fr build
 
 distclean: clean

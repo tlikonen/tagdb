@@ -24,7 +24,7 @@
 (in-package #:tagdb)
 
 
-(defparameter *program-version* "DEVELOPMENT")
+(defparameter *program-version* "1.2025")
 
 
 (defclass record ()
@@ -647,7 +647,7 @@ Command options
 
 (defun command-version ()
   (format t "~
-tagdb ~A
+tagdb v~A
 Author:  Teemu Likonen <tlikonen@iki.fi>
 License: GNU General Public License 3
          <https://www.gnu.org/licenses/gpl-3.0.html>
@@ -856,9 +856,8 @@ License: GNU General Public License 3
     (execute-command-line args)))
 
 
-(defun start (&key version)
-  (handler-case (let ((*program-version* (or version *program-version*)))
-                  (apply #'main (rest sb-ext:*posix-argv*)))
+(defun start ()
+  (handler-case (apply #'main (rest sb-ext:*posix-argv*))
     (sb-int:simple-stream-error ()
       (sb-ext:exit :code 0))
     (sb-sys:interactive-interrupt ()
