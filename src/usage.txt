@@ -25,8 +25,8 @@ Command options
 
   -s TAG ...
         Short output. This is like the default operation but only prints
-        the first line of records' content. The first line could be used
-        as record's title.
+        the first line of records’ content. The first line could be used
+        as record’s title.
 
   -n TAG ...
         Count and print how many records match the given TAG(s).
@@ -34,13 +34,13 @@ Command options
   -c TAG ...
         Create a new database record associated with the given tags. If
         there seems to be data coming from the standard input it will be
-        saved as the record's content. Otherwise the default text editor
+        saved as the record’s content. Otherwise the default text editor
         is launched for editing the record. Empty lines at the beginning
         and end are ignored.
 
   -e TAG ...
         Find all records that match the given tags and launch the
-        default text editor for editing the records' contents and tags.
+        default text editor for editing the records’ contents and tags.
         Empty lines at the beginning and end of the record content are
         ignored. If a record has empty content the record will be
         deleted from the database.
@@ -57,4 +57,4 @@ Command options
   -h    Print this help text.
 
   --version
-        Print program's version and copyright information.
+        Print program’s version and copyright information.
