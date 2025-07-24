@@ -1,6 +1,8 @@
 use crate::{Config, Format, database::Record};
 use chrono::{DateTime, Local, Utc};
 
+const TAGS_MAX_WIDTH: usize = 70;
+
 impl Record {
     pub fn print(&self, config: &Config) {
         let format = match &config.format {
@@ -10,13 +12,11 @@ impl Record {
 
         match format {
             Format::Text { color } => self.print_text(config, *color),
-            Format::OrgMode => todo!(),
+            Format::OrgMode => self.print_orgmode(config),
         }
     }
 
     fn print_text(&self, config: &Config, color: bool) {
-        const TAGS_MAX_WIDTH: usize = 70;
-
         const ESC: char = '\u{001B}';
         const GREEN: &str = "0;32";
         const YELLOW: &str = "0;33";
@@ -59,9 +59,45 @@ impl Record {
         }
 
         if config.short {
-            println!("{}", self.content.lines().next().unwrap_or("(empty)"));
+            if let Some(line) = self.content.lines().next() {
+                println!("{line}");
+            }
         } else {
             print!("{}", self.content);
+        }
+    }
+
+    fn print_orgmode(&self, config: &Config) {
+        let mut lines = self.content.lines();
+
+        let first = lines.next();
+        if let Some(line) = first {
+            if line.starts_with("* ") {
+                println!("{line}");
+            } else {
+                println!("* {line}");
+            }
+        }
+
+        if config.verbose {
+            println!(
+                "# Created:  {}\n\
+                 # Modified: {}",
+                format_time(self.created, config.utc),
+                format_time(self.modified, config.utc),
+            );
+        }
+
+        if !config.quiet || config.verbose {
+            for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
+                println!("# Tags: {line}");
+            }
+        }
+
+        if !config.short {
+            for line in lines {
+                println!("{}{line}", if is_org_header(line) { "*" } else { "" });
+            }
         }
     }
 }
@@ -123,6 +159,18 @@ where
     lines
 }
 
+fn is_org_header(s: &str) -> bool {
+    let mut level = 0;
+    for c in s.chars() {
+        match c {
+            '*' => level += 1,
+            ' ' => return level > 0,
+            _ => return false,
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,5 +197,19 @@ mod tests {
         );
 
         assert_eq!(vec![""], into_lines([""], 15));
+    }
+
+    #[test]
+    fn t_is_org_header() {
+        assert_eq!(false, is_org_header(""));
+        assert_eq!(false, is_org_header(" "));
+        assert_eq!(false, is_org_header("abc"));
+        assert_eq!(false, is_org_header(" *"));
+        assert_eq!(false, is_org_header(" * ab"));
+        assert_eq!(false, is_org_header("*abc"));
+        assert_eq!(true, is_org_header("* abc"));
+        assert_eq!(true, is_org_header("** abc"));
+        assert_eq!(true, is_org_header("*** abc"));
+        assert_eq!(true, is_org_header("**** ä€–"));
     }
 }
