@@ -1,10 +1,11 @@
   The default operation prints all database records that match the given
-  TAG(s).
+  TAG(s). The TAG name arguments can be any substring of the actual tag
+  names.
 
 General options
 
-  -q    Quiet output.
-  -v    Verbose output.
+  -v    Verbose output. Also print records’ timestamps.
+  -q    Quiet output. Don’t print records’ metadata, just the content.
 
   --utc
         Print timestamps in UTC time instead of local time zone. This is
@@ -45,9 +46,9 @@ Command options
         ignored. If a record has empty content the record will be
         deleted from the database.
 
-  -l [STRING]
-        List tags that match the given string. If no string is given
-        list all tags.
+  -l [TAG ...]
+        List tags that match the given TAG name string(s). If no
+        arguments are given list all tags.
 
   -r OLD NEW
         Reassociate records. All database records associated with the
