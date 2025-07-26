@@ -48,7 +48,9 @@ Command options
 
   -l [TAG ...]
         List tags that match the given TAG name string(s). If no
-        arguments are given list all tags.
+        arguments are given list all tags. Tags are listed in alphabetic
+        case insensitive order with a number that represents a count how
+        many records are associated with the tag.
 
   -r OLD NEW
         Reassociate records. All database records associated with the

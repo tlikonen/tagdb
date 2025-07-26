@@ -75,9 +75,29 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
             Ok(())
         }
 
+        Cmd::List(tags) => {
+            if !tags.is_empty() {
+                assert_tag_names(tags)?;
+            }
+
+            let name_count = database::list_tags(&mut db, tags).await?;
+
+            if name_count.is_empty() {
+                Err("No tags found.")?;
+            } else {
+                let mut list: Vec<(String, u64)> = name_count.into_iter().collect();
+                list.sort_by_key(|(name, _)| name.to_lowercase());
+                let width = list.iter().map(|x| num_width(x.1)).max().unwrap();
+
+                for (name, count) in list {
+                    println!("{count:width$} {name}");
+                }
+            }
+            Ok(())
+        }
+
         Cmd::Create(_tags) => todo!(),
         Cmd::Edit(_tags) => todo!(),
-        Cmd::List(_tags) => todo!(),
         Cmd::Reassociate(_tags) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
@@ -131,6 +151,15 @@ fn is_valid_tag_name(tag: &str) -> bool {
     !tag.is_empty() && tag.chars().all(|c| !" \n\r".contains(c))
 }
 
+fn num_width(mut num: u64) -> usize {
+    let mut width = 1;
+    while num / 10 > 0 {
+        width += 1;
+        num /= 10;
+    }
+    width
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,5 +193,17 @@ mod tests {
         assert_eq!(false, atn(Vec::<String>::new()).is_ok());
         assert_eq!(false, atn([""]).is_ok());
         assert_eq!(false, atn(["", "a"]).is_ok());
+    }
+
+    #[test]
+    fn t_num_width() {
+        assert_eq!(1, num_width(0));
+        assert_eq!(1, num_width(1));
+        assert_eq!(1, num_width(9));
+        assert_eq!(2, num_width(10));
+        assert_eq!(2, num_width(99));
+        assert_eq!(3, num_width(100));
+        assert_eq!(3, num_width(999));
+        assert_eq!(4, num_width(1000));
     }
 }

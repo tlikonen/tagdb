@@ -3,7 +3,7 @@ use futures::TryStreamExt; // STREAM.try_next()
 use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
 use std::{
     cmp::Ordering,
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     error::Error,
     fs,
     path::{Path, PathBuf},
@@ -104,6 +104,36 @@ pub async fn list_records(
 
     records.sort_by_key(|r| r.tags.join(" ").to_lowercase());
     Ok(records)
+}
+
+pub async fn list_tags(
+    db: &mut SqliteConnection,
+    mut tags: &[String],
+) -> Result<HashMap<String, u64>, sqlx::Error> {
+    let empty = &[String::new()];
+    if tags.is_empty() {
+        tags = empty;
+    }
+
+    let mut name_count = HashMap::<String, u64>::with_capacity(50);
+
+    for tag in tags {
+        let mut rows = sqlx::query(
+            "SELECT count(t.id) AS count, t.name FROM tags AS t \
+             JOIN record_tag AS j ON t.id = j.tag_id \
+             WHERE t.name LIKE $1 GROUP BY t.name",
+        )
+        .bind(like_esc_wild(tag))
+        .fetch(&mut *db);
+
+        while let Some(row) = rows.try_next().await? {
+            let name: String = row.try_get("name")?;
+            let count: u64 = row.try_get("count")?;
+            name_count.insert(name, count);
+        }
+    }
+
+    Ok(name_count)
 }
 
 pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Error>> {
