@@ -2,7 +2,7 @@ mod database;
 mod print;
 
 use crate::database::Record;
-use sqlx::SqliteConnection;
+use sqlx::{Connection, SqliteConnection};
 use std::error::Error;
 
 pub struct Config {
@@ -96,7 +96,18 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
             Ok(())
         }
 
-        Cmd::Create(_tags) => todo!(),
+        Cmd::Create(tags) => {
+            assert_tag_names(tags)?;
+            let mut ta = db.begin().await?;
+            database::assert_write_access(&mut ta).await?;
+            // KESKEN: Tutkitaan, tuleeko standardisyötteestä tekstiä.
+            // Jos tulee, muodostetaan tietue siitä. Muuten avataan
+            // tekstieditori.
+            create_and_edit_new_record(&mut ta, tags).await?;
+            ta.commit().await?;
+            Ok(())
+        }
+
         Cmd::Edit(_tags) => todo!(),
         Cmd::Reassociate(_tags) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
@@ -115,6 +126,14 @@ async fn find_records(
         }
         None => Err("Records not found.")?,
     }
+}
+
+async fn create_and_edit_new_record(
+    _db: &mut SqliteConnection,
+    _tags: &[String],
+) -> Result<(), Box<dyn Error>> {
+    // KESKEN
+    Ok(())
 }
 
 fn assert_tag_names(tags: &[String]) -> Result<(), Box<dyn Error>> {

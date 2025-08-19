@@ -489,6 +489,21 @@ async fn change_counter_reset(db: &mut SqliteConnection) -> Result<(), sqlx::Err
     Ok(())
 }
 
+async fn change_counter_add(db: &mut SqliteConnection, count: u32) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE maintenance SET value = value + $1 WHERE key = 'change counter'")
+        .bind(count)
+        .execute(&mut *db)
+        .await?;
+    Ok(())
+}
+
+pub async fn assert_write_access(db: &mut SqliteConnection) -> Result<(), Box<dyn Error>> {
+    change_counter_add(db, 0).await.map_err(
+        |_| "Couldn’t get write access to the database. It’s probably locked by another process.",
+    )?;
+    Ok(())
+}
+
 fn like_esc_wild(string: &str) -> String {
     let mut new = String::with_capacity(string.len() + 3);
     new.push('%');
