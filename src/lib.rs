@@ -45,73 +45,38 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
     let mut db = database::connect(&mut config).await?;
 
     match cmd {
-        Cmd::Normal(tags) => {
-            assert_tag_names(tags)?;
-
-            if config.quiet & config.verbose {
-                eprintln!("Note: Option “-q” is ignored when combined with “-v”.");
-                config.quiet = false;
-            }
-
-            let mut first = true;
-            for record in find_records(&mut db, tags).await? {
-                if first {
-                    first = false;
-                } else {
-                    println!();
-                }
-                record.print(&config);
-            }
-            Ok(())
-        }
-
-        Cmd::Count(tags) => {
-            assert_tag_names(tags)?;
-            let ids = database::list_matching_records(&mut db, tags).await?;
-            match ids {
-                Some(set) => println!("{}", set.len()),
-                None => println!("0"),
-            }
-            Ok(())
-        }
-
-        Cmd::List(tags) => {
-            if !tags.is_empty() {
-                assert_tag_names(tags)?;
-            }
-
-            let name_count = database::list_tags(&mut db, tags).await?;
-
-            if name_count.is_empty() {
-                Err("No tags found.")?;
-            } else {
-                let mut list: Vec<(String, u64)> = name_count.into_iter().collect();
-                list.sort_by_key(|(name, _)| name.to_lowercase());
-                let width = list.iter().map(|x| num_width(x.1)).max().unwrap();
-
-                for (name, count) in list {
-                    println!("{count:width$} {name}");
-                }
-            }
-            Ok(())
-        }
-
-        Cmd::Create(tags) => {
-            assert_tag_names(tags)?;
-            let mut ta = db.begin().await?;
-            database::assert_write_access(&mut ta).await?;
-            // KESKEN: Tutkitaan, tuleeko standardisyötteestä tekstiä.
-            // Jos tulee, muodostetaan tietue siitä. Muuten avataan
-            // tekstieditori.
-            create_and_edit_new_record(&mut ta, tags).await?;
-            ta.commit().await?;
-            Ok(())
-        }
-
+        Cmd::Normal(tags) => cmd_normal(&mut db, config, tags).await,
+        Cmd::Count(tags) => cmd_count(&mut db, tags).await,
+        Cmd::List(tags) => cmd_list(&mut db, tags).await,
+        Cmd::Create(tags) => cmd_create(&mut db, config, tags).await,
         Cmd::Edit(_tags) => todo!(),
         Cmd::Reassociate(_tags) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
+}
+
+async fn cmd_normal(
+    db: &mut SqliteConnection,
+    mut config: Config,
+    tags: &[String],
+) -> Result<(), Box<dyn Error>> {
+    assert_tag_names(tags)?;
+
+    if config.quiet & config.verbose {
+        eprintln!("Note: Option “-q” is ignored when combined with “-v”.");
+        config.quiet = false;
+    }
+
+    let mut first = true;
+    for record in find_records(db, tags).await? {
+        if first {
+            first = false;
+        } else {
+            println!();
+        }
+        record.print(&config);
+    }
+    Ok(())
 }
 
 async fn find_records(
@@ -126,6 +91,53 @@ async fn find_records(
         }
         None => Err("Records not found.")?,
     }
+}
+
+async fn cmd_count(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
+    assert_tag_names(tags)?;
+    let ids = database::list_matching_records(db, tags).await?;
+    match ids {
+        Some(set) => println!("{}", set.len()),
+        None => println!("0"),
+    }
+    Ok(())
+}
+
+async fn cmd_list(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
+    if !tags.is_empty() {
+        assert_tag_names(tags)?;
+    }
+
+    let name_count = database::list_tags(db, tags).await?;
+
+    if name_count.is_empty() {
+        Err("No tags found.")?;
+    } else {
+        let mut list: Vec<(String, u64)> = name_count.into_iter().collect();
+        list.sort_by_key(|(name, _)| name.to_lowercase());
+        let width = list.iter().map(|x| num_width(x.1)).max().unwrap();
+
+        for (name, count) in list {
+            println!("{count:width$} {name}");
+        }
+    }
+    Ok(())
+}
+
+async fn cmd_create(
+    db: &mut SqliteConnection,
+    mut _config: Config,
+    tags: &[String],
+) -> Result<(), Box<dyn Error>> {
+    assert_tag_names(tags)?;
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
+    // KESKEN: Tutkitaan, tuleeko standardisyötteestä tekstiä.
+    // Jos tulee, muodostetaan tietue siitä. Muuten avataan
+    // tekstieditori.
+    create_and_edit_new_record(&mut ta, tags).await?;
+    ta.commit().await?;
+    Ok(())
 }
 
 async fn create_and_edit_new_record(
