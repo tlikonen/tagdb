@@ -118,7 +118,7 @@ async fn cmd_list(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<
     } else {
         let mut list: Vec<(String, u64)> = name_count.into_iter().collect();
         list.sort_by_key(|(name, _)| name.to_lowercase());
-        let width = list.iter().map(|x| num_width(x.1)).max().unwrap();
+        let width = list.iter().map(|x| num_width(x.1)).max().unwrap_or(0);
 
         for (name, count) in list {
             println!("{count:width$} {name}");
