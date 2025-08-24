@@ -1,4 +1,4 @@
-use crate::{Config, Format};
+use crate::{Config, Format, PROGRAM_NAME};
 use futures::TryStreamExt; // STREAM.try_next()
 use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
 use std::{
@@ -9,8 +9,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-static DB_FILE: &str = env!("CARGO_PKG_NAME");
-//static DB_FILE: &str = "tagdb2";
 const PROGRAM_DB_VERSION: i32 = 7;
 
 pub async fn list_matching_records(
@@ -151,7 +149,7 @@ pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Er
             })?;
         }
     } else {
-        let name = format!("{DB_FILE}.sqlite");
+        let name = format!("{PROGRAM_NAME}.sqlite");
         path = xdg::BaseDirectories::new()
             .place_data_file(&name)
             .map_err(|e| format!("Couldn’t create database file “{name}”: {}", e.kind()))?;

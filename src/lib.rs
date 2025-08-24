@@ -3,7 +3,9 @@ mod print;
 
 use crate::database::Record;
 use sqlx::{Connection, SqliteConnection};
-use std::error::Error;
+use std::{error::Error, path::PathBuf};
+
+static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 
 pub struct Config {
     pub short: bool,
@@ -144,6 +146,10 @@ async fn create_and_edit_new_record(
     _db: &mut SqliteConnection,
     _tags: &[String],
 ) -> Result<(), Box<dyn Error>> {
+    let path = temp_filename();
+    let name = path.to_string_lossy();
+    println!("{name}");
+
     // KESKEN
     Ok(())
 }
@@ -189,6 +195,27 @@ fn num_width(mut num: u64) -> usize {
         num /= 10;
     }
     width
+}
+
+fn temp_filename() -> PathBuf {
+    use rand::Rng;
+    const RAND_CHARS: usize = 6;
+    const SUFFIX: &str = ".txt";
+    const NAME_LEN: usize = PROGRAM_NAME.len() + 1 + RAND_CHARS + SUFFIX.len();
+
+    let mut rng = rand::rng();
+
+    let mut name = String::with_capacity(NAME_LEN);
+    name.push_str(PROGRAM_NAME);
+    name.push('-');
+    for _ in 0..RAND_CHARS {
+        name.push(rng.sample(rand::distr::Alphanumeric) as char);
+    }
+    name.push_str(SUFFIX);
+
+    let mut file = std::env::temp_dir();
+    file.push(name);
+    file
 }
 
 #[cfg(test)]
