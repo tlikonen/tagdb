@@ -156,10 +156,42 @@ async fn create_and_edit_new_record(
 
     let path = file.path();
     let name = path.to_string_lossy();
-    println!("{name}");
+    run_text_editor(&name)?;
+
+    for line in std::fs::read_to_string(&path).unwrap().lines() {
+        println!("{line}");
+    }
 
     // KESKEN
     Ok(())
+}
+
+fn run_text_editor(name: &str) -> Result<(), Box<dyn Error>> {
+    use std::{env, process::Command};
+
+    let editor = match env::var("EDITOR") {
+        Ok(value) if !value.is_empty() => value,
+        _ => Err("Couldn’t launch text editor: the EDITOR variable is unset.")?,
+    };
+
+    match Command::new(&editor).arg(&name).status() {
+        Ok(status) if status.success() => Ok(()),
+
+        Ok(status) => {
+            let err = match status.code() {
+                Some(code) => {
+                    format!("Text editor process “{editor}” returned an error code {code}.")
+                }
+                None => format!("Text editor process “{editor}” was terminated."),
+            };
+            Err(err.into())
+        }
+
+        Err(_) => Err(format!(
+            "Couldn’t launch text editor “{editor}”. Check the EDITOR variable."
+        )
+        .into()),
+    }
 }
 
 fn assert_tag_names(tags: &[String]) -> Result<(), Box<dyn Error>> {
