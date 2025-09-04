@@ -158,7 +158,7 @@ async fn create_and_edit_new_record(
     let name = path.to_string_lossy();
     run_text_editor(&name)?;
 
-    for line in std::fs::read_to_string(&path).unwrap().lines() {
+    for line in std::fs::read_to_string(path).unwrap().lines() {
         println!("{line}");
     }
 
@@ -174,7 +174,7 @@ fn run_text_editor(name: &str) -> Result<(), Box<dyn Error>> {
         _ => Err("Couldn’t launch text editor: the EDITOR variable is unset.")?,
     };
 
-    match Command::new(&editor).arg(&name).status() {
+    match Command::new(&editor).arg(name).status() {
         Ok(status) if status.success() => Ok(()),
 
         Ok(status) => {
