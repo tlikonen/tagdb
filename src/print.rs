@@ -1,5 +1,5 @@
-use crate::{Config, Format, database::Record};
-use chrono::{DateTime, Local, Utc};
+use crate::{CL_TIME_EPOCH, Config, Format, database::Record};
+use chrono::{DateTime, Local};
 
 const TAGS_MAX_WIDTH: usize = 70;
 
@@ -102,12 +102,6 @@ impl Record {
     }
 }
 
-// Seconds from 1900-01-01T00:00:00Z to 1970-01-01T00:00:00Z. That is,
-// from the beginning of Common Lisp universal time to the beginning of
-// UNIX time. The database uses timestamps in Common Lisp format because
-// this program was initially implemented in the Common Lisp language.
-const CL_TIME_EPOCH: i64 = 2208988800;
-
 fn format_time(ut: i64, utc: bool) -> String {
     // ut = Common Lisp universal time: seconds since
     // 1900-01-01T00:00:00Z.
@@ -125,10 +119,6 @@ fn format_time(ut: i64, utc: bool) -> String {
             DateTime::<Local>::from(dt_utc).format("%Y-%m-%d %H:%M:%S%:z")
         )
     }
-}
-
-fn current_time() -> i64 {
-    Utc::now().timestamp() + CL_TIME_EPOCH
 }
 
 fn into_lines<I, S>(words: I, max: usize) -> Vec<String>

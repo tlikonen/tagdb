@@ -1,4 +1,4 @@
-use crate::{Config, Format, PROGRAM_NAME};
+use crate::{CL_TIME_EPOCH, Config, Format, PROGRAM_NAME};
 use futures::TryStreamExt; // STREAM.try_next()
 use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
 use std::{
@@ -132,6 +132,37 @@ pub async fn list_tags(
     }
 
     Ok(name_count)
+}
+
+pub async fn new_record(
+    db: &mut SqliteConnection,
+    tags: &[String],
+    content: &str,
+) -> Result<(), sqlx::Error> {
+    //let id = insert_record(db, content).await?;
+
+    // let mut tag_ids = Vec::with_capacity(5);
+    // for tag in tags {
+    //     tag_ids.push(get_or_insert_tag(db, tag).await?);
+    // }
+    Ok(())
+}
+
+async fn insert_record(db: &mut SqliteConnection, content: &str) -> Result<i32, sqlx::Error> {
+    let now = current_time();
+    let row = sqlx::query(
+        "INSERT INTO records (created, modified, content) \
+         VALUES ($1, $2, $3) RETURNING id",
+    )
+    .bind(now)
+    .bind(now)
+    .bind(content)
+    .fetch_one(&mut *db)
+    .await?;
+
+    let id: i32 = row.try_get("id")?;
+    change_counter_add(db, 1).await?;
+    Ok(id)
 }
 
 pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Error>> {
@@ -519,6 +550,10 @@ fn like_esc_wild(string: &str) -> String {
 
     new.push('%');
     new
+}
+
+fn current_time() -> i64 {
+    chrono::Utc::now().timestamp() + CL_TIME_EPOCH
 }
 
 #[cfg(test)]
