@@ -3,7 +3,7 @@ mod print;
 
 use crate::database::Record;
 use sqlx::{Connection, SqliteConnection};
-use std::error::Error;
+use std::{error::Error, fs};
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 
@@ -157,11 +157,18 @@ async fn create_and_edit_new_record(
     let name = path.to_string_lossy();
     run_text_editor(&name)?;
 
-    for line in std::fs::read_to_string(path).unwrap().lines() {
-        println!("{line}");
-    }
+    let content = fs::read_to_string(path)?;
 
-    // KESKEN
+    let (skip, take) = skip_and_take_lines(content.lines());
+
+    if take > 0 {
+        for line in content.lines().skip(skip).take(take) {
+            println!("{line}");
+        }
+        // KESKEN
+    } else {
+        Err("Empty file. Aborting.")?;
+    }
     Ok(())
 }
 
@@ -236,6 +243,33 @@ fn num_width(mut num: u64) -> usize {
     width
 }
 
+fn is_empty_string(s: &str) -> bool {
+    s.chars().all(|x| x.is_whitespace())
+}
+
+fn skip_and_take_lines<'a>(lines: impl Iterator<Item = &'a str>) -> (usize, usize) {
+    let mut skip = 0;
+    let mut take = 0;
+    let mut beginning = true;
+
+    for (n, line) in lines.enumerate() {
+        if beginning {
+            if is_empty_string(line) {
+                skip = n + 1;
+                continue;
+            } else {
+                beginning = false;
+            }
+        }
+
+        if !is_empty_string(line) {
+            take = n + 1 - skip;
+        }
+    }
+
+    (skip, take)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -281,5 +315,16 @@ mod tests {
         assert_eq!(3, num_width(100));
         assert_eq!(3, num_width(999));
         assert_eq!(4, num_width(1000));
+    }
+
+    #[test]
+    fn t_skip_and_take_lines() {
+        assert_eq!((0, 1), skip_and_take_lines("one".lines()));
+        assert_eq!((0, 1), skip_and_take_lines("one\n".lines()));
+        assert_eq!((1, 1), skip_and_take_lines("  \none\n  ".lines()));
+        assert_eq!(
+            (2, 3),
+            skip_and_take_lines(" \n  \none\ntwo\nthree\n  \n  ".lines())
+        );
     }
 }
