@@ -157,16 +157,11 @@ async fn create_and_edit_new_record(
     let name = path.to_string_lossy();
     run_text_editor(&name)?;
 
-    let content = fs::read_to_string(path)?;
+    let buffer = fs::read_to_string(path)?;
 
-    let (skip, take) = skip_and_take_lines(content.lines());
-
-    if take > 0 {
-        todo!();
-        //let record = content.lines().skip(skip).take(take).join("\n");
-        //database::new_record(db, tags, record).await?;
-    } else {
-        Err("Empty file. Aborting.")?;
+    match strip_empty_lines(&buffer) {
+        Some(lines) => database::new_record(db, tags, lines).await?,
+        None => Err("Empty file. Aborting.")?,
     }
     Ok(())
 }
@@ -246,19 +241,20 @@ fn is_empty_string(s: &str) -> bool {
     s.chars().all(|x| x.is_whitespace())
 }
 
-fn skip_and_take_lines<'a>(lines: impl Iterator<Item = &'a str>) -> (usize, usize) {
+fn strip_empty_lines(buffer: &str) -> Option<impl Iterator<Item = &str>> {
     let mut skip = 0;
     let mut take = 0;
     let mut beginning = true;
 
-    for (n, line) in lines.enumerate() {
+    for (n, line) in buffer.lines().enumerate() {
         if beginning {
             if is_empty_string(line) {
                 skip = n + 1;
-                continue;
             } else {
                 beginning = false;
+                take = 1; // first non-empty line
             }
+            continue;
         }
 
         if !is_empty_string(line) {
@@ -266,7 +262,11 @@ fn skip_and_take_lines<'a>(lines: impl Iterator<Item = &'a str>) -> (usize, usiz
         }
     }
 
-    (skip, take)
+    if take > 0 {
+        Some(buffer.lines().skip(skip).take(take))
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -317,13 +317,23 @@ mod tests {
     }
 
     #[test]
-    fn t_skip_and_take_lines() {
-        assert_eq!((0, 1), skip_and_take_lines("one".lines()));
-        assert_eq!((0, 1), skip_and_take_lines("one\n".lines()));
-        assert_eq!((1, 1), skip_and_take_lines("  \none\n  ".lines()));
+    fn t_strip_empty_lines() {
+        assert_eq!(false, strip_empty_lines("   \n   \n  ").is_some());
         assert_eq!(
-            (2, 3),
-            skip_and_take_lines(" \n  \none\ntwo\nthree\n  \n  ".lines())
+            vec!["one"],
+            strip_empty_lines("one").unwrap().collect::<Vec<&str>>()
+        );
+        assert_eq!(
+            vec!["one"],
+            strip_empty_lines("  \none\n  ")
+                .unwrap()
+                .collect::<Vec<&str>>()
+        );
+        assert_eq!(
+            vec!["one", "two", "three"],
+            strip_empty_lines(" \n  \none\ntwo\nthree\n  \n  ")
+                .unwrap()
+                .collect::<Vec<&str>>()
         );
     }
 }

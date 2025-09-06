@@ -141,11 +141,11 @@ pub async fn list_tags(
 }
 
 pub async fn new_record(
-    db: &mut SqliteConnection,
-    tags: &[String],
-    content: &str,
+    _db: &mut SqliteConnection,
+    _tags: &[String],
+    _lines: impl Iterator<Item = &str>,
 ) -> Result<(), sqlx::Error> {
-    //let id = insert_record(db, content).await?;
+    //let id = insert_record(db, lines).await?;
 
     // let mut tag_ids = Vec::with_capacity(5);
     // for tag in tags {
@@ -154,15 +154,25 @@ pub async fn new_record(
     Ok(())
 }
 
-async fn insert_record(db: &mut SqliteConnection, content: &str) -> Result<i32, sqlx::Error> {
+async fn insert_record(
+    db: &mut SqliteConnection,
+    lines: impl Iterator<Item = &str>,
+) -> Result<i32, sqlx::Error> {
     let now = current_time();
+
+    let mut record = String::with_capacity(100);
+    for line in lines {
+        record.push_str(line);
+        record.push('\n');
+    }
+
     let row = sqlx::query(
         "INSERT INTO records (created, modified, content) \
          VALUES ($1, $2, $3) RETURNING id",
     )
     .bind(now)
     .bind(now)
-    .bind(content)
+    .bind(record)
     .fetch_one(&mut *db)
     .await?;
 
