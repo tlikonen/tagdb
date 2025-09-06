@@ -560,7 +560,7 @@ fn like_esc_wild(string: &str) -> String {
                 new.push(c);
             }
             '*' => new.push('%'),
-            _ => new.push(c),
+            other => new.push(other),
         }
     }
 
