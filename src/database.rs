@@ -1,4 +1,4 @@
-use crate::{CL_TIME_EPOCH, Config, Format, PROGRAM_NAME};
+use crate::{Config, Format, PROGRAM_NAME};
 use futures::TryStreamExt; // STREAM.try_next()
 use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
 use std::{
@@ -10,6 +10,12 @@ use std::{
 };
 
 const PROGRAM_DB_VERSION: i32 = 7;
+
+// Seconds from 1900-01-01T00:00:00Z to 1970-01-01T00:00:00Z. That is,
+// from the beginning of Common Lisp universal time to the beginning of
+// UNIX time. The database uses timestamps in Common Lisp format because
+// this program was initially implemented in the Common Lisp language.
+pub const CL_TIME_EPOCH: i64 = 2208988800;
 
 pub async fn list_matching_records(
     db: &mut SqliteConnection,

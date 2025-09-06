@@ -7,12 +7,6 @@ use std::{error::Error, fs};
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 
-// Seconds from 1900-01-01T00:00:00Z to 1970-01-01T00:00:00Z. That is,
-// from the beginning of Common Lisp universal time to the beginning of
-// UNIX time. The database uses timestamps in Common Lisp format because
-// this program was initially implemented in the Common Lisp language.
-const CL_TIME_EPOCH: i64 = 2208988800;
-
 pub struct Config {
     pub short: bool,
     pub verbose: bool,

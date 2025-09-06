@@ -1,4 +1,7 @@
-use crate::{CL_TIME_EPOCH, Config, Format, database::Record};
+use crate::{
+    Config, Format,
+    database::{CL_TIME_EPOCH, Record},
+};
 use chrono::{DateTime, Local};
 
 const TAGS_MAX_WIDTH: usize = 70;
