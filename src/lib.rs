@@ -4,7 +4,6 @@ mod print;
 use crate::database::Record;
 use sqlx::{Connection, SqliteConnection};
 use std::error::Error;
-use tempfile::Builder;
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 
@@ -147,7 +146,7 @@ async fn create_and_edit_new_record(
     _db: &mut SqliteConnection,
     _tags: &[String],
 ) -> Result<(), Box<dyn Error>> {
-    let file = Builder::new()
+    let file = tempfile::Builder::new()
         .prefix(&format!("{PROGRAM_NAME}-"))
         .suffix(".txt")
         .rand_bytes(6)
