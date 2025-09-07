@@ -3,6 +3,7 @@ name = "tagdb"
 description = "Tag-based command-line database tool"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 authors = ["Teemu Likonen <tlikonen@iki.fi>"]
 license = "GPL-3.0-or-later"
 publish = false
