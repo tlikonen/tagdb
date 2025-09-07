@@ -3,7 +3,7 @@ mod print;
 
 use crate::database::Record;
 use sqlx::{Connection, SqliteConnection};
-use std::{error::Error, fs};
+use std::{error::Error, fs, io};
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 
@@ -51,8 +51,8 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
         Cmd::Normal(tags) => cmd_normal(&mut db, config, tags).await,
         Cmd::Count(tags) => cmd_count(&mut db, tags).await,
         Cmd::List(tags) => cmd_list(&mut db, tags).await,
-        Cmd::Create(tags) => cmd_create(&mut db, config, tags).await,
-        Cmd::CreateStdin(_tags) => todo!(),
+        Cmd::Create(tags) => cmd_create(&mut db, tags).await,
+        Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await,
         Cmd::Edit(_tags) => todo!(),
         Cmd::Retag(_tags) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
@@ -128,11 +128,7 @@ async fn cmd_list(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<
     Ok(())
 }
 
-async fn cmd_create(
-    db: &mut SqliteConnection,
-    mut _config: Config,
-    tags: &[String],
-) -> Result<(), Box<dyn Error>> {
+async fn cmd_create(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
     assert_tag_names(tags)?;
     let mut ta = db.begin().await?;
     database::assert_write_access(&mut ta).await?;
@@ -153,6 +149,25 @@ async fn cmd_create(
     match strip_empty_lines(&buffer) {
         Some(lines) => database::new_record(&mut ta, tags, lines).await?,
         None => Err("Empty file. Aborting.")?,
+    }
+
+    ta.commit().await?;
+    Ok(())
+}
+
+async fn cmd_create_stdin(
+    db: &mut SqliteConnection,
+    tags: &[String],
+) -> Result<(), Box<dyn Error>> {
+    assert_tag_names(tags)?;
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
+
+    let buffer = io::read_to_string(io::stdin())?;
+
+    match strip_empty_lines(&buffer) {
+        Some(lines) => database::new_record(&mut ta, tags, lines).await?,
+        None => Err("No content. Aborting.")?,
     }
 
     ta.commit().await?;

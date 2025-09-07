@@ -34,7 +34,6 @@ async fn main() -> ExitCode {
         .option("help", "h", OptValue::None)
         .option("help", "help", OptValue::None)
         .option("version", "version", OptValue::None)
-        .flag(OptFlags::PrefixMatchLongOptions)
         .getopt(std::env::args().skip(1));
 
     let mut error = false;
