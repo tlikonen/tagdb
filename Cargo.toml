@@ -10,7 +10,7 @@ publish = false
 [dependencies]
 chrono = "0.4.41"
 futures = "0.3.31"
-just-getopt = "2.0.0"
+just-getopt = "2.0.1"
 libc = "0.2.174"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite"] }
 tokio = { version = "1.46.1", features = ["rt-multi-thread", "macros"] }
