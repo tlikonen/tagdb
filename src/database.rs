@@ -141,16 +141,29 @@ pub async fn list_tags(
 }
 
 pub async fn new_record(
-    _db: &mut SqliteConnection,
-    _tags: &[String],
-    _lines: impl Iterator<Item = &str>,
+    db: &mut SqliteConnection,
+    tags: &[String],
+    lines: impl Iterator<Item = &str>,
 ) -> Result<(), sqlx::Error> {
-    //let id = insert_record(db, lines).await?;
+    let record_id = insert_record(db, lines).await?;
 
-    // let mut tag_ids = Vec::with_capacity(5);
-    // for tag in tags {
-    //     tag_ids.push(get_or_insert_tag(db, tag).await?);
-    // }
+    let mut tag_ids = HashSet::with_capacity(5);
+    for tag in tags {
+        let id = get_or_insert_tag(db, tag).await?;
+        tag_ids.insert(id);
+    }
+
+    let mut count: i32 = 0;
+    for tag_id in &tag_ids {
+        sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
+            .bind(record_id)
+            .bind(tag_id)
+            .execute(&mut *db)
+            .await?;
+        count += 1;
+    }
+
+    change_counter_add(db, count).await?;
     Ok(())
 }
 
@@ -176,8 +189,31 @@ async fn insert_record(
     .fetch_one(&mut *db)
     .await?;
 
-    let id: i32 = row.try_get("id")?;
     change_counter_add(db, 1).await?;
+
+    let id: i32 = row.try_get("id")?;
+    Ok(id)
+}
+
+async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32, sqlx::Error> {
+    let id: i32;
+
+    match sqlx::query("SELECT id FROM tags WHERE name = $1")
+        .bind(name)
+        .fetch_optional(&mut *db)
+        .await?
+    {
+        Some(row) => id = row.try_get("id")?,
+        None => {
+            let row = sqlx::query("INSERT INTO tags (name) VALUES ($1) RETURNING id")
+                .bind(name)
+                .fetch_one(&mut *db)
+                .await?;
+            change_counter_add(db, 1).await?;
+            id = row.try_get("id")?;
+        }
+    }
+
     Ok(id)
 }
 
@@ -534,7 +570,7 @@ async fn change_counter_reset(db: &mut SqliteConnection) -> Result<(), sqlx::Err
     Ok(())
 }
 
-async fn change_counter_add(db: &mut SqliteConnection, count: u32) -> Result<(), sqlx::Error> {
+async fn change_counter_add(db: &mut SqliteConnection, count: i32) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE maintenance SET value = value + $1 WHERE key = 'change counter'")
         .bind(count)
         .execute(&mut *db)
