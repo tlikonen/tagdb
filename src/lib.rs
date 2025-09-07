@@ -32,9 +32,10 @@ pub enum Cmd<'a> {
     Normal(&'a [String]),
     Count(&'a [String]),
     Create(&'a [String]),
+    CreateStdin(&'a [String]),
     Edit(&'a [String]),
     List(&'a [String]),
-    Reassociate(&'a [String]),
+    Retag(&'a [String]),
     Help,
     Version,
 }
@@ -51,8 +52,9 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
         Cmd::Count(tags) => cmd_count(&mut db, tags).await,
         Cmd::List(tags) => cmd_list(&mut db, tags).await,
         Cmd::Create(tags) => cmd_create(&mut db, config, tags).await,
+        Cmd::CreateStdin(_tags) => todo!(),
         Cmd::Edit(_tags) => todo!(),
-        Cmd::Reassociate(_tags) => todo!(),
+        Cmd::Retag(_tags) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
 }
@@ -134,18 +136,7 @@ async fn cmd_create(
     assert_tag_names(tags)?;
     let mut ta = db.begin().await?;
     database::assert_write_access(&mut ta).await?;
-    // KESKEN: Tutkitaan, tuleeko standardisyötteestä tekstiä.
-    // Jos tulee, muodostetaan tietue siitä. Muuten avataan
-    // tekstieditori.
-    create_and_edit_new_record(&mut ta, tags).await?;
-    ta.commit().await?;
-    Ok(())
-}
 
-async fn create_and_edit_new_record(
-    db: &mut SqliteConnection,
-    tags: &[String],
-) -> Result<(), Box<dyn Error>> {
     let file = tempfile::Builder::new()
         .prefix(&format!("{PROGRAM_NAME}-"))
         .suffix(".txt")
@@ -160,9 +151,11 @@ async fn create_and_edit_new_record(
     let buffer = fs::read_to_string(path)?;
 
     match strip_empty_lines(&buffer) {
-        Some(lines) => database::new_record(db, tags, lines).await?,
+        Some(lines) => database::new_record(&mut ta, tags, lines).await?,
         None => Err("Empty file. Aborting.")?,
     }
+
+    ta.commit().await?;
     Ok(())
 }
 

@@ -4,8 +4,11 @@
 
 General options
 
-  -v    Verbose output. Also print records’ timestamps.
-  -q    Quiet output. Don’t print records’ metadata, just the content.
+  -v, --verbose
+        Verbose output. Also print records’ timestamps.
+
+  -q, --quiet
+        Quiet output. Don’t print records’ metadata, just the content.
 
   --utc
         Print timestamps in UTC time instead of local time zone. This is
@@ -24,40 +27,44 @@ General options
 
 Command options
 
-  -s TAG ...
+  -s, --short TAG ...
         Short output. This is like the default operation but only prints
         the first line of records’ content. The first line could be used
         as record’s title.
 
-  -n TAG ...
+  -n, --count TAG ...
         Count and print how many records match the given TAG(s).
 
-  -c TAG ...
-        Create a new database record associated with the given tags. If
-        there seems to be data coming from the standard input it will be
-        saved as the record’s content. Otherwise the default text editor
-        is launched for editing the record. Empty lines at the beginning
-        and end are ignored.
+  -c, --create TAG ...
+        Create a new database record associated with the given tags. The
+        default text editor ($EDITOR) is launched for editing the
+        record. Empty lines at the beginning and end are ignored.
 
-  -e TAG ...
+  --cs, --create-stdin
+        The same as above but the standard input stream is be saved as
+        the record’s content. Empty lines at the beginning and end are
+        ignored.
+
+  -e, --edit TAG ...
         Find all records that match the given tags and launch the
-        default text editor for editing the records’ contents and tags.
-        Empty lines at the beginning and end of the record content are
-        ignored. If a record has empty content the record will be
-        deleted from the database.
+        default text editor ($EDITOR) for editing the records’ contents
+        and tags. Empty lines at the beginning and end of the record
+        content are ignored. If a record has empty content the record
+        will be deleted from the database.
 
-  -l [TAG ...]
+  -l, --list [TAG ...]
         List tags that match the given TAG name string(s). If no
         arguments are given list all tags. Tags are listed in alphabetic
         case insensitive order with a number that represents a count how
         many records are associated with the tag.
 
-  -r OLD NEW
-        Reassociate records. All database records associated with the
-        old tag will be associated with the new tag. The old tag is then
+  -r, --retag OLD NEW
+        Retag records. All database records associated with the old tag
+        will be associated with the new tag. The old tag is then
         removed.
 
-  -h    Print this help text.
+  -h, --help
+        Print this help text.
 
   --version
         Print program’s version and copyright information.

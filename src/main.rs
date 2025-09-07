@@ -11,17 +11,28 @@ static PROGRAM_LICENSE: &str = env!("CARGO_PKG_LICENSE");
 async fn main() -> ExitCode {
     let args = OptSpecs::new()
         .option("quiet", "q", OptValue::None)
+        .option("quiet", "quiet", OptValue::None)
         .option("verbose", "v", OptValue::None)
+        .option("verbose", "verbose", OptValue::None)
         .option("utc", "utc", OptValue::None)
         .option("db", "db", OptValue::RequiredNonEmpty)
         .option("format", "format", OptValue::RequiredNonEmpty)
         .option("short", "s", OptValue::None)
+        .option("short", "short", OptValue::None)
         .option("count", "n", OptValue::None)
+        .option("count", "count", OptValue::None)
         .option("create", "c", OptValue::None)
+        .option("create", "create", OptValue::None)
+        .option("create-stdin", "cs", OptValue::None)
+        .option("create-stdin", "create-stdin", OptValue::None)
         .option("edit", "e", OptValue::None)
+        .option("edit", "edit", OptValue::None)
         .option("list", "l", OptValue::None)
-        .option("reassociate", "r", OptValue::None)
+        .option("list", "list", OptValue::None)
+        .option("retag", "r", OptValue::None)
+        .option("retag", "retag", OptValue::None)
         .option("help", "h", OptValue::None)
+        .option("help", "help", OptValue::None)
         .option("version", "version", OptValue::None)
         .flag(OptFlags::PrefixMatchLongOptions)
         .getopt(std::env::args().skip(1));
@@ -92,9 +103,10 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
         ("short", Cmd::Normal(&args.other)),
         ("count", Cmd::Count(&args.other)),
         ("create", Cmd::Create(&args.other)),
+        ("create-stdin", Cmd::CreateStdin(&args.other)),
         ("edit", Cmd::Edit(&args.other)),
         ("list", Cmd::List(&args.other)),
-        ("reassociate", Cmd::Reassociate(&args.other)),
+        ("retag", Cmd::Retag(&args.other)),
         ("help", Cmd::Help),
         ("version", Cmd::Version),
     ] {
