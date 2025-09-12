@@ -130,9 +130,8 @@ When the program is installed start with `tagdb -h` command.
 
 ## Copyright and License
 
-Copyright (C) 2014-2022 Teemu Likonen <<tlikonen@iki.fi>>
-
-OpenPGP key: [6965F03973F0D4CA22B9410F0F2CAE0E07608462][PGP]
+Copyright (C) 2014-2022 Teemu Likonen <<tlikonen@iki.fi>> ([web][],
+[PGP][])
 
 This program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -148,4 +147,5 @@ The license text: <http://www.gnu.org/licenses/gpl-3.0.html>
 
 The source code repository: <https://github.com/tlikonen/tagdb>
 
-[PGP]: http://www.iki.fi/tlikonen/pgp-key.asc
+[web]: http://www.iki.fi/tlikonen/
+[PGP]: http://www.iki.fi/tlikonen/teemu.pgp
