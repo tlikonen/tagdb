@@ -3,6 +3,7 @@ use crate::{
     database::{CL_TIME_EPOCH, Record},
 };
 use chrono::{DateTime, Local};
+use std::{error::Error, io::Write};
 
 const TAGS_MAX_WIDTH: usize = 70;
 
@@ -102,6 +103,14 @@ impl Record {
                 println!("{}{line}", if is_org_header(line) { "*" } else { "" });
             }
         }
+    }
+
+    pub fn write(&self, file: &mut tempfile::NamedTempFile, id: u64) -> Result<(), Box<dyn Error>> {
+        for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
+            writeln!(file, "# Id: {id} Tags: {line}")?;
+        }
+        write!(file, "\n{}", self.content)?;
+        Ok(())
     }
 }
 

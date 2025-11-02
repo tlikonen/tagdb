@@ -3,7 +3,12 @@ mod print;
 
 use crate::database::Record;
 use sqlx::{Connection, SqliteConnection};
-use std::{error::Error, fs, io};
+use std::{
+    collections::HashMap,
+    error::Error,
+    fs,
+    io::{self, Write},
+};
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 
@@ -53,7 +58,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
         Cmd::List(tags) => cmd_list(&mut db, tags).await,
         Cmd::Create(tags) => cmd_create(&mut db, tags).await,
         Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await,
-        Cmd::Edit(_tags) => todo!(),
+        Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await,
         Cmd::Retag(_tags) => todo!(),
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
@@ -133,13 +138,7 @@ async fn cmd_create(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Bo
     let mut ta = db.begin().await?;
     database::assert_write_access(&mut ta).await?;
 
-    let file = tempfile::Builder::new()
-        .prefix(&format!("{PROGRAM_NAME}-"))
-        .suffix(".txt")
-        .rand_bytes(6)
-        .tempfile()
-        .map_err(|_| "Couldn’t create a temporary file for the new record.")?;
-
+    let file = tmp_file()?;
     let path = file.path();
     let name = path.to_string_lossy();
     run_text_editor(&name)?;
@@ -172,6 +171,81 @@ async fn cmd_create_stdin(
 
     ta.commit().await?;
     Ok(())
+}
+
+async fn cmd_edit(
+    db: &mut SqliteConnection,
+    config: Config,
+    tags: &[String],
+) -> Result<(), Box<dyn Error>> {
+    assert_tag_names(tags)?;
+    let mut ta = db.begin().await?;
+
+    let records = find_records(&mut ta, tags).await?;
+    database::assert_write_access(&mut ta).await?;
+
+    let mut file = tmp_file()?;
+
+    let already_seen = database::is_already_seen(&mut ta).await?;
+
+    if !already_seen || config.verbose {
+        writeln!(
+            file,
+            "\
+            # Here you can edit records' content and tags. You must not edit the\n\
+            # prefix part of records' header lines: \"# Id: 1 Tags: \". You can edit\n\
+            # the tag list that comes after the prefix. If record's header spans\n\
+            # over many lines you must keep the lines together (no empty lines\n\
+            # between).\n\n\
+            # Empty lines at the beginning and end of the record content are\n\
+            # ignored. If a record has empty content the record will be deleted from\n\
+            # the database.\n"
+        )?;
+
+        if !already_seen {
+            writeln!(
+                file,
+                "# The above message will not show next time unless -v option is used.\n"
+            )?;
+            database::set_already_seen(&mut ta).await?;
+        }
+    }
+
+    let mut ids = HashMap::<u64, i32>::with_capacity(10);
+    let mut id: u64 = 1;
+    let mut first = true;
+
+    for record in records {
+        if first {
+            first = false;
+        } else {
+            writeln!(&mut file)?;
+        }
+
+        ids.insert(id, record.id);
+        record.write(&mut file, id)?;
+        id += 1;
+    }
+
+    let path = file.path();
+    let name = path.to_string_lossy();
+    run_text_editor(&name)?;
+
+    // let buffer = fs::read_to_string(path)?;
+    // println!("{buffer}");
+
+    ta.commit().await?;
+    Ok(())
+}
+
+fn tmp_file() -> Result<tempfile::NamedTempFile, String> {
+    let tmp = tempfile::Builder::new()
+        .prefix(&format!("{PROGRAM_NAME}-"))
+        .suffix(".txt")
+        .rand_bytes(6)
+        .tempfile()
+        .map_err(|_| "Couldn’t create a temporary file for the new record.")?;
+    Ok(tmp)
 }
 
 fn run_text_editor(name: &str) -> Result<(), Box<dyn Error>> {

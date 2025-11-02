@@ -217,6 +217,24 @@ async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32,
     Ok(id)
 }
 
+pub async fn is_already_seen(db: &mut SqliteConnection) -> Result<bool, sqlx::Error> {
+    match sqlx::query("SELECT value FROM maintenance WHERE key = 'seen edit message'")
+        .fetch_optional(&mut *db)
+        .await?
+    {
+        Some(_) => Ok(true),
+        None => Ok(false),
+    }
+}
+
+pub async fn set_already_seen(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+    sqlx::query("INSERT INTO maintenance (key, value) VALUES ('seen edit message', 1)")
+        .execute(&mut *db)
+        .await?;
+    change_counter_add(db, 1).await?;
+    Ok(())
+}
+
 pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Error>> {
     let path;
 
