@@ -190,7 +190,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn t_into_lines() {
+    fn into_lines_fn() {
         for i in 0..8 {
             assert_eq!(
                 vec!["€ka", "tøka", "kølmas"],
@@ -214,16 +214,17 @@ mod tests {
     }
 
     #[test]
-    fn t_is_org_header() {
-        assert_eq!(false, is_org_header(""));
-        assert_eq!(false, is_org_header(" "));
-        assert_eq!(false, is_org_header("abc"));
-        assert_eq!(false, is_org_header(" *"));
-        assert_eq!(false, is_org_header(" * ab"));
-        assert_eq!(false, is_org_header("*abc"));
-        assert_eq!(true, is_org_header("* abc"));
-        assert_eq!(true, is_org_header("** abc"));
-        assert_eq!(true, is_org_header("*** abc"));
-        assert_eq!(true, is_org_header("**** ä€–"));
+    fn is_org_header_fn() {
+        assert!(!is_org_header(""));
+        assert!(!is_org_header(" "));
+        assert!(!is_org_header("abc"));
+        assert!(!is_org_header(" *"));
+        assert!(!is_org_header(" * ab"));
+        assert!(!is_org_header("*abc"));
+
+        assert!(is_org_header("* abc"));
+        assert!(is_org_header("** abc"));
+        assert!(is_org_header("*** abc"));
+        assert!(is_org_header("**** ä€–"));
     }
 }

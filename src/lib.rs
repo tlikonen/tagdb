@@ -356,7 +356,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn t_is_valid_tag_name() {
+    fn is_valid_tag_name_fn() {
         assert_eq!(false, is_valid_tag_name(""));
         assert_eq!(false, is_valid_tag_name(" "));
         assert_eq!(true, is_valid_tag_name("\t"));
@@ -371,7 +371,7 @@ mod tests {
     }
 
     #[test]
-    fn t_assert_tag_names() {
+    fn assert_tag_names_fn() {
         fn atn(tags: impl IntoIterator<Item = impl ToString>) -> Result<(), Box<dyn Error>> {
             let vec = tags
                 .into_iter()
@@ -380,14 +380,14 @@ mod tests {
             assert_tag_names(&vec)
         }
 
-        assert_eq!(true, atn(["a", "ab", "öljyä", "–fas", "ab\tcd"]).is_ok());
-        assert_eq!(false, atn(Vec::<String>::new()).is_ok());
-        assert_eq!(false, atn([""]).is_ok());
-        assert_eq!(false, atn(["", "a"]).is_ok());
+        assert!(atn(["a", "ab", "öljyä", "–fas", "ab\tcd"]).is_ok());
+        assert!(atn(Vec::<String>::new()).is_err());
+        assert!(atn([""]).is_err());
+        assert!(atn(["", "a"]).is_err());
     }
 
     #[test]
-    fn t_num_width() {
+    fn num_width_fn() {
         assert_eq!(1, num_width(0));
         assert_eq!(1, num_width(1));
         assert_eq!(1, num_width(9));
@@ -399,7 +399,7 @@ mod tests {
     }
 
     #[test]
-    fn t_strip_empty_lines() {
+    fn strip_empty_lines_fn() {
         assert_eq!(false, strip_empty_lines("   \n   \n  ").is_some());
         assert_eq!(
             vec!["one"],

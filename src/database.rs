@@ -631,7 +631,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn t_like_esc_wild() {
+    fn like_esc_wild_fn() {
         assert_eq!("%abcd%", like_esc_wild("abcd"));
         assert_eq!("%a\\%b\\_cd%", like_esc_wild("a%b_cd"));
         assert_eq!("%ab\\\\cd%", like_esc_wild("ab\\cd"));
