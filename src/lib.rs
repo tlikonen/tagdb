@@ -193,7 +193,7 @@ async fn cmd_edit(
             file,
             "# Here you can edit records' content and tags. You must not edit the\n\
              # record id in records' header lines: \"# Record: XXX\". You can edit\n\
-             # the tag list that comes after the prefix \"# Tags:\". You must keep\n\
+             # the tag list that comes after the prefix \"# Tags: \". You must keep\n\
              # all header lines together (no empty lines between).\n\n\
              # Empty lines at the beginning and end of the record content are\n\
              # ignored. If a record has empty content the record will be deleted from\n\
