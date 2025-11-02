@@ -105,10 +105,22 @@ impl Record {
         }
     }
 
-    pub fn write(&self, file: &mut tempfile::NamedTempFile, id: u64) -> Result<(), Box<dyn Error>> {
+    pub fn write(
+        &self,
+        file: &mut tempfile::NamedTempFile,
+        config: &Config,
+        id: u64,
+    ) -> Result<(), Box<dyn Error>> {
+        writeln!(
+            file,
+            "# Record: {id}  Created: {}",
+            format_time(self.created, config.utc)
+        )?;
+
         for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
-            writeln!(file, "# Id: {id} Tags: {line}")?;
+            writeln!(file, "# Tags: {line}")?;
         }
+
         write!(file, "\n{}", self.content)?;
         Ok(())
     }

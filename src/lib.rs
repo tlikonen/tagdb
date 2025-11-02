@@ -191,15 +191,13 @@ async fn cmd_edit(
     if !already_seen || config.verbose {
         writeln!(
             file,
-            "\
-            # Here you can edit records' content and tags. You must not edit the\n\
-            # prefix part of records' header lines: \"# Id: 1 Tags: \". You can edit\n\
-            # the tag list that comes after the prefix. If record's header spans\n\
-            # over many lines you must keep the lines together (no empty lines\n\
-            # between).\n\n\
-            # Empty lines at the beginning and end of the record content are\n\
-            # ignored. If a record has empty content the record will be deleted from\n\
-            # the database.\n"
+            "# Here you can edit records' content and tags. You must not edit the\n\
+             # record id in records' header lines: \"# Record: XXX\". You can edit\n\
+             # the tag list that comes after the prefix \"# Tags:\". You must keep\n\
+             # all header lines together (no empty lines between).\n\n\
+             # Empty lines at the beginning and end of the record content are\n\
+             # ignored. If a record has empty content the record will be deleted from\n\
+             # the database.\n"
         )?;
 
         if !already_seen {
@@ -223,7 +221,7 @@ async fn cmd_edit(
         }
 
         ids.insert(id, record.id);
-        record.write(&mut file, id)?;
+        record.write(&mut file, &config, id)?;
         id += 1;
     }
 
@@ -233,6 +231,8 @@ async fn cmd_edit(
 
     // let buffer = fs::read_to_string(path)?;
     // println!("{buffer}");
+
+    eprintln!("Doesn’t do anything, yet!");
 
     ta.commit().await?;
     Ok(())
