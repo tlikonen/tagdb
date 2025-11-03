@@ -199,8 +199,8 @@ async fn cmd_edit(
         }
     }
 
-    let mut ids = HashMap::<u64, i32>::with_capacity(10);
-    let mut id: u64 = 1;
+    let mut ids = HashMap::<String, i32>::with_capacity(10);
+    let mut id: usize = 1;
     let mut first = true;
 
     for record in records {
@@ -210,8 +210,9 @@ async fn cmd_edit(
             writeln!(&mut file)?;
         }
 
-        ids.insert(id, record.id);
-        record.write(&mut file, &config, id)?;
+        let id_line = record.editor_id_line(id, &config);
+        record.write(&mut file, &id_line)?;
+        ids.insert(id_line, record.id);
         id += 1;
     }
 

@@ -108,14 +108,9 @@ impl Record {
     pub fn write(
         &self,
         file: &mut tempfile::NamedTempFile,
-        config: &Config,
-        id: u64,
+        id_line: &str,
     ) -> Result<(), Box<dyn Error>> {
-        writeln!(
-            file,
-            "# Record: {id}  Created: {}",
-            format_time(self.created, config.utc)
-        )?;
+        writeln!(file, "{id_line}")?;
 
         for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
             writeln!(file, "# Tags: {line}")?;
@@ -123,6 +118,13 @@ impl Record {
 
         write!(file, "\n{}", self.content)?;
         Ok(())
+    }
+
+    pub fn editor_id_line(&self, id: usize, config: &Config) -> String {
+        format!(
+            "# Record: {id}  Created: {}",
+            format_time(self.created, config.utc)
+        )
     }
 }
 
