@@ -1,0 +1,9 @@
+# Here you can edit records' content and tags. You must not edit the
+# record id lines which look like: "# Record: [...]  Created: [...]".
+# You can edit the tag list that comes after the prefix \"# Tags:\".
+# Add more of such lines if you want. You must keep all #-prefixed header
+# lines together (no empty lines between).
+
+# Empty lines at the beginning and end of the record content are
+# ignored. If a record has empty content the record will be deleted from
+# the database.
