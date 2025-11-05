@@ -186,16 +186,16 @@ async fn cmd_edit(
 
     let mut file = tmp_file()?;
 
-    let already_seen = database::is_already_seen(&mut ta).await?;
+    let edit_message_seen = database::is_edit_message_seen(&mut ta).await?;
 
-    if !already_seen || config.verbose {
+    if !edit_message_seen || config.verbose {
         writeln!(file, "{}", include_str!("editor-message.txt"))?;
-        if !already_seen {
+        if !edit_message_seen {
             writeln!(
                 file,
                 "# The above message will not show next time unless -v option is used.\n"
             )?;
-            database::set_already_seen(&mut ta).await?;
+            database::set_edit_message_seen(&mut ta).await?;
         }
     }
 
