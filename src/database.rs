@@ -132,44 +132,33 @@ pub async fn list_tags(
     Ok(name_count)
 }
 
-pub async fn new_record(
-    db: &mut SqliteConnection,
-    tags: &[String],
-    lines: impl Iterator<Item = &str>,
-) -> Result<(), sqlx::Error> {
-    let record_id = insert_record(db, lines).await?;
+impl Record {
+    pub async fn create(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+        let record_id = insert_record(db, &self.content).await?;
 
-    let mut tag_ids = HashSet::with_capacity(5);
-    for tag in tags {
-        let id = get_or_insert_tag(db, tag).await?;
-        tag_ids.insert(id);
+        let mut tag_ids = HashSet::with_capacity(5);
+        for tag in &self.tags {
+            let id = get_or_insert_tag(db, tag).await?;
+            tag_ids.insert(id);
+        }
+
+        let mut count: i32 = 0;
+        for tag_id in &tag_ids {
+            sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
+                .bind(record_id)
+                .bind(tag_id)
+                .execute(&mut *db)
+                .await?;
+            count += 1;
+        }
+
+        change_counter_add(db, count).await?;
+        Ok(())
     }
-
-    let mut count: i32 = 0;
-    for tag_id in &tag_ids {
-        sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
-            .bind(record_id)
-            .bind(tag_id)
-            .execute(&mut *db)
-            .await?;
-        count += 1;
-    }
-
-    change_counter_add(db, count).await?;
-    Ok(())
 }
 
-async fn insert_record(
-    db: &mut SqliteConnection,
-    lines: impl Iterator<Item = &str>,
-) -> Result<i32, sqlx::Error> {
+async fn insert_record(db: &mut SqliteConnection, content: &str) -> Result<i32, sqlx::Error> {
     let now = current_time();
-
-    let mut record = String::with_capacity(100);
-    for line in lines {
-        record.push_str(line);
-        record.push('\n');
-    }
 
     let row = sqlx::query(
         "INSERT INTO records (created, modified, content) \
@@ -177,7 +166,7 @@ async fn insert_record(
     )
     .bind(now)
     .bind(now)
-    .bind(record)
+    .bind(content)
     .fetch_one(&mut *db)
     .await?;
 

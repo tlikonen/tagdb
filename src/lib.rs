@@ -33,6 +33,7 @@ impl Default for Format {
     }
 }
 
+#[derive(Default)]
 struct Record {
     pub id: Option<i32>,
     pub created: Option<i64>,
@@ -152,9 +153,17 @@ async fn cmd_create(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Bo
     run_text_editor(&name)?;
 
     let buffer = fs::read_to_string(path)?;
+    let lines: Vec<&str> = buffer.lines().collect();
 
-    match strip_empty_lines(&buffer) {
-        Some(lines) => database::new_record(&mut ta, tags, lines).await?,
+    match remove_empty_lines(&lines) {
+        Some(content) => {
+            let record = Record {
+                tags: tags.to_vec(),
+                content,
+                ..Default::default()
+            };
+            record.create(&mut ta).await?;
+        }
         None => Err("Empty file. Aborting.")?,
     }
 
@@ -171,10 +180,18 @@ async fn cmd_create_stdin(
     database::assert_write_access(&mut ta).await?;
 
     let buffer = io::read_to_string(io::stdin())?;
+    let lines: Vec<&str> = buffer.lines().collect();
 
-    match strip_empty_lines(&buffer) {
-        Some(lines) => database::new_record(&mut ta, tags, lines).await?,
-        None => Err("No content. Aborting.")?,
+    match remove_empty_lines(&lines) {
+        Some(content) => {
+            let record = Record {
+                tags: tags.to_vec(),
+                content,
+                ..Default::default()
+            };
+            record.create(&mut ta).await?;
+        }
+        None => Err("Empty content. Aborting.")?,
     }
 
     ta.commit().await?;
@@ -400,6 +417,39 @@ fn num_width(mut num: u64) -> usize {
 
 fn is_empty_string(s: &str) -> bool {
     s.chars().all(|x| x.is_whitespace())
+}
+
+fn remove_empty_lines(lines: &Vec<&str>) -> Option<String> {
+    let mut skip = 0;
+    let mut take = 0;
+    let mut beginning = true;
+
+    for (n, line) in lines.iter().enumerate() {
+        if beginning {
+            if is_empty_string(line) {
+                skip = n + 1;
+            } else {
+                beginning = false;
+                take = 1; // first non-empty line
+            }
+            continue;
+        }
+
+        if !is_empty_string(line) {
+            take = n + 1 - skip;
+        }
+    }
+
+    if take > 0 {
+        let mut new = String::with_capacity(50);
+        for line in lines.iter().skip(skip).take(take) {
+            new.push_str(line);
+            new.push('\n');
+        }
+        Some(new)
+    } else {
+        None
+    }
 }
 
 fn strip_empty_lines(buffer: &str) -> Option<impl Iterator<Item = &str>> {
