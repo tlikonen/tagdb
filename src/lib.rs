@@ -200,34 +200,108 @@ async fn cmd_edit(
         }
     }
 
-    let mut ids = HashMap::<String, i32>::with_capacity(10);
-    let mut id: usize = 1;
-    let mut first = true;
+    let mut record_ids = HashMap::<String, i32>::with_capacity(10);
 
-    for record in records {
-        if first {
-            first = false;
-        } else {
-            writeln!(&mut file)?;
+    {
+        let mut id: usize = 1;
+        let mut first = true;
+
+        for record in records {
+            if first {
+                first = false;
+            } else {
+                writeln!(&mut file)?;
+            }
+
+            let id_line = record.editor_id_line(id, &config);
+            record.write(&mut file, &id_line)?;
+            record_ids.insert(id_line, record.id);
+            id += 1;
         }
-
-        let id_line = record.editor_id_line(id, &config);
-        record.write(&mut file, &id_line)?;
-        ids.insert(id_line, record.id);
-        id += 1;
     }
 
     let path = file.path();
     let name = path.to_string_lossy();
-    run_text_editor(&name)?;
+    let buffer = fs::read_to_string(path)?;
 
-    // let buffer = fs::read_to_string(path)?;
-    // println!("{buffer}");
+    let mut record_id: Option<i32> = None;
+    let mut tags: Vec<&str> = Vec::with_capacity(10);
+    let mut record_lines: Vec<&str> = Vec::with_capacity(20);
 
-    eprintln!("Doesn’t do anything, yet!");
+    'editor: loop {
+        run_text_editor(&name)?;
+        tags.clear();
+        record_lines.clear();
+        let mut read_tags = false;
+        //let mut line_number = 0;
+
+        for line in buffer.lines() {
+            //line_number += 1;
+
+            // Is this new record header?
+            if let Some(new_id) = record_ids.get(line).copied() {
+                if let Some(old_id) = record_id {
+                    // KESKEN
+                    if !maybe_edit_record(&mut ta, old_id, &tags, &record_lines)? {
+                        eprintln!("Tyhjä tietue {old_id}. Poistetaan.");
+                    }
+                    tags.clear();
+                    record_lines.clear();
+                }
+                record_id = Some(new_id);
+                read_tags = true;
+                continue;
+            } else if record_id.is_none() {
+                continue;
+            }
+
+            if read_tags {
+                if let Some(s) = line.strip_prefix(TAG_PREFIX) {
+                    for tag in split_tag_string(s) {
+                        tags.push(tag);
+                    }
+                    continue;
+                } else {
+                    read_tags = false;
+                }
+            }
+
+            record_lines.push(line);
+        }
+
+        if let Some(old_id) = record_id {
+            // KESKEN
+            if !maybe_edit_record(&mut ta, old_id, &tags, &record_lines)? {
+                eprintln!("Tyhjä tietue {old_id}. Poistetaan.");
+            }
+        }
+
+        break 'editor;
+    }
 
     ta.commit().await?;
     Ok(())
+}
+
+fn maybe_edit_record(
+    _db: &mut SqliteConnection,
+    id: i32,
+    tags: &Vec<&str>,
+    lines: &Vec<&str>,
+) -> Result<bool, Box<dyn Error>> {
+    // KESKEN: Tarkista tagit. Palauta virhe, jos tagit ovat väärin.
+    // Muokkaa tietokantaa.
+    let buffer = lines.join("\n");
+    match strip_empty_lines(&buffer) {
+        Some(lines) => {
+            println!("# Record: {id}\n{TAG_PREFIX}{tags:?}");
+            for line in lines {
+                println!("{line}");
+            }
+            Ok(true)
+        }
+        None => Ok(false), // Empty content.
+    }
 }
 
 fn tmp_file() -> Result<tempfile::NamedTempFile, String> {
@@ -300,6 +374,12 @@ fn is_valid_tag_name(tag: &str) -> bool {
     // tags' whitespace characters to valid characters like "_" and
     // print information for user about changed tag names.
     !tag.is_empty() && tag.chars().all(|c| !" \n\r".contains(c))
+}
+
+fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
+    // Maybe convert this to split_whitespace(). This may requires
+    // database update. See is_valid_tag_name.
+    s.split(' ')
 }
 
 fn num_width(mut num: u64) -> usize {
