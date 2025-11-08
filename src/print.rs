@@ -38,10 +38,10 @@ impl Record {
                  {}# Modified: {}{}{}",
                 colors(GREEN),
                 colors(CYAN),
-                format_time(self.created, config.utc),
+                format_time(self.created.expect("Create date not set"), config.utc),
                 colors(GREEN),
                 colors(CYAN),
-                format_time(self.modified, config.utc),
+                format_time(self.modified.expect("Modified date not set"), config.utc),
                 colors(OFF)
             );
         }
@@ -83,8 +83,8 @@ impl Record {
             println!(
                 "# Created:  {}\n\
                  # Modified: {}",
-                format_time(self.created, config.utc),
-                format_time(self.modified, config.utc),
+                format_time(self.created.expect("Create date not set"), config.utc),
+                format_time(self.modified.expect("Modified date not set"), config.utc),
             );
         }
 
@@ -119,7 +119,7 @@ impl Record {
     pub fn editor_id_line(&self, id: usize, config: &Config) -> String {
         format!(
             "# Record: {id}  Created: {}",
-            format_time(self.created, config.utc)
+            format_time(self.created.expect("Create date not set"), config.utc)
         )
     }
 }

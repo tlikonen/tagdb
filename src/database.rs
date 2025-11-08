@@ -86,9 +86,9 @@ pub async fn list_records(
                 .await?;
 
             records.push(Record {
-                id,
-                created: row.try_get("created")?,
-                modified: row.try_get("modified")?,
+                id: Some(id),
+                created: Some(row.try_get("created")?),
+                modified: Some(row.try_get("modified")?),
                 tags: {
                     tags.sort_by_key(|tag| tag.to_lowercase());
                     tags

@@ -34,9 +34,9 @@ impl Default for Format {
 }
 
 struct Record {
-    pub id: i32,
-    pub created: i64,
-    pub modified: i64,
+    pub id: Option<i32>,
+    pub created: Option<i64>,
+    pub modified: Option<i64>,
     pub tags: Vec<String>,
     pub content: String,
 }
@@ -222,7 +222,7 @@ async fn cmd_edit(
 
             let id_line = record.editor_id_line(id, &config);
             record.write(&mut file, &id_line)?;
-            record_ids.insert(id_line, record.id);
+            record_ids.insert(id_line, record.id.expect("Record ID not set"));
             id += 1;
         }
     }
