@@ -1,5 +1,5 @@
 use crate::{
-    Config, Format,
+    Config, Format, TAG_PREFIX,
     database::{CL_TIME_EPOCH, Record},
 };
 use chrono::{DateTime, Local};
@@ -52,10 +52,9 @@ impl Record {
         if !config.quiet || config.verbose {
             for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
                 println!(
-                    "{}# Tags: {}{}{}",
+                    "{}{TAG_PREFIX}{}{line}{}",
                     colors(GREEN),
                     colors(YELLOW),
-                    line,
                     colors(OFF)
                 );
             }
@@ -94,7 +93,7 @@ impl Record {
 
         if !config.quiet || config.verbose {
             for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
-                println!("# Tags: {line}");
+                println!("{TAG_PREFIX}{line}");
             }
         }
 
@@ -113,7 +112,7 @@ impl Record {
         writeln!(file, "{id_line}")?;
 
         for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
-            writeln!(file, "# Tags: {line}")?;
+            writeln!(file, "{TAG_PREFIX}{line}")?;
         }
 
         write!(file, "\n{}", self.content)?;
