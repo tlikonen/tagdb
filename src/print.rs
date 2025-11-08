@@ -1,7 +1,4 @@
-use crate::{
-    Config, Format, TAG_PREFIX,
-    database::{CL_TIME_EPOCH, Record},
-};
+use crate::{Config, Format, Record, TAG_PREFIX, database::CL_TIME_EPOCH};
 use chrono::{DateTime, Local};
 use std::{error::Error, io::Write};
 

@@ -1,4 +1,4 @@
-use crate::{Config, Format, PROGRAM_NAME};
+use crate::{Config, Format, PROGRAM_NAME, Record};
 use futures::TryStreamExt; // STREAM.try_next()
 use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
 use std::{
@@ -53,14 +53,6 @@ pub async fn list_matching_records(
     } else {
         Ok(Some(intersect))
     }
-}
-
-pub struct Record {
-    pub id: i32,
-    pub created: i64,
-    pub modified: i64,
-    pub tags: Vec<String>,
-    pub content: String,
 }
 
 pub async fn list_records(

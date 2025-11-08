@@ -1,7 +1,6 @@
 mod database;
 mod print;
 
-use crate::database::Record;
 use sqlx::{Connection, SqliteConnection};
 use std::{
     collections::HashMap,
@@ -32,6 +31,14 @@ impl Default for Format {
     fn default() -> Self {
         Format::Text { color: false }
     }
+}
+
+struct Record {
+    pub id: i32,
+    pub created: i64,
+    pub modified: i64,
+    pub tags: Vec<String>,
+    pub content: String,
 }
 
 pub enum Cmd<'a> {
