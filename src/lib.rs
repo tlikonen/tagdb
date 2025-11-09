@@ -479,6 +479,7 @@ mod tests {
         assert!(!is_valid_tag_name(" "));
         assert!(is_valid_tag_name("\t"));
         assert!(!is_valid_tag_name("\n"));
+        assert!(!is_valid_tag_name("\r"));
         assert!(!is_valid_tag_name("abc "));
         assert!(!is_valid_tag_name("ab cd"));
         assert!(is_valid_tag_name("ab\t"));
