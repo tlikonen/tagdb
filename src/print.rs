@@ -59,16 +59,22 @@ impl Record {
         }
 
         if config.short {
-            if let Some(line) = self.content.lines().next() {
+            if let Some(line) = self
+                .content
+                .as_ref()
+                .expect("Content missing")
+                .lines()
+                .next()
+            {
                 println!("{line}");
             }
         } else {
-            print!("{}", self.content);
+            print!("{}", self.content.as_ref().expect("Content missing"));
         }
     }
 
     fn print_orgmode(&self, config: &Config) {
-        let mut lines = self.content.lines();
+        let mut lines = self.content.as_ref().expect("Content missing").lines();
 
         let first = lines.next();
         if let Some(line) = first {
@@ -112,7 +118,11 @@ impl Record {
             writeln!(file, "{TAG_PREFIX}{line}")?;
         }
 
-        write!(file, "\n{}", self.content)?;
+        write!(
+            file,
+            "\n{}",
+            self.content.as_ref().expect("Content missing")
+        )?;
         Ok(())
     }
 

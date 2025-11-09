@@ -39,7 +39,7 @@ struct Record {
     pub created: Option<i64>,
     pub modified: Option<i64>,
     pub tags: Vec<String>,
-    pub content: String,
+    pub content: Option<String>,
 }
 
 pub enum Cmd<'a> {
@@ -159,7 +159,7 @@ async fn cmd_create(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Bo
         Some(content) => {
             let record = Record {
                 tags: tags.to_vec(),
-                content,
+                content: Some(content),
                 ..Default::default()
             };
             record.create(&mut ta).await?;
@@ -186,7 +186,7 @@ async fn cmd_create_stdin(
         Some(content) => {
             let record = Record {
                 tags: tags.to_vec(),
-                content,
+                content: Some(content),
                 ..Default::default()
             };
             record.create(&mut ta).await?;
