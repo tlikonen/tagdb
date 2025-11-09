@@ -309,7 +309,7 @@ async fn cmd_edit(
 
             None => {
                 println!("No data found.");
-                if return_to_editor() {
+                if return_to_editor()? {
                     continue 'editor;
                 } else {
                     Err("Aborted.")?;
@@ -319,15 +319,15 @@ async fn cmd_edit(
 
         for record in &records {
             let id = record.id.as_ref().expect("Id is not set.");
-            print!("{} – ", ids_headers.get(id).unwrap());
-            io::stdout().flush().expect("Flushing stdout failed.");
+            print!("{} – ", ids_headers.get(id).expect("Id is not set."));
+            io::stdout().flush()?;
 
             if record.content.is_some() {
                 if let Some(tags) = &record.tags {
                     if let Err(e) = assert_tag_names(tags) {
                         println!("FAILED");
                         eprintln!("{e}");
-                        if return_to_editor() {
+                        if return_to_editor()? {
                             continue 'editor;
                         } else {
                             Err("Aborted.")?;
@@ -338,7 +338,7 @@ async fn cmd_edit(
                 if let Err(e) = record.update(&mut ta).await {
                     println!("FAILED");
                     eprintln!("{e}");
-                    if return_to_editor() {
+                    if return_to_editor()? {
                         continue 'editor;
                     } else {
                         Err("Aborted.")?;
@@ -360,21 +360,20 @@ async fn cmd_edit(
     Ok(())
 }
 
-fn return_to_editor() -> bool {
+fn return_to_editor() -> Result<bool, Box<dyn Error>> {
     loop {
-        let mut buffer = String::with_capacity(1);
         print!(
             "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: "
         );
-        io::stdout().flush().expect("Flushing stdout failed.");
+        io::stdout().flush()?;
 
-        if io::stdin().read_line(&mut buffer).is_err() {
-            return true;
-        }
-        if buffer == "abort\n" {
-            return false;
-        } else if buffer == "\n" {
-            return true;
+        let mut buffer = String::with_capacity(6);
+        io::stdin().read_line(&mut buffer)?;
+
+        match buffer.as_str() {
+            "\n" => return Ok(true),
+            "abort\n" => return Ok(false),
+            _ => (),
         }
     }
 }
