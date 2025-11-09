@@ -3,7 +3,7 @@ use chrono::{DateTime, Local};
 use std::{error::Error, io::Write};
 
 const TAGS_MAX_WIDTH: usize = 70;
-const TAG_PREFIX: &str = "# Tags: ";
+const TAG_PREFIX: &str = "# Tags:";
 
 impl Record {
     pub fn print(&self, config: &Config) {
@@ -50,7 +50,7 @@ impl Record {
         if !config.quiet || config.verbose {
             for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
                 println!(
-                    "{}{TAG_PREFIX}{}{line}{}",
+                    "{}{TAG_PREFIX} {}{line}{}",
                     colors(GREEN),
                     colors(YELLOW),
                     colors(OFF)
@@ -97,7 +97,7 @@ impl Record {
 
         if !config.quiet || config.verbose {
             for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
-                println!("{TAG_PREFIX}{line}");
+                println!("{TAG_PREFIX} {line}");
             }
         }
 
@@ -116,7 +116,7 @@ impl Record {
         writeln!(file, "{id_line}")?;
 
         for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
-            writeln!(file, "{TAG_PREFIX_EDITOR}{line}")?;
+            writeln!(file, "{TAG_PREFIX_EDITOR} {line}")?;
         }
 
         write!(

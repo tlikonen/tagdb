@@ -10,7 +10,7 @@ use std::{
 };
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
-const TAG_PREFIX_EDITOR: &str = "# ";
+const TAG_PREFIX_EDITOR: &str = "#";
 
 pub struct Config {
     pub short: bool,
