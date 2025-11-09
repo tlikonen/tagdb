@@ -3,7 +3,7 @@ mod print;
 
 use sqlx::{Connection, SqliteConnection};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     error::Error,
     fs,
     io::{self, Write},
@@ -38,7 +38,7 @@ struct Record {
     pub id: Option<i32>,
     pub created: Option<i64>,
     pub modified: Option<i64>,
-    pub tags: Vec<String>,
+    pub tags: Option<Vec<String>>,
     pub content: Option<String>,
 }
 
@@ -158,7 +158,7 @@ async fn cmd_create(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Bo
     match remove_empty_lines(&lines) {
         Some(content) => {
             let record = Record {
-                tags: tags.to_vec(),
+                tags: Some(tags.to_vec()),
                 content: Some(content),
                 ..Default::default()
             };
@@ -185,7 +185,7 @@ async fn cmd_create_stdin(
     match remove_empty_lines(&lines) {
         Some(content) => {
             let record = Record {
-                tags: tags.to_vec(),
+                tags: Some(tags.to_vec()),
                 content: Some(content),
                 ..Default::default()
             };
@@ -224,7 +224,8 @@ async fn cmd_edit(
         }
     }
 
-    let mut record_ids = HashMap::<String, i32>::with_capacity(10);
+    let mut headers_ids = HashMap::<String, i32>::with_capacity(10);
+    let mut ids_headers = HashMap::<i32, String>::with_capacity(10);
 
     {
         let mut id: usize = 1;
@@ -239,7 +240,11 @@ async fn cmd_edit(
 
             let id_line = record.editor_id_line(id, &config);
             record.write(&mut file, &id_line)?;
-            record_ids.insert(id_line, record.id.expect("Record ID not set"));
+
+            let record_id = record.id.expect("Record ID not set");
+            headers_ids.insert(id_line.clone(), record_id);
+            ids_headers.insert(record_id, id_line);
+
             id += 1;
         }
     }
@@ -248,41 +253,42 @@ async fn cmd_edit(
     let name = path.to_string_lossy();
     let buffer = fs::read_to_string(path)?;
 
-    let mut record_id: Option<i32> = None;
-    let mut tags: Vec<&str> = Vec::with_capacity(10);
-    let mut record_lines: Vec<&str> = Vec::with_capacity(20);
+    let mut id: Option<i32> = None;
+    let mut tags = HashSet::<&str>::with_capacity(10);
+    let mut lines: Vec<&str> = Vec::with_capacity(20);
+    let mut records: Vec<Record> = Vec::with_capacity(10);
 
     'editor: loop {
         run_text_editor(&name)?;
         tags.clear();
-        record_lines.clear();
+        lines.clear();
         let mut read_tags = false;
-        //let mut line_number = 0;
 
         for line in buffer.lines() {
-            //line_number += 1;
-
             // Is this new record header?
-            if let Some(new_id) = record_ids.get(line).copied() {
-                if let Some(old_id) = record_id {
-                    // KESKEN
-                    if !maybe_edit_record(&mut ta, old_id, &tags, &record_lines)? {
-                        eprintln!("Tyhjä tietue {old_id}. Poistetaan.");
-                    }
+            if let Some(new_id) = headers_ids.get(line).copied() {
+                if let Some(old_id) = id {
+                    records.push(Record {
+                        id: Some(old_id),
+                        tags: prepare_tags(&tags),
+                        content: remove_empty_lines(&lines),
+                        ..Default::default()
+                    });
+
                     tags.clear();
-                    record_lines.clear();
+                    lines.clear();
                 }
-                record_id = Some(new_id);
+                id = Some(new_id);
                 read_tags = true;
                 continue;
-            } else if record_id.is_none() {
+            } else if id.is_none() {
                 continue;
             }
 
             if read_tags {
                 if let Some(s) = line.strip_prefix(TAG_PREFIX) {
                     for tag in split_tag_string(s) {
-                        tags.push(tag);
+                        tags.insert(tag);
                     }
                     continue;
                 } else {
@@ -290,14 +296,17 @@ async fn cmd_edit(
                 }
             }
 
-            record_lines.push(line);
+            lines.push(line);
         }
 
-        if let Some(old_id) = record_id {
-            // KESKEN
-            if !maybe_edit_record(&mut ta, old_id, &tags, &record_lines)? {
-                eprintln!("Tyhjä tietue {old_id}. Poistetaan.");
-            }
+        // Store the last record.
+        if let Some(old_id) = id {
+            records.push(Record {
+                id: Some(old_id),
+                tags: prepare_tags(&tags),
+                content: remove_empty_lines(&lines),
+                ..Default::default()
+            });
         }
 
         break 'editor;
@@ -307,26 +316,26 @@ async fn cmd_edit(
     Ok(())
 }
 
-fn maybe_edit_record(
-    _db: &mut SqliteConnection,
-    id: i32,
-    tags: &Vec<&str>,
-    lines: &Vec<&str>,
-) -> Result<bool, Box<dyn Error>> {
-    // KESKEN: Tarkista tagit. Palauta virhe, jos tagit ovat väärin.
-    // Muokkaa tietokantaa.
-    let buffer = lines.join("\n");
-    match strip_empty_lines(&buffer) {
-        Some(lines) => {
-            println!("# Record: {id}\n{TAG_PREFIX}{tags:?}");
-            for line in lines {
-                println!("{line}");
-            }
-            Ok(true)
-        }
-        None => Ok(false), // Empty content.
-    }
-}
+// fn maybe_edit_record(
+//     _db: &mut SqliteConnection,
+//     id: i32,
+//     tags: &Vec<&str>,
+//     lines: &Vec<&str>,
+// ) -> Result<bool, Box<dyn Error>> {
+//     // KESKEN: Tarkista tagit. Palauta virhe, jos tagit ovat väärin.
+//     // Muokkaa tietokantaa.
+//     let buffer = lines.join("\n");
+//     match strip_empty_lines(&buffer) {
+//         Some(lines) => {
+//             println!("# Record: {id}\n{TAG_PREFIX}{tags:?}");
+//             for line in lines {
+//                 println!("{line}");
+//             }
+//             Ok(true)
+//         }
+//         None => Ok(false), // Empty content.
+//     }
+// }
 
 fn tmp_file() -> Result<tempfile::NamedTempFile, String> {
     let tmp = tempfile::Builder::new()
@@ -441,7 +450,7 @@ fn remove_empty_lines(lines: &Vec<&str>) -> Option<String> {
     }
 
     if take > 0 {
-        let mut new = String::with_capacity(50);
+        let mut new = String::with_capacity(200);
         for line in lines.iter().skip(skip).take(take) {
             new.push_str(line);
             new.push('\n');
@@ -452,31 +461,11 @@ fn remove_empty_lines(lines: &Vec<&str>) -> Option<String> {
     }
 }
 
-fn strip_empty_lines(buffer: &str) -> Option<impl Iterator<Item = &str>> {
-    let mut skip = 0;
-    let mut take = 0;
-    let mut beginning = true;
-
-    for (n, line) in buffer.lines().enumerate() {
-        if beginning {
-            if is_empty_string(line) {
-                skip = n + 1;
-            } else {
-                beginning = false;
-                take = 1; // first non-empty line
-            }
-            continue;
-        }
-
-        if !is_empty_string(line) {
-            take = n + 1 - skip;
-        }
-    }
-
-    if take > 0 {
-        Some(buffer.lines().skip(skip).take(take))
-    } else {
+fn prepare_tags(tags: &HashSet<&str>) -> Option<Vec<String>> {
+    if tags.is_empty() {
         None
+    } else {
+        Some(tags.iter().map(|x| x.to_string()).collect())
     }
 }
 
@@ -528,23 +517,16 @@ mod tests {
     }
 
     #[test]
-    fn strip_empty_lines_fn() {
-        assert_eq!(false, strip_empty_lines("   \n   \n  ").is_some());
+    fn remove_empty_lines_fn() {
+        assert!(remove_empty_lines(&vec!("   ", "     ", "     ")).is_none());
+        assert_eq!("one\n", remove_empty_lines(&vec!("one")).unwrap());
         assert_eq!(
-            vec!["one"],
-            strip_empty_lines("one").unwrap().collect::<Vec<&str>>()
+            "one\n",
+            remove_empty_lines(&vec!("  ", "one", "  ")).unwrap()
         );
         assert_eq!(
-            vec!["one"],
-            strip_empty_lines("  \none\n  ")
-                .unwrap()
-                .collect::<Vec<&str>>()
-        );
-        assert_eq!(
-            vec!["one", "two", "three"],
-            strip_empty_lines(" \n  \none\ntwo\nthree\n  \n  ")
-                .unwrap()
-                .collect::<Vec<&str>>()
+            "one\ntwo\nthree\n",
+            remove_empty_lines(&vec!("  ", "one", "two", "three", "  ", "  ")).unwrap()
         );
     }
 }

@@ -47,7 +47,7 @@ impl Record {
         }
 
         if !config.quiet || config.verbose {
-            for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
+            for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
                 println!(
                     "{}{TAG_PREFIX}{}{line}{}",
                     colors(GREEN),
@@ -95,7 +95,7 @@ impl Record {
         }
 
         if !config.quiet || config.verbose {
-            for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
+            for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
                 println!("{TAG_PREFIX}{line}");
             }
         }
@@ -114,7 +114,7 @@ impl Record {
     ) -> Result<(), Box<dyn Error>> {
         writeln!(file, "{id_line}")?;
 
-        for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
+        for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
             writeln!(file, "{TAG_PREFIX}{line}")?;
         }
 

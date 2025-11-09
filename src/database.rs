@@ -91,14 +91,20 @@ pub async fn list_records(
                 modified: Some(row.try_get("modified")?),
                 tags: {
                     tags.sort_by_key(|tag| tag.to_lowercase());
-                    tags
+                    Some(tags)
                 },
                 content: Some(row.try_get("content")?),
             });
         }
     }
 
-    records.sort_by_key(|r| r.tags.join(" ").to_lowercase());
+    records.sort_by_key(|r| {
+        r.tags
+            .as_ref()
+            .expect("Tags missing")
+            .join(" ")
+            .to_lowercase()
+    });
     Ok(records)
 }
 
@@ -134,10 +140,10 @@ pub async fn list_tags(
 
 impl Record {
     pub async fn create(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
-        let record_id = insert_record(db, &self.content.as_ref().expect("Content missing")).await?;
+        let record_id = insert_record(db, self.content.as_ref().expect("Content missing")).await?;
 
         let mut tag_ids = HashSet::with_capacity(5);
-        for tag in &self.tags {
+        for tag in self.tags.as_ref().expect("Tags missing") {
             let id = get_or_insert_tag(db, tag).await?;
             tag_ids.insert(id);
         }
