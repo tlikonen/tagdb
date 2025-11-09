@@ -4,7 +4,7 @@
 # # Record: [...]  Created: [...]
 #
 # Such lines start a new record. You can edit the tag list that comes
-# after the record id line. Tag lines have the prefix "# ". Add more of
+# after the record id line. Tag lines have the prefix "#". Add more of
 # such lines if you want. If you delete record's all tag lines the
 # record's tags will not be modified. You must keep all #-prefixed
 # header lines together (no empty lines between).
