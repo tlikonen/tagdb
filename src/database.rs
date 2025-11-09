@@ -140,7 +140,26 @@ pub async fn list_tags(
 
 impl Record {
     pub async fn create(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
-        let record_id = insert_record(db, self.content.as_ref().expect("Content missing")).await?;
+        let mut change_count: i32 = 0;
+
+        let record_id = {
+            let content = self.content.as_ref().expect("Content missing");
+            let now = current_time();
+
+            let row = sqlx::query(
+                "INSERT INTO records (created, modified, content) \
+                 VALUES ($1, $2, $3) RETURNING id",
+            )
+            .bind(now)
+            .bind(now)
+            .bind(content)
+            .fetch_one(&mut *db)
+            .await?;
+
+            change_count += 1;
+            let id: i32 = row.try_get("id")?;
+            id
+        };
 
         let mut tag_ids = HashSet::with_capacity(5);
         for tag in self.tags.as_ref().expect("Tags missing") {
@@ -148,42 +167,22 @@ impl Record {
             tag_ids.insert(id);
         }
 
-        let mut count: i32 = 0;
         for tag_id in &tag_ids {
             sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
                 .bind(record_id)
                 .bind(tag_id)
                 .execute(&mut *db)
                 .await?;
-            count += 1;
+            change_count += 1;
         }
 
-        change_counter_add(db, count).await?;
+        change_counter_add(db, change_count).await?;
         Ok(())
     }
 
     pub async fn edit(&self, _db: &mut SqliteConnection) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
-}
-
-async fn insert_record(db: &mut SqliteConnection, content: &str) -> Result<i32, sqlx::Error> {
-    let now = current_time();
-
-    let row = sqlx::query(
-        "INSERT INTO records (created, modified, content) \
-         VALUES ($1, $2, $3) RETURNING id",
-    )
-    .bind(now)
-    .bind(now)
-    .bind(content)
-    .fetch_one(&mut *db)
-    .await?;
-
-    change_counter_add(db, 1).await?;
-
-    let id: i32 = row.try_get("id")?;
-    Ok(id)
 }
 
 async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32, sqlx::Error> {
