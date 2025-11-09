@@ -251,17 +251,16 @@ async fn cmd_edit(
 
     let path = file.path();
     let name = path.to_string_lossy();
-    let buffer = fs::read_to_string(path)?;
-
-    let mut id: Option<i32> = None;
-    let mut tags = HashSet::<&str>::with_capacity(10);
-    let mut lines: Vec<&str> = Vec::with_capacity(20);
-    let mut records: Vec<Record> = Vec::with_capacity(10);
 
     'editor: loop {
         run_text_editor(&name)?;
-        tags.clear();
-        lines.clear();
+        let buffer = fs::read_to_string(path)?;
+
+        let mut id: Option<i32> = None;
+        let mut tags = HashSet::<&str>::with_capacity(10);
+        let mut lines: Vec<&str> = Vec::with_capacity(20);
+        let mut records: Vec<Record> = Vec::with_capacity(10);
+
         let mut read_tags = false;
 
         for line in buffer.lines() {
@@ -300,13 +299,58 @@ async fn cmd_edit(
         }
 
         // Store the last record.
-        if let Some(old_id) = id {
-            records.push(Record {
+        match id {
+            Some(old_id) => records.push(Record {
                 id: Some(old_id),
                 tags: prepare_tags(&tags),
                 content: remove_empty_lines(&lines),
                 ..Default::default()
-            });
+            }),
+
+            None => {
+                println!("No data found.");
+                if return_to_editor() {
+                    continue 'editor;
+                } else {
+                    Err("Aborted.")?;
+                }
+            }
+        }
+
+        for record in &records {
+            let id = record.id.as_ref().expect("Id is not set.");
+            print!("{} – ", ids_headers.get(id).unwrap());
+            io::stdout().flush().expect("Flushing stdout failed.");
+
+            if let Some(_content) = &record.content {
+                if let Some(tags) = &record.tags {
+                    if let Err(e) = assert_tag_names(tags) {
+                        println!("FAILED");
+                        eprintln!("{e}");
+                        if return_to_editor() {
+                            continue 'editor;
+                        } else {
+                            Err("Aborted.")?;
+                        }
+                    }
+                }
+
+                if let Err(e) = record.edit(&mut ta).await {
+                    println!("FAILED");
+                    eprintln!("{e}");
+                    if return_to_editor() {
+                        continue 'editor;
+                    } else {
+                        Err("Aborted.")?;
+                    }
+                }
+                println!("Updated");
+                println!("Muokkaus ei tee vielä mitään.");
+            } else {
+                // Empty content. Delete the record.
+                println!("Deleted");
+                println!("Ei oikeasti poisteta vielä.");
+            }
         }
 
         break 'editor;
@@ -316,26 +360,24 @@ async fn cmd_edit(
     Ok(())
 }
 
-// fn maybe_edit_record(
-//     _db: &mut SqliteConnection,
-//     id: i32,
-//     tags: &Vec<&str>,
-//     lines: &Vec<&str>,
-// ) -> Result<bool, Box<dyn Error>> {
-//     // KESKEN: Tarkista tagit. Palauta virhe, jos tagit ovat väärin.
-//     // Muokkaa tietokantaa.
-//     let buffer = lines.join("\n");
-//     match strip_empty_lines(&buffer) {
-//         Some(lines) => {
-//             println!("# Record: {id}\n{TAG_PREFIX}{tags:?}");
-//             for line in lines {
-//                 println!("{line}");
-//             }
-//             Ok(true)
-//         }
-//         None => Ok(false), // Empty content.
-//     }
-// }
+fn return_to_editor() -> bool {
+    loop {
+        let mut buffer = String::with_capacity(1);
+        print!(
+            "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: "
+        );
+        io::stdout().flush().expect("Flushing stdout failed.");
+
+        if io::stdin().read_line(&mut buffer).is_err() {
+            return true;
+        }
+        if buffer == "abort\n" {
+            return false;
+        } else if buffer == "\n" {
+            return true;
+        }
+    }
+}
 
 fn tmp_file() -> Result<tempfile::NamedTempFile, String> {
     let tmp = tempfile::Builder::new()

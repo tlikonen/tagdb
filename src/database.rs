@@ -161,6 +161,10 @@ impl Record {
         change_counter_add(db, count).await?;
         Ok(())
     }
+
+    pub async fn edit(&self, _db: &mut SqliteConnection) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
 }
 
 async fn insert_record(db: &mut SqliteConnection, content: &str) -> Result<i32, sqlx::Error> {

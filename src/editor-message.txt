@@ -7,3 +7,5 @@
 # Empty lines at the beginning and end of the record content are
 # ignored. If a record has empty content the record will be deleted from
 # the database.
+
+# To abort and cancel all changes save an empty buffer.
