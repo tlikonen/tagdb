@@ -475,17 +475,17 @@ mod tests {
 
     #[test]
     fn is_valid_tag_name_fn() {
-        assert_eq!(false, is_valid_tag_name(""));
-        assert_eq!(false, is_valid_tag_name(" "));
-        assert_eq!(true, is_valid_tag_name("\t"));
-        assert_eq!(false, is_valid_tag_name("\n"));
-        assert_eq!(false, is_valid_tag_name("abc "));
-        assert_eq!(false, is_valid_tag_name("ab cd"));
-        assert_eq!(true, is_valid_tag_name("ab\t"));
-        assert_eq!(false, is_valid_tag_name("ab\n"));
-        assert_eq!(true, is_valid_tag_name("a"));
-        assert_eq!(true, is_valid_tag_name("€ä"));
-        assert_eq!(true, is_valid_tag_name("–"));
+        assert!(!is_valid_tag_name(""));
+        assert!(!is_valid_tag_name(" "));
+        assert!(is_valid_tag_name("\t"));
+        assert!(!is_valid_tag_name("\n"));
+        assert!(!is_valid_tag_name("abc "));
+        assert!(!is_valid_tag_name("ab cd"));
+        assert!(is_valid_tag_name("ab\t"));
+        assert!(!is_valid_tag_name("ab\n"));
+        assert!(is_valid_tag_name("a"));
+        assert!(is_valid_tag_name("€ä"));
+        assert!(is_valid_tag_name("–"));
     }
 
     #[test]
