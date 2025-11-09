@@ -162,7 +162,7 @@ async fn cmd_create(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Bo
                 content: Some(content),
                 ..Default::default()
             };
-            record.create(&mut ta).await?;
+            record.insert(&mut ta).await?;
         }
         None => Err("Empty file. Aborting.")?,
     }
@@ -189,7 +189,7 @@ async fn cmd_create_stdin(
                 content: Some(content),
                 ..Default::default()
             };
-            record.create(&mut ta).await?;
+            record.insert(&mut ta).await?;
         }
         None => Err("Empty content. Aborting.")?,
     }
@@ -322,7 +322,7 @@ async fn cmd_edit(
             print!("{} – ", ids_headers.get(id).unwrap());
             io::stdout().flush().expect("Flushing stdout failed.");
 
-            if let Some(_content) = &record.content {
+            if record.content.is_some() {
                 if let Some(tags) = &record.tags {
                     if let Err(e) = assert_tag_names(tags) {
                         println!("FAILED");
@@ -335,7 +335,7 @@ async fn cmd_edit(
                     }
                 }
 
-                if let Err(e) = record.edit(&mut ta).await {
+                if let Err(e) = record.update(&mut ta).await {
                     println!("FAILED");
                     eprintln!("{e}");
                     if return_to_editor() {
@@ -345,17 +345,17 @@ async fn cmd_edit(
                     }
                 }
                 println!("Updated");
-                println!("Muokkaus ei tee vielä mitään.");
             } else {
                 // Empty content. Delete the record.
                 println!("Deleted");
-                println!("Ei oikeasti poisteta vielä.");
+                record.delete(&mut ta).await?;
             }
         }
 
         break 'editor;
     }
 
+    database::delete_unused_tags(&mut ta).await?;
     ta.commit().await?;
     Ok(())
 }
@@ -452,9 +452,9 @@ fn is_valid_tag_name(tag: &str) -> bool {
 }
 
 fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
-    // Maybe convert this to split_whitespace(). This may requires
+    // Maybe convert this to split_whitespace(). This may require
     // database update. See is_valid_tag_name.
-    s.split(' ')
+    s.split(' ').filter(|x| x.len() > 0)
 }
 
 fn num_width(mut num: u64) -> usize {

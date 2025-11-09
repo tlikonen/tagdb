@@ -139,7 +139,7 @@ pub async fn list_tags(
 }
 
 impl Record {
-    pub async fn create(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+    pub async fn insert(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
         let mut change_count: i32 = 0;
 
         let record_id = {
@@ -180,7 +180,74 @@ impl Record {
         Ok(())
     }
 
-    pub async fn edit(&self, _db: &mut SqliteConnection) -> Result<(), Box<dyn Error>> {
+    pub async fn update(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+        let record_id = self.id.as_ref().expect("Record id not set.");
+
+        sqlx::query("UPDATE records SET modified = $1, content = $2 WHERE id = $3")
+            .bind(current_time())
+            .bind(self.content.as_ref().expect("Record content not set."))
+            .bind(record_id)
+            .execute(&mut *db)
+            .await?;
+
+        let mut change_count = 1;
+
+        // Record-tag connections.
+        if let Some(tags) = &self.tags {
+            let mut new_tag_ids = HashSet::with_capacity(8);
+            for tag in tags {
+                new_tag_ids.insert(get_or_insert_tag(db, tag).await?);
+            }
+
+            let mut will_delete = HashSet::new();
+            let mut old_tag_ids = HashSet::with_capacity(8);
+
+            {
+                let mut rows = sqlx::query("SELECT tag_id FROM record_tag WHERE record_id = $1")
+                    .bind(record_id)
+                    .fetch(&mut *db);
+
+                while let Some(row) = rows.try_next().await? {
+                    let old_tag_id: i32 = row.try_get("tag_id")?;
+                    old_tag_ids.insert(old_tag_id);
+                    if !new_tag_ids.contains(&old_tag_id) {
+                        will_delete.insert(old_tag_id);
+                    }
+                }
+            }
+
+            for old in will_delete {
+                sqlx::query("DELETE FROM record_tag WHERE record_id = $1 AND tag_id = $2")
+                    .bind(record_id)
+                    .bind(old)
+                    .execute(&mut *db)
+                    .await?;
+                change_count += 1;
+            }
+
+            for new in new_tag_ids {
+                if !old_tag_ids.contains(&new) {
+                    sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
+                        .bind(record_id)
+                        .bind(new)
+                        .execute(&mut *db)
+                        .await?;
+                    change_count += 1;
+                }
+            }
+        }
+
+        change_counter_add(db, change_count).await?;
+        Ok(())
+    }
+
+    pub async fn delete(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+        let record_id = self.id.as_ref().expect("Record id not set.");
+        sqlx::query("DELETE FROM records WHERE id = $1")
+            .bind(record_id)
+            .execute(&mut *db)
+            .await?;
+        change_counter_add(db, 1).await?;
         Ok(())
     }
 }
@@ -205,6 +272,17 @@ async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32,
     }
 
     Ok(id)
+}
+
+pub async fn delete_unused_tags(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "DELETE FROM tags WHERE id IN \
+         (SELECT tags.id FROM tags LEFT JOIN record_tag AS j \
+         ON tags.id = j.tag_id WHERE j.tag_id IS NULL)",
+    )
+    .execute(&mut *db)
+    .await?;
+    Ok(())
 }
 
 pub async fn is_edit_message_seen(db: &mut SqliteConnection) -> Result<bool, sqlx::Error> {
