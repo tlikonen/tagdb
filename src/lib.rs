@@ -560,6 +560,22 @@ mod tests {
     }
 
     #[test]
+    fn split_tag_string_fn() {
+        fn sts(s: &str) -> Vec<String> {
+            split_tag_string(s).map(|x| x.to_string()).collect()
+        }
+
+        assert_eq!(Vec::<String>::new(), sts("   "));
+        assert_eq!(Vec::<String>::new(), sts(""));
+        assert_eq!(vec!["111"], sts("111"));
+        assert_eq!(vec!["€€€"], sts("€€€"));
+        assert_eq!(
+            vec!["111", "222", "€€", "444"],
+            sts("  111   222  €€  444  ")
+        );
+    }
+
+    #[test]
     fn remove_empty_lines_fn() {
         assert!(remove_empty_lines(&vec!("   ", "     ", "     ")).is_none());
         assert_eq!("one\n", remove_empty_lines(&vec!("one")).unwrap());
