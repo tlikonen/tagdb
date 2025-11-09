@@ -443,18 +443,11 @@ fn assert_tag_names(tags: &[String]) -> Result<(), Box<dyn Error>> {
 }
 
 fn is_valid_tag_name(tag: &str) -> bool {
-    // This used to be Common Lisp's (and (graphic-char-p x) (not (eql
-    // #\space x))). Maybe change it to !x.is_whitespace(). The change
-    // requires a new database version. The version update must convert
-    // tags' whitespace characters to valid characters like "_" and
-    // print information for user about changed tag names.
-    !tag.is_empty() && tag.chars().all(|c| !" \n\r".contains(c))
+    !tag.is_empty() && tag.chars().all(|x| !x.is_whitespace())
 }
 
 fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
-    // Maybe convert this to split_whitespace(). This may require
-    // database update. See is_valid_tag_name.
-    s.split(' ').filter(|x| !x.is_empty())
+    s.split_whitespace()
 }
 
 fn num_width(mut num: u64) -> usize {
@@ -519,13 +512,14 @@ mod tests {
     fn is_valid_tag_name_fn() {
         assert!(!is_valid_tag_name(""));
         assert!(!is_valid_tag_name(" "));
-        assert!(is_valid_tag_name("\t"));
+        assert!(!is_valid_tag_name("\t"));
         assert!(!is_valid_tag_name("\n"));
         assert!(!is_valid_tag_name("\r"));
         assert!(!is_valid_tag_name("abc "));
         assert!(!is_valid_tag_name("ab cd"));
-        assert!(is_valid_tag_name("ab\t"));
+        assert!(!is_valid_tag_name("ab\tab"));
         assert!(!is_valid_tag_name("ab\n"));
+
         assert!(is_valid_tag_name("a"));
         assert!(is_valid_tag_name("€ä"));
         assert!(is_valid_tag_name("–"));
@@ -541,10 +535,11 @@ mod tests {
             assert_tag_names(&vec)
         }
 
-        assert!(atn(["a", "ab", "öljyä", "–fas", "ab\tcd"]).is_ok());
+        assert!(atn(["a", "ab", "öljyä", "–fas", "abcd"]).is_ok());
         assert!(atn(Vec::<String>::new()).is_err());
         assert!(atn([""]).is_err());
         assert!(atn(["", "a"]).is_err());
+        assert!(atn(["ab "]).is_err());
     }
 
     #[test]
