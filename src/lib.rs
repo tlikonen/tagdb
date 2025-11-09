@@ -454,7 +454,7 @@ fn is_valid_tag_name(tag: &str) -> bool {
 fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
     // Maybe convert this to split_whitespace(). This may require
     // database update. See is_valid_tag_name.
-    s.split(' ').filter(|x| x.len() > 0)
+    s.split(' ').filter(|x| !x.is_empty())
 }
 
 fn num_width(mut num: u64) -> usize {
