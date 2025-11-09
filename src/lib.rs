@@ -10,7 +10,7 @@ use std::{
 };
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
-const TAG_PREFIX: &str = "# Tags: ";
+const TAG_PREFIX_EDITOR: &str = "# ";
 
 pub struct Config {
     pub short: bool,
@@ -285,7 +285,7 @@ async fn cmd_edit(
             }
 
             if read_tags {
-                if let Some(s) = line.strip_prefix(TAG_PREFIX) {
+                if let Some(s) = line.strip_prefix(TAG_PREFIX_EDITOR) {
                     for tag in split_tag_string(s) {
                         tags.insert(tag);
                     }

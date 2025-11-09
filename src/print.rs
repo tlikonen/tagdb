@@ -1,8 +1,9 @@
-use crate::{Config, Format, Record, TAG_PREFIX, database::CL_TIME_EPOCH};
+use crate::{Config, Format, Record, TAG_PREFIX_EDITOR, database::CL_TIME_EPOCH};
 use chrono::{DateTime, Local};
 use std::{error::Error, io::Write};
 
 const TAGS_MAX_WIDTH: usize = 70;
+const TAG_PREFIX: &str = "# Tags: ";
 
 impl Record {
     pub fn print(&self, config: &Config) {
@@ -115,7 +116,7 @@ impl Record {
         writeln!(file, "{id_line}")?;
 
         for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
-            writeln!(file, "{TAG_PREFIX}{line}")?;
+            writeln!(file, "{TAG_PREFIX_EDITOR}{line}")?;
         }
 
         write!(
