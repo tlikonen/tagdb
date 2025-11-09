@@ -1,6 +1,12 @@
 Tagdb
 =====
 
+**Note:** This particular development branch is no longer being
+developed. The program has been rewritten in the
+[Rust](https://www.rust-lang.org/) programming language. The current
+development is available in [Github](https://github.com/tlikonen/tagdb).
+
+
 _Tagdb_ is a simple tag-based command-line database tool for storing
 text records. Every record is associated with one or more tags which can
 be used to find the records. _Tagdb_ is useful for saving and finding
