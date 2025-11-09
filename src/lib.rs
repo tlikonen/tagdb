@@ -347,8 +347,8 @@ async fn cmd_edit(
                 println!("Updated");
             } else {
                 // Empty content. Delete the record.
-                println!("Deleted");
                 record.delete(&mut ta).await?;
+                println!("Deleted");
             }
         }
 
