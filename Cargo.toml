@@ -7,6 +7,7 @@ rust-version = "1.85"
 authors = ["Teemu Likonen <tlikonen@iki.fi>"]
 license = "GPL-3.0-or-later"
 publish = false
+readme = "README.md"
 
 [dependencies]
 chrono = "0.4.41"
