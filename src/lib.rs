@@ -214,7 +214,7 @@ async fn cmd_edit(
     let edit_message_seen = database::is_edit_message_seen(&mut ta).await?;
 
     if !edit_message_seen || config.verbose {
-        writeln!(file, "{}", include_str!("editor-message.txt"))?;
+        writeln!(file, "{}", include_str!("editor.txt"))?;
         if !edit_message_seen {
             writeln!(
                 file,
