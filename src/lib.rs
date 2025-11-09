@@ -228,7 +228,7 @@ async fn cmd_edit(
     let mut ids_headers = HashMap::<i32, String>::with_capacity(10);
 
     {
-        let mut id: usize = 1;
+        let mut header_id: usize = 1;
         let mut first = true;
 
         for record in records {
@@ -238,14 +238,14 @@ async fn cmd_edit(
                 writeln!(&mut file)?;
             }
 
-            let id_line = record.editor_id_line(id, &config);
+            let id_line = record.editor_id_line(header_id, &config);
             record.write(&mut file, &id_line)?;
 
             let record_id = record.id.expect("Record ID not set");
             headers_ids.insert(id_line.clone(), record_id);
             ids_headers.insert(record_id, id_line);
 
-            id += 1;
+            header_id += 1;
         }
     }
 
