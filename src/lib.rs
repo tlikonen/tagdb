@@ -256,7 +256,7 @@ async fn cmd_edit(
         run_text_editor(&name)?;
         let buffer = fs::read_to_string(path)?;
 
-        let mut id: Option<i32> = None;
+        let mut header_id: Option<i32> = None;
         let mut tags = HashSet::<&str>::with_capacity(10);
         let mut lines: Vec<&str> = Vec::with_capacity(20);
         let mut records: Vec<Record> = Vec::with_capacity(10);
@@ -265,8 +265,8 @@ async fn cmd_edit(
 
         for line in buffer.lines() {
             // Is this new record header?
-            if let Some(new_id) = headers_ids.get(line).copied() {
-                if let Some(old_id) = id {
+            if let Some(new_id) = headers_ids.get(line) {
+                if let Some(old_id) = header_id {
                     records.push(Record {
                         id: Some(old_id),
                         tags: prepare_tags(&tags),
@@ -277,10 +277,10 @@ async fn cmd_edit(
                     tags.clear();
                     lines.clear();
                 }
-                id = Some(new_id);
+                header_id = Some(*new_id);
                 read_tags = true;
                 continue;
-            } else if id.is_none() {
+            } else if header_id.is_none() {
                 continue;
             }
 
@@ -299,7 +299,7 @@ async fn cmd_edit(
         }
 
         // Store the last record.
-        match id {
+        match header_id {
             Some(old_id) => records.push(Record {
                 id: Some(old_id),
                 tags: prepare_tags(&tags),
