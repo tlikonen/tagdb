@@ -274,6 +274,92 @@ async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32,
     Ok(id)
 }
 
+pub async fn retag(db: &mut SqliteConnection, old: &str, new: &str) -> Result<(), Box<dyn Error>> {
+    let row = sqlx::query("SELECT id FROM tags WHERE name = $1")
+        .bind(old)
+        .fetch_optional(&mut *db)
+        .await?;
+
+    let old_id: i32 = match row {
+        Some(r) => r.try_get("id")?,
+        None => Err(format!("Tag “{old}” not found."))?,
+    };
+
+    let row = sqlx::query("SELECT id FROM tags WHERE name = $1")
+        .bind(new)
+        .fetch_optional(&mut *db)
+        .await?;
+
+    let mut change_count = 0;
+
+    if let Some(r) = row {
+        // New tag found. Modify record-tag connections.
+        let new_id: i32 = r.try_get("id")?;
+
+        // List all record ids that have the old tag.
+        let mut record_ids = Vec::with_capacity(5);
+
+        {
+            let mut rows = sqlx::query("SELECT record_id FROM record_tag WHERE tag_id = $1")
+                .bind(old_id)
+                .fetch(&mut *db);
+
+            while let Some(row) = rows.try_next().await? {
+                let id: i32 = row.try_get("record_id")?;
+                record_ids.push(id);
+            }
+        }
+
+        for record_id in record_ids {
+            // Check if the record already has the new tag.
+            let has_new =
+                sqlx::query("SELECT 1 FROM record_tag WHERE record_id = $1 AND tag_id = $2")
+                    .bind(record_id)
+                    .bind(new_id)
+                    .fetch_optional(&mut *db)
+                    .await?
+                    .is_some();
+
+            if has_new {
+                // The record has the new tag. Delete the connection to
+                // the old tag. Later unused old tags are deleted.
+                sqlx::query("DELETE FROM record_tag WHERE record_id = $1 AND tag_id = $2")
+                    .bind(record_id)
+                    .bind(old_id)
+                    .execute(&mut *db)
+                    .await?;
+            } else {
+                // The record doesn't have the new tag. Change the old
+                // tag id to new tag id.
+                sqlx::query(
+                    "UPDATE record_tag SET tag_id = $1 WHERE record_id = $2 AND tag_id = $3",
+                )
+                .bind(new_id)
+                .bind(record_id)
+                .bind(old_id)
+                .execute(&mut *db)
+                .await?;
+            }
+
+            change_count += 1;
+        }
+
+        delete_unused_tags(db).await?;
+    } else {
+        // New tag doesn't exist. Rename the tag name from old to new.
+        sqlx::query("UPDATE tags SET name = $1 WHERE id = $2")
+            .bind(new)
+            .bind(old_id)
+            .execute(&mut *db)
+            .await?;
+        change_count += 1;
+    };
+
+    change_counter_add(db, change_count).await?;
+
+    Ok(())
+}
+
 pub async fn delete_unused_tags(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
     sqlx::query(
         "DELETE FROM tags WHERE id IN \

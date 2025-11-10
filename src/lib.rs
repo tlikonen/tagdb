@@ -68,7 +68,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
         Cmd::Create(tags) => cmd_create(&mut db, tags).await,
         Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await,
         Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await,
-        Cmd::Retag(_tags) => todo!(),
+        Cmd::Retag(tags) => cmd_retag(&mut db, tags).await,
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
 }
@@ -356,6 +356,28 @@ async fn cmd_edit(
     }
 
     database::delete_unused_tags(&mut ta).await?;
+    ta.commit().await?;
+    Ok(())
+}
+
+async fn cmd_retag(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
+    if tags.len() != 2 {
+        Err("The retag command requires two tag names, OLD and NEW. See “-h” for help.")?;
+    }
+
+    assert_tag_names(tags)?;
+
+    let old = &tags[0];
+    let new = &tags[1];
+
+    if old == new {
+        Err(format!("OLD and NEW tag can’t be the same (both “{old}”)."))?;
+    }
+
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
+    database::retag(&mut ta, old, new).await?;
+
     ta.commit().await?;
     Ok(())
 }
