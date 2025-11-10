@@ -362,7 +362,7 @@ async fn cmd_edit(
 
 async fn cmd_retag(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
     if tags.len() != 2 {
-        Err("The retag command requires two tag names, OLD and NEW. See “-h” for help.")?;
+        Err("The retag command requires two tag names: OLD and NEW.")?;
     }
 
     assert_tag_names(tags)?;
