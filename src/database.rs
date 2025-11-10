@@ -29,7 +29,7 @@ pub async fn list_matching_records(
         let mut rows = sqlx::query(
             "SELECT j.record_id FROM record_tag AS j \
              LEFT JOIN tags AS t ON j.tag_id = t.id \
-             WHERE t.name LIKE $1",
+             WHERE t.name LIKE $1 ESCAPE '\\'",
         )
         .bind(like_esc_wild(tag))
         .fetch(&mut *db);
@@ -123,7 +123,7 @@ pub async fn list_tags(
         let mut rows = sqlx::query(
             "SELECT count(t.id) AS count, t.name FROM tags AS t \
              JOIN record_tag AS j ON t.id = j.tag_id \
-             WHERE t.name LIKE $1 GROUP BY t.name",
+             WHERE t.name LIKE $1 ESCAPE '\\' GROUP BY t.name",
         )
         .bind(like_esc_wild(tag))
         .fetch(&mut *db);
