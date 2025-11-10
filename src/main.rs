@@ -122,10 +122,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
 
     match command {
         Cmd::Help => {
-            println!(
-                "Usage: {PROGRAM_NAME} [options] [--] TAG ...\n\n{txt}",
-                txt = include_str!("usage.txt")
-            );
+            println!(include_str!("usage.txt"), program = PROGRAM_NAME);
             Ok(())
         }
 
