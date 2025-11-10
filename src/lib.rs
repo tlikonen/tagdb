@@ -29,7 +29,7 @@ pub enum Format {
 
 impl Default for Format {
     fn default() -> Self {
-        Format::Text { color: false }
+        Format::Text { color: true }
     }
 }
 

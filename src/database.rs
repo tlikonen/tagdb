@@ -515,7 +515,7 @@ async fn init(db: &mut SqliteConnection, path: &Path) -> Result<(), Box<dyn Erro
             .execute(&mut *ta)
             .await?;
 
-        sqlx::query("INSERT INTO maintenance (key, value) VALUES ('output format', 'text')")
+        sqlx::query("INSERT INTO maintenance (key, value) VALUES ('output format', 'text-color')")
             .execute(&mut *ta)
             .await?;
 
