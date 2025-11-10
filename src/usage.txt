@@ -46,10 +46,10 @@ Command options
 
   -e, --edit TAG ...
         Find all records that match the given tags and launch the
-        default text editor ($EDITOR) for editing the records’ contents
-        and tags. Empty lines at the beginning and end of the record
-        content are ignored. If a record has empty content the record
-        will be deleted from the database.
+        default text editor (variable: EDITOR) for editing the records’
+        contents and tags. Empty lines at the beginning and end of the
+        record content are ignored. If a record has empty content the
+        record will be deleted from the database.
 
   -l, --list [TAG ...]
         List tags that match the given TAG name string(s). If no
