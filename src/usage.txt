@@ -37,13 +37,12 @@ Command options
 
   -c, --create TAG ...
         Create a new database record associated with the given tags. The
-        default text editor ($EDITOR) is launched for editing the
-        record. Empty lines at the beginning and end are ignored.
+        default text editor (variable: EDITOR) is launched for editing
+        the record. Empty lines at the beginning and end are ignored.
 
-  --cs, --create-stdin
-        The same as above but the standard input stream is be saved as
-        the record’s content. Empty lines at the beginning and end are
-        ignored.
+  --cs, --create-stdin TAG ...
+        Same as the command “-c” but the standard input stream is saved
+        as record’s content.
 
   -e, --edit TAG ...
         Find all records that match the given tags and launch the
