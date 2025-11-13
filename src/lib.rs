@@ -62,15 +62,18 @@ pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<d
     let mut db = database::connect(&mut config).await?;
 
     match cmd {
-        Cmd::Normal(tags) => cmd_normal(&mut db, config, tags).await,
-        Cmd::Count(tags) => cmd_count(&mut db, tags).await,
-        Cmd::List(tags) => cmd_list(&mut db, tags).await,
-        Cmd::Create(tags) => cmd_create(&mut db, tags).await,
-        Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await,
-        Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await,
-        Cmd::Retag(tags) => cmd_retag(&mut db, tags).await,
+        Cmd::Normal(tags) => cmd_normal(&mut db, config, tags).await?,
+        Cmd::Count(tags) => cmd_count(&mut db, tags).await?,
+        Cmd::List(tags) => cmd_list(&mut db, tags).await?,
+        Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
+        Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
+        Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await?,
+        Cmd::Retag(tags) => cmd_retag(&mut db, tags).await?,
         Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
+
+    database::vacuum_check(&mut db).await?;
+    Ok(())
 }
 
 async fn cmd_normal(

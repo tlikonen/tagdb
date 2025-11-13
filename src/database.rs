@@ -10,6 +10,7 @@ use std::{
 };
 
 const PROGRAM_DB_VERSION: i32 = 7;
+const CHANGES_BEFORE_VACUUM: i32 = 1000;
 
 // Seconds from 1900-01-01T00:00:00Z to 1970-01-01T00:00:00Z. That is,
 // from the beginning of Common Lisp universal time to the beginning of
@@ -732,6 +733,18 @@ async fn update_db(db: &mut SqliteConnection, version: i32) -> Result<(), Box<dy
 async fn vacuum(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
     sqlx::query("VACUUM").execute(&mut *db).await?;
     change_counter_reset(&mut *db).await?;
+    Ok(())
+}
+
+pub async fn vacuum_check(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+    let row = sqlx::query("SELECT value FROM maintenance WHERE key = 'change counter'")
+        .fetch_one(&mut *db)
+        .await?;
+
+    let count: i32 = row.try_get("value")?;
+    if count >= CHANGES_BEFORE_VACUUM {
+        vacuum(db).await?;
+    }
     Ok(())
 }
 
