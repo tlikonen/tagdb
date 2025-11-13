@@ -7,14 +7,14 @@ Usage: {program} [options] [--] TAG ...
 General options
 
   -v, --verbose
-        Verbose output. Also print records’ timestamps.
+        Verbose output. Print records’ timestamps.
 
   -q, --quiet
         Quiet output. Don’t print records’ metadata, just the content.
 
   --utc
         Print timestamps in UTC time instead of local time zone. This is
-        relevant only with verbose (-v) output.
+        relevant with verbose (-v) output and edit (-e).
 
   --db=FILE
         Use FILE as the database file instead of the default. The
