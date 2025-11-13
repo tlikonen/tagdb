@@ -732,7 +732,7 @@ async fn update_db(db: &mut SqliteConnection, version: i32) -> Result<(), Box<dy
 
 async fn vacuum(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
     sqlx::query("VACUUM").execute(&mut *db).await?;
-    change_counter_reset(&mut *db).await?;
+    change_counter_reset(db).await?;
     Ok(())
 }
 
