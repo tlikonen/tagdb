@@ -1396,7 +1396,7 @@ dependencies = [
 
 [[package]]
 name = "tagdb"
-version = "1.99.3"
+version = "1.99.4"
 dependencies = [
  "chrono",
  "futures",

@@ -83,7 +83,7 @@ async fn cmd_normal(
 ) -> Result<(), Box<dyn Error>> {
     assert_tag_names(tags)?;
 
-    if config.quiet & config.verbose {
+    if config.quiet && config.verbose {
         eprintln!("Note: Option “-q” is ignored when combined with “-v”.");
         config.quiet = false;
     }
