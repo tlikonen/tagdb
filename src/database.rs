@@ -1,4 +1,4 @@
-use crate::{Config, Format, PROGRAM_NAME, Record};
+use crate::{Config, Format, Record, database_name};
 use futures::TryStreamExt; // STREAM.try_next()
 use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
 use std::{
@@ -405,7 +405,7 @@ pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Er
             })?;
         }
     } else {
-        let name = format!("{PROGRAM_NAME}.sqlite");
+        let name = database_name();
         path = xdg::BaseDirectories::new()
             .place_data_file(&name)
             .map_err(|e| format!("Couldn’t create database file “{name}”: {}", e.kind()))?;

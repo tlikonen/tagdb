@@ -122,7 +122,11 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
 
     match command {
         Cmd::Help => {
-            println!(include_str!("usage.txt"), program = PROGRAM_NAME);
+            println!(
+                include_str!("usage.txt"),
+                program = PROGRAM_NAME,
+                database = tagdb::database_name()
+            );
             Ok(())
         }
 

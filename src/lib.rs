@@ -528,6 +528,10 @@ fn prepare_tags(tags: &HashSet<&str>) -> Option<Vec<String>> {
     }
 }
 
+pub fn database_name() -> String {
+    format!("{PROGRAM_NAME}.sqlite")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
