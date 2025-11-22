@@ -399,7 +399,7 @@ pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Er
             fs::create_dir_all(dirs).map_err(|e| {
                 format!(
                     "Couldn’t create database file “{}”: {}",
-                    path.to_string_lossy(),
+                    path.display(),
                     e.kind()
                 )
             })?;
@@ -464,8 +464,6 @@ async fn init(db: &mut SqliteConnection, path: &Path) -> Result<(), Box<dyn Erro
     .await?
     .is_some();
 
-    let pathname = || path.to_string_lossy();
-
     if db_exists {
         let row = sqlx::query("SELECT value FROM maintenance WHERE key = 'database version'")
             .fetch_one(&mut *db)
@@ -478,7 +476,7 @@ async fn init(db: &mut SqliteConnection, path: &Path) -> Result<(), Box<dyn Erro
             Ordering::Less => {
                 eprintln!(
                     "Updating database file “{}” from version {version} to {PROGRAM_DB_VERSION}.",
-                    pathname()
+                    path.display()
                 );
                 for v in (version + 1)..=(PROGRAM_DB_VERSION) {
                     update_db(db, v).await?;
@@ -490,12 +488,12 @@ async fn init(db: &mut SqliteConnection, path: &Path) -> Result<(), Box<dyn Erro
                 "The database version in file “{}” is {version}\n\
                  but this program can only handle versions upto {PROGRAM_DB_VERSION}.\n\
                  Please update the program.",
-                pathname()
+                path.display()
             ))?,
         }
     } else {
         // Database objects don't exist. Create all.
-        eprintln!("Preparing database file “{}”.", pathname());
+        eprintln!("Preparing database file “{}”.", path.display());
 
         let mut ta = db.begin().await?;
 
