@@ -1,12 +1,14 @@
 mod database;
 mod print;
 
-use sqlx::{Connection, SqliteConnection};
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fs,
-    io::{self, Write},
+use {
+    sqlx::{Connection, SqliteConnection},
+    std::{
+        collections::{HashMap, HashSet},
+        error::Error,
+        fs,
+        io::{self, Write},
+    },
 };
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");

@@ -1,12 +1,14 @@
-use crate::{Config, Format, Record, database_name};
-use futures::TryStreamExt; // STREAM.try_next()
-use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
-use std::{
-    cmp::Ordering,
-    collections::{HashMap, HashSet},
-    error::Error,
-    fs,
-    path::{Path, PathBuf},
+use {
+    crate::{Config, Format, Record, database_name},
+    futures::TryStreamExt,
+    sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions},
+    std::{
+        cmp::Ordering,
+        collections::{HashMap, HashSet},
+        error::Error,
+        fs,
+        path::{Path, PathBuf},
+    },
 };
 
 const PROGRAM_DB_VERSION: i32 = 7;

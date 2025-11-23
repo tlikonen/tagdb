@@ -1,6 +1,8 @@
-use crate::{Config, Format, Record, TAG_PREFIX_EDITOR, database::CL_TIME_EPOCH};
-use chrono::{DateTime, Local};
-use std::{error::Error, io::Write};
+use {
+    crate::{Config, Format, Record, TAG_PREFIX_EDITOR, database::CL_TIME_EPOCH},
+    chrono::{DateTime, Local},
+    std::{error::Error, io::Write},
+};
 
 const TAGS_MAX_WIDTH: usize = 70;
 const TAG_PREFIX: &str = "# Tags:";
