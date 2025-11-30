@@ -1,15 +1,8 @@
 mod database;
+mod prelude;
 mod print;
 
-use {
-    sqlx::{Connection, SqliteConnection},
-    std::{
-        collections::{HashMap, HashSet},
-        error::Error,
-        fs,
-        io::{self, Write},
-    },
-};
+use crate::prelude::*;
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 const TAG_PREFIX_EDITOR: &str = "#";

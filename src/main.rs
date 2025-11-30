@@ -1,8 +1,6 @@
-use {
-    just_getopt::{Args, OptFlags, OptSpecs, OptValue},
-    std::{error::Error, process::ExitCode},
-    tagdb::{Cmd, Config, Format},
-};
+use just_getopt::{Args, OptFlags, OptSpecs, OptValue};
+use std::{error::Error, process::ExitCode};
+use tagdb::*;
 
 static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
