@@ -2,11 +2,6 @@ use just_getopt::{Args, OptFlags, OptSpecs, OptValue};
 use std::{error::Error, process::ExitCode};
 use tagdb::*;
 
-static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
-static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
-static PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
-static PROGRAM_LICENSE: &str = env!("CARGO_PKG_LICENSE");
-
 #[tokio::main]
 async fn main() -> ExitCode {
     let args = OptSpecs::new()
@@ -124,7 +119,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
         Cmd::Help => {
             println!(
                 include_str!("usage.txt"),
-                program = PROGRAM_NAME,
+                program = tagdb::PROGRAM_NAME,
                 database = tagdb::database_name()
             );
             Ok(())
@@ -132,9 +127,13 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
 
         Cmd::Version => {
             println!(
-                "{PROGRAM_NAME} v{PROGRAM_VERSION}\n\
-                 Author:  {PROGRAM_AUTHORS}\n\
-                 License: {PROGRAM_LICENSE}"
+                "{prg} v{ver}\n\
+                 Author:  {author}\n\
+                 License: {license}",
+                prg = tagdb::PROGRAM_NAME,
+                ver = tagdb::PROGRAM_VERSION,
+                author = tagdb::PROGRAM_AUTHORS,
+                license = tagdb::PROGRAM_LICENSE,
             );
             Ok(())
         }

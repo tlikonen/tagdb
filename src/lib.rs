@@ -4,7 +4,11 @@ mod print;
 
 use crate::prelude::*;
 
-static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
+pub static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
+pub static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub static PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
+pub static PROGRAM_LICENSE: &str = env!("CARGO_PKG_LICENSE");
+
 const TAG_PREFIX_EDITOR: &str = "#";
 
 pub struct Config {
