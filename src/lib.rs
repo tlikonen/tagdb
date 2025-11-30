@@ -1,8 +1,9 @@
 mod database;
+mod objects;
 mod prelude;
 mod print;
 
-use crate::prelude::*;
+pub use crate::prelude::*;
 
 pub static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 pub static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -10,48 +11,6 @@ pub static PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub static PROGRAM_LICENSE: &str = env!("CARGO_PKG_LICENSE");
 
 const TAG_PREFIX_EDITOR: &str = "#";
-
-pub struct Config {
-    pub short: bool,
-    pub verbose: bool,
-    pub quiet: bool,
-    pub utc: bool,
-    pub database: Option<String>,
-    pub format: Option<Format>,
-    pub format_save: bool,
-}
-
-pub enum Format {
-    Text { color: bool },
-    OrgMode,
-}
-
-impl Default for Format {
-    fn default() -> Self {
-        Format::Text { color: true }
-    }
-}
-
-#[derive(Default)]
-struct Record {
-    pub id: Option<i32>,
-    pub created: Option<i64>,
-    pub modified: Option<i64>,
-    pub tags: Option<Vec<String>>,
-    pub content: Option<String>,
-}
-
-pub enum Cmd<'a> {
-    Normal(&'a [String]),
-    Count(&'a [String]),
-    Create(&'a [String]),
-    CreateStdin(&'a [String]),
-    Edit(&'a [String]),
-    List(&'a [String]),
-    Retag(&'a [String]),
-    Help,
-    Version,
-}
 
 pub async fn command_stage(mut config: Config, cmd: Cmd<'_>) -> Result<(), Box<dyn Error>> {
     unsafe {
