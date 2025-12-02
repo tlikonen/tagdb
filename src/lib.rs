@@ -3,7 +3,8 @@ mod objects;
 mod prelude;
 mod print;
 
-pub use crate::prelude::*;
+use crate::prelude::*;
+pub use crate::objects::{Cmd, Config, Format};
 
 pub static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 pub static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");

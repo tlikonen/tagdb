@@ -1,7 +1,12 @@
 pub(crate) use {
-    crate::{TAG_PREFIX_EDITOR, database::CL_TIME_EPOCH, database_name, objects::Record},
+    crate::{
+        TAG_PREFIX_EDITOR,
+        database::CL_TIME_EPOCH,
+        database_name,
+        objects::{Config, Format, Record},
+    },
     chrono::{DateTime, Local},
-    futures::TryStreamExt,
+    futures::TryStreamExt as _,
     sqlx::{Connection, Row as _, SqliteConnection, sqlite::SqliteConnectOptions},
     std::{
         cmp::Ordering,
@@ -12,5 +17,3 @@ pub(crate) use {
         path::{Path, PathBuf},
     },
 };
-
-pub use crate::objects::{Cmd, Config, Format};
