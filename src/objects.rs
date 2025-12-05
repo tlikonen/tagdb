@@ -74,8 +74,39 @@ impl Tags {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &String> {
-        self.0.iter()
+    pub fn iter(&self) -> TagsIter<'_> {
+        TagsIter {
+            tags: self,
+            index: 0,
+        }
+    }
+}
+
+pub struct TagsIter<'a> {
+    tags: &'a Tags,
+    index: usize,
+}
+
+impl<'a> Iterator for TagsIter<'a> {
+    type Item = &'a String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.tags.0.get(self.index) {
+            None => None,
+            value => {
+                self.index += 1;
+                value
+            }
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a Tags {
+    type Item = &'a String;
+    type IntoIter = TagsIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
@@ -94,5 +125,26 @@ mod tests {
         assert!(Tags::try_from(["abc "]).is_err());
         assert!(Tags::try_from([" "]).is_err());
         assert!(Tags::try_from(["abc "]).is_err());
+    }
+
+    #[test]
+    fn tags_iterator() {
+        let tags = Tags::try_from(["a", "b"]).unwrap();
+        let mut it = tags.iter();
+
+        assert_eq!(Some("a"), it.next().map(|x| x.as_str()));
+        assert_eq!(Some("b"), it.next().map(|x| x.as_str()));
+        assert_eq!(None, it.next());
+    }
+
+    #[test]
+    fn tags_for_loop() {
+        let tags = Tags::try_from(["a", "b", "c"]).unwrap();
+
+        let mut output = Vec::new();
+        for tag in &tags {
+            output.push(tag);
+        }
+        assert_eq!(vec!["a", "b", "c"], output);
     }
 }
