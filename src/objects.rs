@@ -23,11 +23,11 @@ impl Default for Format {
 
 #[derive(Default)]
 pub struct Record {
-    pub id: Option<i32>,
-    pub created: Option<i64>,
-    pub modified: Option<i64>,
-    pub tags: Option<Vec<String>>,
-    pub content: Option<String>,
+    pub id: i32,
+    pub created: i64,
+    pub modified: i64,
+    pub tags: Vec<String>,
+    pub content: String,
 }
 
 pub enum Cmd {

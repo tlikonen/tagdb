@@ -78,25 +78,19 @@ pub async fn list_records(
                 .await?;
 
             records.push(Record {
-                id: Some(id),
-                created: Some(row.try_get("created")?),
-                modified: Some(row.try_get("modified")?),
+                id: id,
+                created: row.try_get("created")?,
+                modified: row.try_get("modified")?,
                 tags: {
                     tags.sort_by_key(|tag| tag.to_lowercase());
-                    Some(tags)
+                    tags
                 },
-                content: Some(row.try_get("content")?),
+                content: row.try_get("content")?,
             });
         }
     }
 
-    records.sort_by_key(|r| {
-        r.tags
-            .as_ref()
-            .expect("Tags missing")
-            .join(" ")
-            .to_lowercase()
-    });
+    records.sort_by_key(|r| r.tags.join(" ").to_lowercase());
     Ok(records)
 }
 
@@ -131,227 +125,227 @@ pub async fn list_tags(
     Ok(name_count)
 }
 
-impl Record {
-    pub async fn insert(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
-        let mut change_count: i32 = 0;
+// impl Record {
+//     pub async fn insert(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+//         let mut change_count: i32 = 0;
 
-        let record_id = {
-            let content = self.content.as_ref().expect("Content missing");
-            let now = current_time();
+//         let record_id = {
+//             let content = self.content.as_ref().expect("Content missing");
+//             let now = current_time();
 
-            let row = sqlx::query(
-                "INSERT INTO records (created, modified, content) \
-                 VALUES ($1, $2, $3) RETURNING id",
-            )
-            .bind(now)
-            .bind(now)
-            .bind(content)
-            .fetch_one(&mut *db)
-            .await?;
+//             let row = sqlx::query(
+//                 "INSERT INTO records (created, modified, content) \
+//                  VALUES ($1, $2, $3) RETURNING id",
+//             )
+//             .bind(now)
+//             .bind(now)
+//             .bind(content)
+//             .fetch_one(&mut *db)
+//             .await?;
 
-            change_count += 1;
-            let id: i32 = row.try_get("id")?;
-            id
-        };
+//             change_count += 1;
+//             let id: i32 = row.try_get("id")?;
+//             id
+//         };
 
-        let mut tag_ids = HashSet::with_capacity(5);
-        for tag in self.tags.as_ref().expect("Tags missing") {
-            let id = get_or_insert_tag(db, tag).await?;
-            tag_ids.insert(id);
-        }
+//         let mut tag_ids = HashSet::with_capacity(5);
+//         for tag in self.tags.as_ref().expect("Tags missing") {
+//             let id = get_or_insert_tag(db, tag).await?;
+//             tag_ids.insert(id);
+//         }
 
-        for tag_id in &tag_ids {
-            sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
-                .bind(record_id)
-                .bind(tag_id)
-                .execute(&mut *db)
-                .await?;
-            change_count += 1;
-        }
+//         for tag_id in &tag_ids {
+//             sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
+//                 .bind(record_id)
+//                 .bind(tag_id)
+//                 .execute(&mut *db)
+//                 .await?;
+//             change_count += 1;
+//         }
 
-        change_counter_add(db, change_count).await?;
-        Ok(())
-    }
+//         change_counter_add(db, change_count).await?;
+//         Ok(())
+//     }
 
-    pub async fn update(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
-        let record_id = self.id.as_ref().expect("Record id not set.");
+//     pub async fn update(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+//         let record_id = self.id.as_ref().expect("Record id not set.");
 
-        sqlx::query("UPDATE records SET modified = $1, content = $2 WHERE id = $3")
-            .bind(current_time())
-            .bind(self.content.as_ref().expect("Record content not set."))
-            .bind(record_id)
-            .execute(&mut *db)
-            .await?;
+//         sqlx::query("UPDATE records SET modified = $1, content = $2 WHERE id = $3")
+//             .bind(current_time())
+//             .bind(self.content.as_ref().expect("Record content not set."))
+//             .bind(record_id)
+//             .execute(&mut *db)
+//             .await?;
 
-        let mut change_count = 1;
+//         let mut change_count = 1;
 
-        // Record-tag connections.
-        if let Some(tags) = &self.tags {
-            let mut new_tag_ids = HashSet::with_capacity(8);
-            for tag in tags {
-                new_tag_ids.insert(get_or_insert_tag(db, tag).await?);
-            }
+//         // Record-tag connections.
+//         if let Some(tags) = &self.tags {
+//             let mut new_tag_ids = HashSet::with_capacity(8);
+//             for tag in tags {
+//                 new_tag_ids.insert(get_or_insert_tag(db, tag).await?);
+//             }
 
-            let mut will_delete = HashSet::new();
-            let mut old_tag_ids = HashSet::with_capacity(8);
+//             let mut will_delete = HashSet::new();
+//             let mut old_tag_ids = HashSet::with_capacity(8);
 
-            {
-                let mut rows = sqlx::query("SELECT tag_id FROM record_tag WHERE record_id = $1")
-                    .bind(record_id)
-                    .fetch(&mut *db);
+//             {
+//                 let mut rows = sqlx::query("SELECT tag_id FROM record_tag WHERE record_id = $1")
+//                     .bind(record_id)
+//                     .fetch(&mut *db);
 
-                while let Some(row) = rows.try_next().await? {
-                    let old_tag_id: i32 = row.try_get("tag_id")?;
-                    old_tag_ids.insert(old_tag_id);
-                    if !new_tag_ids.contains(&old_tag_id) {
-                        will_delete.insert(old_tag_id);
-                    }
-                }
-            }
+//                 while let Some(row) = rows.try_next().await? {
+//                     let old_tag_id: i32 = row.try_get("tag_id")?;
+//                     old_tag_ids.insert(old_tag_id);
+//                     if !new_tag_ids.contains(&old_tag_id) {
+//                         will_delete.insert(old_tag_id);
+//                     }
+//                 }
+//             }
 
-            for old in will_delete {
-                sqlx::query("DELETE FROM record_tag WHERE record_id = $1 AND tag_id = $2")
-                    .bind(record_id)
-                    .bind(old)
-                    .execute(&mut *db)
-                    .await?;
-                change_count += 1;
-            }
+//             for old in will_delete {
+//                 sqlx::query("DELETE FROM record_tag WHERE record_id = $1 AND tag_id = $2")
+//                     .bind(record_id)
+//                     .bind(old)
+//                     .execute(&mut *db)
+//                     .await?;
+//                 change_count += 1;
+//             }
 
-            for new in new_tag_ids {
-                if !old_tag_ids.contains(&new) {
-                    sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
-                        .bind(record_id)
-                        .bind(new)
-                        .execute(&mut *db)
-                        .await?;
-                    change_count += 1;
-                }
-            }
-        }
+//             for new in new_tag_ids {
+//                 if !old_tag_ids.contains(&new) {
+//                     sqlx::query("INSERT INTO record_tag (record_id, tag_id) VALUES ($1, $2)")
+//                         .bind(record_id)
+//                         .bind(new)
+//                         .execute(&mut *db)
+//                         .await?;
+//                     change_count += 1;
+//                 }
+//             }
+//         }
 
-        change_counter_add(db, change_count).await?;
-        Ok(())
-    }
+//         change_counter_add(db, change_count).await?;
+//         Ok(())
+//     }
 
-    pub async fn delete(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
-        let record_id = self.id.as_ref().expect("Record id not set.");
-        sqlx::query("DELETE FROM records WHERE id = $1")
-            .bind(record_id)
-            .execute(&mut *db)
-            .await?;
-        change_counter_add(db, 1).await?;
-        Ok(())
-    }
-}
+//     pub async fn delete(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+//         let record_id = self.id.as_ref().expect("Record id not set.");
+//         sqlx::query("DELETE FROM records WHERE id = $1")
+//             .bind(record_id)
+//             .execute(&mut *db)
+//             .await?;
+//         change_counter_add(db, 1).await?;
+//         Ok(())
+//     }
+// }
 
-async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32, sqlx::Error> {
-    let id: i32;
+// async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32, sqlx::Error> {
+//     let id: i32;
 
-    match sqlx::query("SELECT id FROM tags WHERE name = $1")
-        .bind(name)
-        .fetch_optional(&mut *db)
-        .await?
-    {
-        Some(row) => id = row.try_get("id")?,
-        None => {
-            let row = sqlx::query("INSERT INTO tags (name) VALUES ($1) RETURNING id")
-                .bind(name)
-                .fetch_one(&mut *db)
-                .await?;
-            change_counter_add(db, 1).await?;
-            id = row.try_get("id")?;
-        }
-    }
+//     match sqlx::query("SELECT id FROM tags WHERE name = $1")
+//         .bind(name)
+//         .fetch_optional(&mut *db)
+//         .await?
+//     {
+//         Some(row) => id = row.try_get("id")?,
+//         None => {
+//             let row = sqlx::query("INSERT INTO tags (name) VALUES ($1) RETURNING id")
+//                 .bind(name)
+//                 .fetch_one(&mut *db)
+//                 .await?;
+//             change_counter_add(db, 1).await?;
+//             id = row.try_get("id")?;
+//         }
+//     }
 
-    Ok(id)
-}
+//     Ok(id)
+// }
 
-pub async fn retag(db: &mut SqliteConnection, old: &str, new: &str) -> Result<(), Box<dyn Error>> {
-    let row = sqlx::query("SELECT id FROM tags WHERE name = $1")
-        .bind(old)
-        .fetch_optional(&mut *db)
-        .await?;
+// pub async fn retag(db: &mut SqliteConnection, old: &str, new: &str) -> Result<(), Box<dyn Error>> {
+//     let row = sqlx::query("SELECT id FROM tags WHERE name = $1")
+//         .bind(old)
+//         .fetch_optional(&mut *db)
+//         .await?;
 
-    let old_id: i32 = match row {
-        Some(r) => r.try_get("id")?,
-        None => Err(format!("Tag “{old}” not found."))?,
-    };
+//     let old_id: i32 = match row {
+//         Some(r) => r.try_get("id")?,
+//         None => Err(format!("Tag “{old}” not found."))?,
+//     };
 
-    let row = sqlx::query("SELECT id FROM tags WHERE name = $1")
-        .bind(new)
-        .fetch_optional(&mut *db)
-        .await?;
+//     let row = sqlx::query("SELECT id FROM tags WHERE name = $1")
+//         .bind(new)
+//         .fetch_optional(&mut *db)
+//         .await?;
 
-    let mut change_count = 0;
+//     let mut change_count = 0;
 
-    if let Some(r) = row {
-        // New tag found. Modify record-tag connections.
-        let new_id: i32 = r.try_get("id")?;
+//     if let Some(r) = row {
+//         // New tag found. Modify record-tag connections.
+//         let new_id: i32 = r.try_get("id")?;
 
-        // List all record ids that have the old tag.
-        let mut record_ids = Vec::with_capacity(5);
+//         // List all record ids that have the old tag.
+//         let mut record_ids = Vec::with_capacity(5);
 
-        {
-            let mut rows = sqlx::query("SELECT record_id FROM record_tag WHERE tag_id = $1")
-                .bind(old_id)
-                .fetch(&mut *db);
+//         {
+//             let mut rows = sqlx::query("SELECT record_id FROM record_tag WHERE tag_id = $1")
+//                 .bind(old_id)
+//                 .fetch(&mut *db);
 
-            while let Some(row) = rows.try_next().await? {
-                let id: i32 = row.try_get("record_id")?;
-                record_ids.push(id);
-            }
-        }
+//             while let Some(row) = rows.try_next().await? {
+//                 let id: i32 = row.try_get("record_id")?;
+//                 record_ids.push(id);
+//             }
+//         }
 
-        for record_id in record_ids {
-            // Check if the record already has the new tag.
-            let has_new =
-                sqlx::query("SELECT 1 FROM record_tag WHERE record_id = $1 AND tag_id = $2")
-                    .bind(record_id)
-                    .bind(new_id)
-                    .fetch_optional(&mut *db)
-                    .await?
-                    .is_some();
+//         for record_id in record_ids {
+//             // Check if the record already has the new tag.
+//             let has_new =
+//                 sqlx::query("SELECT 1 FROM record_tag WHERE record_id = $1 AND tag_id = $2")
+//                     .bind(record_id)
+//                     .bind(new_id)
+//                     .fetch_optional(&mut *db)
+//                     .await?
+//                     .is_some();
 
-            if has_new {
-                // The record has the new tag. Delete the connection to
-                // the old tag. Later unused old tags are deleted.
-                sqlx::query("DELETE FROM record_tag WHERE record_id = $1 AND tag_id = $2")
-                    .bind(record_id)
-                    .bind(old_id)
-                    .execute(&mut *db)
-                    .await?;
-            } else {
-                // The record doesn't have the new tag. Change the old
-                // tag id to new tag id.
-                sqlx::query(
-                    "UPDATE record_tag SET tag_id = $1 WHERE record_id = $2 AND tag_id = $3",
-                )
-                .bind(new_id)
-                .bind(record_id)
-                .bind(old_id)
-                .execute(&mut *db)
-                .await?;
-            }
+//             if has_new {
+//                 // The record has the new tag. Delete the connection to
+//                 // the old tag. Later unused old tags are deleted.
+//                 sqlx::query("DELETE FROM record_tag WHERE record_id = $1 AND tag_id = $2")
+//                     .bind(record_id)
+//                     .bind(old_id)
+//                     .execute(&mut *db)
+//                     .await?;
+//             } else {
+//                 // The record doesn't have the new tag. Change the old
+//                 // tag id to new tag id.
+//                 sqlx::query(
+//                     "UPDATE record_tag SET tag_id = $1 WHERE record_id = $2 AND tag_id = $3",
+//                 )
+//                 .bind(new_id)
+//                 .bind(record_id)
+//                 .bind(old_id)
+//                 .execute(&mut *db)
+//                 .await?;
+//             }
 
-            change_count += 1;
-        }
+//             change_count += 1;
+//         }
 
-        delete_unused_tags(db).await?;
-    } else {
-        // New tag doesn't exist. Rename the tag name from old to new.
-        sqlx::query("UPDATE tags SET name = $1 WHERE id = $2")
-            .bind(new)
-            .bind(old_id)
-            .execute(&mut *db)
-            .await?;
-        change_count += 1;
-    };
+//         delete_unused_tags(db).await?;
+//     } else {
+//         // New tag doesn't exist. Rename the tag name from old to new.
+//         sqlx::query("UPDATE tags SET name = $1 WHERE id = $2")
+//             .bind(new)
+//             .bind(old_id)
+//             .execute(&mut *db)
+//             .await?;
+//         change_count += 1;
+//     };
 
-    change_counter_add(db, change_count).await?;
+//     change_counter_add(db, change_count).await?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 pub async fn delete_unused_tags(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
     sqlx::query(

@@ -37,16 +37,16 @@ impl Record {
                  {}# Modified: {}{}{}",
                 colors(GREEN),
                 colors(CYAN),
-                format_time(self.created.expect("Create date not set"), config.utc),
+                format_time(self.created, config.utc),
                 colors(GREEN),
                 colors(CYAN),
-                format_time(self.modified.expect("Modified date not set"), config.utc),
+                format_time(self.modified, config.utc),
                 colors(OFF)
             );
         }
 
         if !config.quiet || config.verbose {
-            for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
+            for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
                 println!(
                     "{}{TAG_PREFIX} {}{line}{}",
                     colors(GREEN),
@@ -58,22 +58,16 @@ impl Record {
         }
 
         if config.short {
-            if let Some(line) = self
-                .content
-                .as_ref()
-                .expect("Content missing")
-                .lines()
-                .next()
-            {
+            if let Some(line) = self.content.lines().next() {
                 println!("{line}");
             }
         } else {
-            print!("{}", self.content.as_ref().expect("Content missing"));
+            print!("{}", self.content);
         }
     }
 
     fn print_orgmode(&self, config: &Config) {
-        let mut lines = self.content.as_ref().expect("Content missing").lines();
+        let mut lines = self.content.lines();
 
         let first = lines.next();
         if let Some(line) = first {
@@ -88,13 +82,13 @@ impl Record {
             println!(
                 "# Created:  {}\n\
                  # Modified: {}",
-                format_time(self.created.expect("Create date not set"), config.utc),
-                format_time(self.modified.expect("Modified date not set"), config.utc),
+                format_time(self.created, config.utc),
+                format_time(self.modified, config.utc),
             );
         }
 
         if !config.quiet || config.verbose {
-            for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
+            for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
                 println!("{TAG_PREFIX} {line}");
             }
         }
@@ -113,22 +107,18 @@ impl Record {
     ) -> Result<(), Box<dyn Error>> {
         writeln!(file, "{id_line}")?;
 
-        for line in into_lines(self.tags.as_ref().expect("Tags missing"), TAGS_MAX_WIDTH) {
+        for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
             writeln!(file, "{TAG_PREFIX_EDITOR} {line}")?;
         }
 
-        write!(
-            file,
-            "\n{}",
-            self.content.as_ref().expect("Content missing")
-        )?;
+        write!(file, "\n{}", self.content)?;
         Ok(())
     }
 
     pub fn editor_id_line(&self, id: usize, config: &Config) -> String {
         format!(
             "# Record: {id}  Created: {}",
-            format_time(self.created.expect("Create date not set"), config.utc)
+            format_time(self.created, config.utc)
         )
     }
 }
