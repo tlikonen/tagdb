@@ -388,10 +388,6 @@ fn run_text_editor(name: &str) -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn is_valid_tag_name(tag: &str) -> bool {
-    !tag.is_empty() && tag.chars().all(|x| !x.is_whitespace())
-}
-
 fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
     s.split_whitespace()
 }
@@ -457,23 +453,6 @@ pub fn database_name() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn is_valid_tag_name_fn() {
-        assert!(!is_valid_tag_name(""));
-        assert!(!is_valid_tag_name(" "));
-        assert!(!is_valid_tag_name("\t"));
-        assert!(!is_valid_tag_name("\n"));
-        assert!(!is_valid_tag_name("\r"));
-        assert!(!is_valid_tag_name("abc "));
-        assert!(!is_valid_tag_name("ab cd"));
-        assert!(!is_valid_tag_name("ab\tab"));
-        assert!(!is_valid_tag_name("ab\n"));
-
-        assert!(is_valid_tag_name("a"));
-        assert!(is_valid_tag_name("€ä"));
-        assert!(is_valid_tag_name("–"));
-    }
 
     #[test]
     fn num_width_fn() {

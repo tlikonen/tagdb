@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 pub struct Config {
     pub short: bool,
     pub verbose: bool,
@@ -126,6 +124,10 @@ impl<'a> IntoIterator for &'a Tags {
     }
 }
 
+fn is_valid_tag_name(tag: &str) -> bool {
+    !tag.is_empty() && tag.chars().all(|x| !x.is_whitespace())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,5 +166,22 @@ mod tests {
             output.push(tag);
         }
         assert_eq!(vec!["a", "b", "c"], output);
+    }
+
+    #[test]
+    fn is_valid_tag_name_fn() {
+        assert!(!is_valid_tag_name(""));
+        assert!(!is_valid_tag_name(" "));
+        assert!(!is_valid_tag_name("\t"));
+        assert!(!is_valid_tag_name("\n"));
+        assert!(!is_valid_tag_name("\r"));
+        assert!(!is_valid_tag_name("abc "));
+        assert!(!is_valid_tag_name("ab cd"));
+        assert!(!is_valid_tag_name("ab\tab"));
+        assert!(!is_valid_tag_name("ab\n"));
+
+        assert!(is_valid_tag_name("a"));
+        assert!(is_valid_tag_name("€ä"));
+        assert!(is_valid_tag_name("–"));
     }
 }
