@@ -24,8 +24,8 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<(), Box<dyn E
         Cmd::Normal(tags) => cmd_normal(&mut db, config, tags).await?,
         Cmd::Count(tags) => cmd_count(&mut db, tags).await?,
         Cmd::List(maybetags) => cmd_list(&mut db, maybetags).await?,
-        // Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
-        // Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
+        Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
+        Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
         // Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await?,
         // Cmd::Retag(tags) => cmd_retag(&mut db, tags).await?,
         // Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
@@ -95,61 +95,48 @@ async fn cmd_list(
     Ok(())
 }
 
-// async fn cmd_create(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
-//     assert_tag_names(tags)?;
-//     let mut ta = db.begin().await?;
-//     database::assert_write_access(&mut ta).await?;
+async fn cmd_create(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn Error>> {
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
 
-//     let file = tmp_file()?;
-//     let path = file.path();
-//     let name = path.to_string_lossy();
-//     run_text_editor(&name)?;
+    let file = tmp_file()?;
+    let path = file.path();
+    let name = path.to_string_lossy();
+    run_text_editor(&name)?;
 
-//     let buffer = fs::read_to_string(path)?;
-//     let lines: Vec<&str> = buffer.lines().collect();
+    let buffer = fs::read_to_string(path)?;
+    let lines: Vec<&str> = buffer.lines().collect();
 
-//     match remove_empty_lines(&lines) {
-//         Some(content) => {
-//             let record = Record {
-//                 tags: Some(tags.to_vec()),
-//                 content: Some(content),
-//                 ..Default::default()
-//             };
-//             record.insert(&mut ta).await?;
-//         }
-//         None => Err("Empty file. Aborting.")?,
-//     }
+    match remove_empty_lines(&lines) {
+        Some(content) => {
+            let new = RecordNew { tags, content };
+            new.insert(&mut ta).await?;
+        }
+        None => Err("Empty file. Aborting.")?,
+    }
 
-//     ta.commit().await?;
-//     Ok(())
-// }
+    ta.commit().await?;
+    Ok(())
+}
 
-// async fn cmd_create_stdin(
-//     db: &mut SqliteConnection,
-//     tags: &[String],
-// ) -> Result<(), Box<dyn Error>> {
-//     assert_tag_names(tags)?;
-//     let mut ta = db.begin().await?;
-//     database::assert_write_access(&mut ta).await?;
+async fn cmd_create_stdin(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn Error>> {
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
 
-//     let buffer = io::read_to_string(io::stdin())?;
-//     let lines: Vec<&str> = buffer.lines().collect();
+    let buffer = io::read_to_string(io::stdin())?;
+    let lines: Vec<&str> = buffer.lines().collect();
 
-//     match remove_empty_lines(&lines) {
-//         Some(content) => {
-//             let record = Record {
-//                 tags: Some(tags.to_vec()),
-//                 content: Some(content),
-//                 ..Default::default()
-//             };
-//             record.insert(&mut ta).await?;
-//         }
-//         None => Err("Empty content. Aborting.")?,
-//     }
+    match remove_empty_lines(&lines) {
+        Some(content) => {
+            let new = RecordNew { tags, content };
+            new.insert(&mut ta).await?;
+        }
+        None => Err("Empty content. Aborting.")?,
+    }
 
-//     ta.commit().await?;
-//     Ok(())
-// }
+    ta.commit().await?;
+    Ok(())
+}
 
 // async fn cmd_edit(
 //     db: &mut SqliteConnection,

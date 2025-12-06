@@ -141,7 +141,6 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
         }
 
         "normal" | "short" => {
-            check_if_empty(&args.other)?;
             if config.quiet && config.verbose {
                 eprintln!("Note: Option “-q” is ignored when combined with “-v”.");
                 config.quiet = false;
@@ -149,10 +148,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             Cmd::Normal(Tags::try_from(&args.other)?)
         }
 
-        "count" => {
-            check_if_empty(&args.other)?;
-            Cmd::Count(Tags::try_from(&args.other)?)
-        }
+        "count" => Cmd::Count(Tags::try_from(&args.other)?),
 
         "list" => {
             if args.other.is_empty() {
@@ -162,16 +158,11 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             }
         }
 
+        "create" => Cmd::Create(Tags::try_from(&args.other)?),
+        "create-stdin" => Cmd::CreateStdin(Tags::try_from(&args.other)?),
+
         _ => panic!("unexpected command"),
     };
 
     tagdb::command_stage(config, command).await
-}
-
-fn check_if_empty(args: &[String]) -> Result<(), Box<dyn Error>> {
-    if args.is_empty() {
-        Err("No tags. At least one tag is required.".into())
-    } else {
-        Ok(())
-    }
 }

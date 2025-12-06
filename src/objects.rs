@@ -21,7 +21,6 @@ impl Default for Format {
     }
 }
 
-#[derive(Default)]
 pub struct Record {
     pub id: i32,
     pub created: i64,
@@ -30,12 +29,17 @@ pub struct Record {
     pub content: String,
 }
 
+pub struct RecordNew {
+    pub tags: Tags,
+    pub content: String,
+}
+
 pub enum Cmd {
     Normal(Tags),
     Count(Tags),
     List(Option<Tags>),
-    // Create(Tags),
-    // CreateStdin(Tags),
+    Create(Tags),
+    CreateStdin(Tags),
     // Edit(Tags),
     // Retag(Tags),
 }
