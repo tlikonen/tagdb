@@ -3,7 +3,7 @@ pub(crate) use {
         TAG_PREFIX_EDITOR,
         database::CL_TIME_EPOCH,
         database_name, is_valid_tag_name,
-        objects::{Config, Format, Record, RecordNew, Tags},
+        objects::{Config, Format, Record, RecordEditor, RecordNew, RecordUpdate, Tags},
     },
     chrono::{DateTime, Local},
     futures::TryStreamExt as _,

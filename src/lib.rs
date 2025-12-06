@@ -26,7 +26,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<(), Box<dyn E
         Cmd::List(maybetags) => cmd_list(&mut db, maybetags).await?,
         Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
         Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
-        // Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await?,
+        Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await?,
         // Cmd::Retag(tags) => cmd_retag(&mut db, tags).await?,
         // Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
     }
@@ -138,167 +138,178 @@ async fn cmd_create_stdin(db: &mut SqliteConnection, tags: Tags) -> Result<(), B
     Ok(())
 }
 
-// async fn cmd_edit(
-//     db: &mut SqliteConnection,
-//     config: Config,
-//     tags: &[String],
-// ) -> Result<(), Box<dyn Error>> {
-//     assert_tag_names(tags)?;
-//     let mut ta = db.begin().await?;
+async fn cmd_edit(
+    db: &mut SqliteConnection,
+    config: Config,
+    tags: Tags,
+) -> Result<(), Box<dyn Error>> {
+    let mut ta = db.begin().await?;
 
-//     let records = find_records(&mut ta, tags).await?;
-//     database::assert_write_access(&mut ta).await?;
+    let records = find_records(&mut ta, &tags).await?;
+    database::assert_write_access(&mut ta).await?;
 
-//     let mut file = tmp_file()?;
+    let mut file = tmp_file()?;
 
-//     let edit_message_seen = database::is_edit_message_seen(&mut ta).await?;
+    let edit_message_seen = database::is_edit_message_seen(&mut ta).await?;
 
-//     if !edit_message_seen || config.verbose {
-//         writeln!(file, "{}", include_str!("editor.txt"))?;
-//         if !edit_message_seen {
-//             writeln!(
-//                 file,
-//                 "# The above message will not show next time unless -v option is used.\n"
-//             )?;
-//             database::set_edit_message_seen(&mut ta).await?;
-//         }
-//     }
+    if !edit_message_seen || config.verbose {
+        writeln!(file, "{}", include_str!("editor.txt"))?;
+        if !edit_message_seen {
+            writeln!(
+                file,
+                "# The above message will not show next time unless -v option is used.\n"
+            )?;
+            database::set_edit_message_seen(&mut ta).await?;
+        }
+    }
 
-//     let mut headers_ids = HashMap::<String, i32>::with_capacity(10);
-//     let mut ids_headers = HashMap::<i32, String>::with_capacity(10);
+    let mut headers_ids = HashMap::<String, i32>::with_capacity(10);
+    let mut ids_headers = HashMap::<i32, String>::with_capacity(10);
 
-//     {
-//         let mut header_id: usize = 1;
-//         let mut first = true;
+    {
+        let mut header_id: usize = 1;
+        let mut first = true;
 
-//         for record in records {
-//             if first {
-//                 first = false;
-//             } else {
-//                 writeln!(&mut file)?;
-//             }
+        for record in records {
+            if first {
+                first = false;
+            } else {
+                writeln!(&mut file)?;
+            }
 
-//             let id_line = record.editor_id_line(header_id, &config);
-//             record.write(&mut file, &id_line)?;
+            let id_line = record.editor_id_line(header_id, &config);
+            record.write(&mut file, &id_line)?;
 
-//             let record_id = record.id.expect("Record ID not set");
-//             headers_ids.insert(id_line.clone(), record_id);
-//             ids_headers.insert(record_id, id_line);
+            let record_id = record.id;
+            headers_ids.insert(id_line.clone(), record_id);
+            ids_headers.insert(record_id, id_line);
 
-//             header_id += 1;
-//         }
-//     }
+            header_id += 1;
+        }
+    }
 
-//     let path = file.path();
-//     let name = path.to_string_lossy();
+    let path = file.path();
+    let name = path.to_string_lossy();
 
-//     'editor: loop {
-//         run_text_editor(&name)?;
-//         let buffer = fs::read_to_string(path)?;
+    'editor: loop {
+        run_text_editor(&name)?;
+        let buffer = fs::read_to_string(path)?;
 
-//         let mut header_id: Option<i32> = None;
-//         let mut tags = HashSet::<&str>::with_capacity(10);
-//         let mut lines: Vec<&str> = Vec::with_capacity(20);
-//         let mut records: Vec<Record> = Vec::with_capacity(10);
+        let mut header_id: Option<i32> = None;
+        let mut tags = HashSet::<&str>::with_capacity(10);
+        let mut lines: Vec<&str> = Vec::with_capacity(20);
+        let mut records: Vec<RecordEditor> = Vec::with_capacity(10);
 
-//         let mut read_tags = false;
+        let mut read_tags = false;
 
-//         for line in buffer.lines() {
-//             // Is this new record header?
-//             if let Some(new_id) = headers_ids.get(line) {
-//                 if let Some(old_id) = header_id {
-//                     records.push(Record {
-//                         id: Some(old_id),
-//                         tags: prepare_tags(&tags),
-//                         content: remove_empty_lines(&lines),
-//                         ..Default::default()
-//                     });
+        for line in buffer.lines() {
+            // Is this new record header?
+            if let Some(new_id) = headers_ids.get(line) {
+                if let Some(old_id) = header_id {
+                    records.push(RecordEditor {
+                        id: old_id,
+                        tags: prepare_tags(&tags),
+                        content: remove_empty_lines(&lines),
+                    });
 
-//                     tags.clear();
-//                     lines.clear();
-//                 }
-//                 header_id = Some(*new_id);
-//                 read_tags = true;
-//                 continue;
-//             } else if header_id.is_none() {
-//                 continue;
-//             }
+                    tags.clear();
+                    lines.clear();
+                }
+                header_id = Some(*new_id);
+                read_tags = true;
+                continue;
+            } else if header_id.is_none() {
+                continue;
+            }
 
-//             if read_tags {
-//                 if let Some(s) = line.strip_prefix(TAG_PREFIX_EDITOR) {
-//                     for tag in split_tag_string(s) {
-//                         tags.insert(tag);
-//                     }
-//                     continue;
-//                 } else {
-//                     read_tags = false;
-//                 }
-//             }
+            if read_tags {
+                if let Some(s) = line.strip_prefix(TAG_PREFIX_EDITOR) {
+                    for tag in split_tag_string(s) {
+                        tags.insert(tag);
+                    }
+                    continue;
+                } else {
+                    read_tags = false;
+                }
+            }
 
-//             lines.push(line);
-//         }
+            lines.push(line);
+        }
 
-//         // Store the last record.
-//         match header_id {
-//             Some(old_id) => records.push(Record {
-//                 id: Some(old_id),
-//                 tags: prepare_tags(&tags),
-//                 content: remove_empty_lines(&lines),
-//                 ..Default::default()
-//             }),
+        // Store the last record.
+        match header_id {
+            Some(old_id) => records.push(RecordEditor {
+                id: old_id,
+                tags: prepare_tags(&tags),
+                content: remove_empty_lines(&lines),
+            }),
 
-//             None => {
-//                 println!("No data found.");
-//                 if return_to_editor()? {
-//                     continue 'editor;
-//                 } else {
-//                     Err("Aborted.")?;
-//                 }
-//             }
-//         }
+            None => {
+                println!("No data found.");
+                if return_to_editor()? {
+                    continue 'editor;
+                } else {
+                    Err("Aborted.")?;
+                }
+            }
+        }
 
-//         for record in &records {
-//             let id = record.id.as_ref().expect("Id is not set.");
-//             print!("{} – ", ids_headers.get(id).expect("Id is not set."));
-//             io::stdout().flush()?;
+        for record in records {
+            print!(
+                "{} – ",
+                ids_headers.get(&record.id).expect("Id is not set.")
+            );
+            io::stdout().flush()?;
 
-//             if record.content.is_some() {
-//                 if let Some(tags) = &record.tags {
-//                     if let Err(e) = assert_tag_names(tags) {
-//                         println!("FAILED");
-//                         eprintln!("{e}");
-//                         if return_to_editor()? {
-//                             continue 'editor;
-//                         } else {
-//                             Err("Aborted.")?;
-//                         }
-//                     }
-//                 }
+            if let Some(content) = record.content {
+                let mut tags = None;
 
-//                 if let Err(e) = record.update(&mut ta).await {
-//                     println!("FAILED");
-//                     eprintln!("{e}");
-//                     if return_to_editor()? {
-//                         continue 'editor;
-//                     } else {
-//                         Err("Aborted.")?;
-//                     }
-//                 }
-//                 println!("Updated");
-//             } else {
-//                 // Empty content. Delete the record.
-//                 record.delete(&mut ta).await?;
-//                 println!("Deleted");
-//             }
-//         }
+                if let Some(proposed_tags) = &record.tags {
+                    match Tags::try_from(proposed_tags) {
+                        Ok(t) => tags = Some(t),
+                        Err(e) => {
+                            println!("FAILED");
+                            eprintln!("{e}");
+                            if return_to_editor()? {
+                                continue 'editor;
+                            } else {
+                                Err("Aborted.")?;
+                            }
+                        }
+                    }
+                }
 
-//         break 'editor;
-//     }
+                let updated = RecordUpdate {
+                    id: record.id,
+                    tags,
+                    content,
+                };
 
-//     database::delete_unused_tags(&mut ta).await?;
-//     ta.commit().await?;
-//     Ok(())
-// }
+                if let Err(e) = updated.update(&mut ta).await {
+                    println!("FAILED");
+                    eprintln!("{e}");
+                    if return_to_editor()? {
+                        continue 'editor;
+                    } else {
+                        Err("Aborted.")?;
+                    }
+                }
+
+                println!("Updated");
+            } else {
+                // Empty content. Delete the record.
+                record.delete(&mut ta).await?;
+                println!("Deleted");
+            }
+        }
+
+        break 'editor;
+    }
+
+    database::delete_unused_tags(&mut ta).await?;
+    ta.commit().await?;
+    Ok(())
+}
 
 // async fn cmd_retag(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
 //     if tags.len() != 2 {

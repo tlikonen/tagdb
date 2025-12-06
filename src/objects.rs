@@ -34,13 +34,25 @@ pub struct RecordNew {
     pub content: String,
 }
 
+pub struct RecordEditor {
+    pub id: i32,
+    pub tags: Option<Vec<String>>,
+    pub content: Option<String>,
+}
+
+pub struct RecordUpdate {
+    pub id: i32,
+    pub tags: Option<Tags>,
+    pub content: String,
+}
+
 pub enum Cmd {
     Normal(Tags),
     Count(Tags),
     List(Option<Tags>),
     Create(Tags),
     CreateStdin(Tags),
-    // Edit(Tags),
+    Edit(Tags),
     // Retag(Tags),
 }
 
