@@ -85,7 +85,9 @@ impl Tags {
 
         for name in names.into_iter().map(|x| x.to_string()) {
             if is_valid_tag_name(&name) {
-                tags.push(name);
+                if !tags.contains(&name) {
+                    tags.push(name);
+                }
             } else {
                 if !invalid.is_empty() {
                     invalid.push_str(", ");
