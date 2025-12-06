@@ -30,16 +30,14 @@ pub struct Record {
     pub content: Option<String>,
 }
 
-pub enum Cmd<'a> {
-    Normal(&'a [String]),
-    Count(&'a [String]),
-    Create(&'a [String]),
-    CreateStdin(&'a [String]),
-    Edit(&'a [String]),
-    List(&'a [String]),
-    Retag(&'a [String]),
-    Help,
-    Version,
+pub enum Cmd {
+    Normal(Tags),
+    Count(Tags),
+    List(Option<Tags>),
+    // Create(Tags),
+    // CreateStdin(Tags),
+    // Edit(Tags),
+    // Retag(Tags),
 }
 
 #[derive(Debug, PartialEq)]
@@ -67,10 +65,12 @@ impl Tags {
             }
         }
 
-        if invalid.is_empty() {
-            Ok(Self(tags))
-        } else {
+        if !invalid.is_empty() {
             Err(format!("Invalid tag names: {invalid}."))?
+        } else if tags.is_empty() {
+            Err("No tags.")?
+        } else {
+            Ok(Self(tags))
         }
     }
 
@@ -122,6 +122,8 @@ mod tests {
             Tags::try_from(["€äö", "123"])
         );
 
+        let empty = Vec::<String>::new();
+        assert!(Tags::try_from(empty).is_err());
         assert!(Tags::try_from(["abc "]).is_err());
         assert!(Tags::try_from([" "]).is_err());
         assert!(Tags::try_from(["abc "]).is_err());

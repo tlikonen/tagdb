@@ -59,7 +59,7 @@ async fn main() -> ExitCode {
 }
 
 async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
-    let config = {
+    let mut config = {
         let mut format = None;
         let mut format_save = false;
 
@@ -91,41 +91,43 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let mut command_option = false;
-    let mut command = Cmd::Normal(&args.other);
+    let selected_option = {
+        let mut options = Vec::with_capacity(1);
 
-    for o in [
-        ("short", Cmd::Normal(&args.other)),
-        ("count", Cmd::Count(&args.other)),
-        ("create", Cmd::Create(&args.other)),
-        ("create-stdin", Cmd::CreateStdin(&args.other)),
-        ("edit", Cmd::Edit(&args.other)),
-        ("list", Cmd::List(&args.other)),
-        ("retag", Cmd::Retag(&args.other)),
-        ("help", Cmd::Help),
-        ("version", Cmd::Version),
-    ] {
-        if args.option_exists(o.0) {
-            if command_option {
-                Err("Only one command option is allowed. Use option “-h” alone for help.")?;
-            } else {
-                command_option = true;
-                command = o.1;
+        for o in [
+            "short",
+            "count",
+            "create",
+            "create-stdin",
+            "edit",
+            "list",
+            "retag",
+            "help",
+            "version",
+        ] {
+            if args.option_exists(o) && !options.contains(&o) {
+                options.push(o);
             }
         }
-    }
 
-    match command {
-        Cmd::Help => {
+        match options.len() {
+            0 => "normal",
+            1 => options[0],
+            _ => Err("Only one command option is allowed. Use option “-h” alone for help.")?,
+        }
+    };
+
+    let command = match selected_option {
+        "help" => {
             println!(
                 include_str!("usage.txt"),
                 program = tagdb::PROGRAM_NAME,
                 database = tagdb::database_name()
             );
-            Ok(())
+            return Ok(());
         }
 
-        Cmd::Version => {
+        "version" => {
             println!(
                 "{prg} v{ver}\n\
                  Author:  {author}\n\
@@ -135,9 +137,41 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
                 author = tagdb::PROGRAM_AUTHORS,
                 license = tagdb::PROGRAM_LICENSE,
             );
-            Ok(())
+            return Ok(());
         }
 
-        cmd => tagdb::command_stage(config, cmd).await,
+        "normal" | "short" => {
+            check_if_empty(&args.other)?;
+            if config.quiet && config.verbose {
+                eprintln!("Note: Option “-q” is ignored when combined with “-v”.");
+                config.quiet = false;
+            }
+            Cmd::Normal(Tags::try_from(&args.other)?)
+        }
+
+        "count" => {
+            check_if_empty(&args.other)?;
+            Cmd::Count(Tags::try_from(&args.other)?)
+        }
+
+        "list" => {
+            if args.other.is_empty() {
+                Cmd::List(None)
+            } else {
+                Cmd::List(Some(Tags::try_from(&args.other)?))
+            }
+        }
+
+        _ => panic!("unexpected command"),
+    };
+
+    tagdb::command_stage(config, command).await
+}
+
+fn check_if_empty(args: &[String]) -> Result<(), Box<dyn Error>> {
+    if args.is_empty() {
+        Err("No tags. At least one tag is required.".into())
+    } else {
+        Ok(())
     }
 }

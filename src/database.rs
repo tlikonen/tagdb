@@ -11,7 +11,7 @@ pub const CL_TIME_EPOCH: i64 = 2208988800;
 
 pub async fn list_matching_records(
     db: &mut SqliteConnection,
-    tags: &[String],
+    tags: &Tags,
 ) -> Result<Option<HashSet<i32>>, sqlx::Error> {
     let mut intersect = HashSet::with_capacity(10);
     let mut set = HashSet::with_capacity(10);
@@ -102,16 +102,17 @@ pub async fn list_records(
 
 pub async fn list_tags(
     db: &mut SqliteConnection,
-    mut tags: &[String],
+    tags: Option<&Tags>,
 ) -> Result<HashMap<String, u64>, sqlx::Error> {
-    let empty = &[String::new()];
-    if tags.is_empty() {
-        tags = empty;
-    }
+    let empty = String::new();
+    let list: Vec<&String> = match tags {
+        Some(t) => t.iter().collect(),
+        None => vec![&empty],
+    };
 
     let mut name_count = HashMap::<String, u64>::with_capacity(50);
 
-    for tag in tags {
+    for tag in list {
         let mut rows = sqlx::query(
             "SELECT count(t.id) AS count, t.name FROM tags AS t \
              JOIN record_tag AS j ON t.id = j.tag_id \
