@@ -162,6 +162,13 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
         "create-stdin" => Cmd::CreateStdin(Tags::try_from(&args.other)?),
         "edit" => Cmd::Edit(Tags::try_from(&args.other)?),
 
+        "retag" => {
+            if args.other.len() != 2 {
+                Err("The retag command requires two tag names: OLD and NEW.")?;
+            }
+            Cmd::Retag(Tags::try_from(&args.other)?)
+        }
+
         _ => panic!("unexpected command"),
     };
 

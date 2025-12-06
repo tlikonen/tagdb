@@ -53,7 +53,7 @@ pub enum Cmd {
     Create(Tags),
     CreateStdin(Tags),
     Edit(Tags),
-    // Retag(Tags),
+    Retag(Tags),
 }
 
 #[derive(Debug, PartialEq)]

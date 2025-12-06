@@ -27,8 +27,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<(), Box<dyn E
         Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
         Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
         Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await?,
-        // Cmd::Retag(tags) => cmd_retag(&mut db, tags).await?,
-        // Cmd::Help | Cmd::Version => panic!("help and version must be handled earlier"),
+        Cmd::Retag(old_new) => cmd_retag(&mut db, old_new).await?,
     }
 
     database::vacuum_check(&mut db).await?;
@@ -311,27 +310,27 @@ async fn cmd_edit(
     Ok(())
 }
 
-// async fn cmd_retag(db: &mut SqliteConnection, tags: &[String]) -> Result<(), Box<dyn Error>> {
-//     if tags.len() != 2 {
-//         Err("The retag command requires two tag names: OLD and NEW.")?;
-//     }
+async fn cmd_retag(db: &mut SqliteConnection, old_new: Tags) -> Result<(), Box<dyn Error>> {
+    let (old, new) = {
+        let mut tags = old_new.iter();
+        match (tags.next(), tags.next()) {
+            (Some(o), Some(n)) => {
+                if o == n {
+                    Err("OLD and NEW tag can’t be the same.")?;
+                }
+                (Tags::try_from([o])?, Tags::try_from([n])?)
+            }
+            _ => Err("The retag command requires two tag names: OLD and NEW.")?,
+        }
+    };
 
-//     assert_tag_names(tags)?;
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
+    database::retag(&mut ta, &old, &new).await?;
 
-//     let old = &tags[0];
-//     let new = &tags[1];
-
-//     if old == new {
-//         Err(format!("OLD and NEW tag can’t be the same (both “{old}”)."))?;
-//     }
-
-//     let mut ta = db.begin().await?;
-//     database::assert_write_access(&mut ta).await?;
-//     database::retag(&mut ta, old, new).await?;
-
-//     ta.commit().await?;
-//     Ok(())
-// }
+    ta.commit().await?;
+    Ok(())
+}
 
 fn return_to_editor() -> Result<bool, Box<dyn Error>> {
     loop {
@@ -388,31 +387,6 @@ fn run_text_editor(name: &str) -> Result<(), Box<dyn Error>> {
         .into()),
     }
 }
-
-// fn assert_tag_names(tags: &[String]) -> Result<(), Box<dyn Error>> {
-//     if tags.is_empty() {
-//         Err("No tags. At least one tag is required.")?;
-//     }
-
-//     let mut invalid = String::new();
-
-//     for t in tags {
-//         if !is_valid_tag_name(t) {
-//             if !invalid.is_empty() {
-//                 invalid.push_str(", ");
-//             }
-//             invalid.push('“');
-//             invalid.push_str(t);
-//             invalid.push('”');
-//         }
-//     }
-
-//     if invalid.is_empty() {
-//         Ok(())
-//     } else {
-//         Err(format!("Invalid tag names: {invalid}."))?
-//     }
-// }
 
 fn is_valid_tag_name(tag: &str) -> bool {
     !tag.is_empty() && tag.chars().all(|x| !x.is_whitespace())
@@ -500,23 +474,6 @@ mod tests {
         assert!(is_valid_tag_name("€ä"));
         assert!(is_valid_tag_name("–"));
     }
-
-    // #[test]
-    // fn assert_tag_names_fn() {
-    //     fn atn(tags: impl IntoIterator<Item = impl ToString>) -> Result<(), Box<dyn Error>> {
-    //         let vec = tags
-    //             .into_iter()
-    //             .map(|x| x.to_string())
-    //             .collect::<Vec<String>>();
-    //         assert_tag_names(&vec)
-    //     }
-
-    //     assert!(atn(["a", "ab", "öljyä", "–fas", "abcd"]).is_ok());
-    //     assert!(atn(Vec::<String>::new()).is_err());
-    //     assert!(atn([""]).is_err());
-    //     assert!(atn(["", "a"]).is_err());
-    //     assert!(atn(["ab "]).is_err());
-    // }
 
     #[test]
     fn num_width_fn() {
