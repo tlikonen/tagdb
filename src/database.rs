@@ -231,6 +231,24 @@ impl RecordUpdate {
 }
 
 impl RecordEditor {
+    pub fn for_update(self) -> Result<RecordUpdate, Box<dyn Error>> {
+        let mut tags = None;
+        if let Some(proposed_tags) = &self.tags {
+            tags = Some(Tags::try_from(proposed_tags)?);
+        }
+
+        let new = RecordUpdate {
+            id: self.id,
+            tags,
+            content: match self.content {
+                Some(v) => v,
+                None => Err("No content.")?,
+            },
+        };
+
+        Ok(new)
+    }
+
     pub async fn delete(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM records WHERE id = $1")
             .bind(self.id)

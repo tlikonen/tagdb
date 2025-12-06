@@ -260,12 +260,10 @@ async fn cmd_edit(
             );
             io::stdout().flush()?;
 
-            if let Some(content) = record.content {
-                let mut tags = None;
-
-                if let Some(proposed_tags) = &record.tags {
-                    match Tags::try_from(proposed_tags) {
-                        Ok(t) => tags = Some(t),
+            if record.content.is_some() {
+                match record.for_update() {
+                    Ok(rec) => match rec.update(&mut ta).await {
+                        Ok(_) => println!("Updated"),
                         Err(e) => {
                             println!("FAILED");
                             eprintln!("{e}");
@@ -275,26 +273,18 @@ async fn cmd_edit(
                                 Err("Aborted.")?;
                             }
                         }
-                    }
-                }
+                    },
 
-                let updated = RecordUpdate {
-                    id: record.id,
-                    tags,
-                    content,
+                    Err(e) => {
+                        println!("FAILED");
+                        eprintln!("{e}");
+                        if return_to_editor()? {
+                            continue 'editor;
+                        } else {
+                            Err("Aborted.")?;
+                        }
+                    }
                 };
-
-                if let Err(e) = updated.update(&mut ta).await {
-                    println!("FAILED");
-                    eprintln!("{e}");
-                    if return_to_editor()? {
-                        continue 'editor;
-                    } else {
-                        Err("Aborted.")?;
-                    }
-                }
-
-                println!("Updated");
             } else {
                 // Empty content. Delete the record.
                 record.delete(&mut ta).await?;
