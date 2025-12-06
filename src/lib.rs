@@ -3,7 +3,7 @@ mod objects;
 mod prelude;
 mod print;
 
-pub use crate::objects::{Cmd, Config, Format, Tags};
+pub use crate::objects::{Cmd, Config, Format, Tag, Tags};
 use crate::prelude::*;
 
 pub static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
@@ -27,7 +27,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<(), Box<dyn E
         Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
         Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
         Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await?,
-        Cmd::Retag(old_new) => cmd_retag(&mut db, old_new).await?,
+        Cmd::Retag(old, new) => cmd_retag(&mut db, old, new).await?,
     }
 
     database::vacuum_check(&mut db).await?;
@@ -310,24 +310,10 @@ async fn cmd_edit(
     Ok(())
 }
 
-async fn cmd_retag(db: &mut SqliteConnection, old_new: Tags) -> Result<(), Box<dyn Error>> {
-    let (old, new) = {
-        let mut tags = old_new.iter();
-        match (tags.next(), tags.next()) {
-            (Some(o), Some(n)) => {
-                if o == n {
-                    Err("OLD and NEW tag can’t be the same.")?;
-                }
-                (Tags::try_from([o])?, Tags::try_from([n])?)
-            }
-            _ => Err("The retag command requires two tag names: OLD and NEW.")?,
-        }
-    };
-
+async fn cmd_retag(db: &mut SqliteConnection, old: Tag, new: Tag) -> Result<(), Box<dyn Error>> {
     let mut ta = db.begin().await?;
     database::assert_write_access(&mut ta).await?;
     database::retag(&mut ta, &old, &new).await?;
-
     ta.commit().await?;
     Ok(())
 }

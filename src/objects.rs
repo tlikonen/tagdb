@@ -51,7 +51,24 @@ pub enum Cmd {
     Create(Tags),
     CreateStdin(Tags),
     Edit(Tags),
-    Retag(Tags),
+    Retag(Tag, Tag),
+}
+
+#[derive(PartialEq)]
+pub struct Tag(String);
+
+impl Tag {
+    pub fn try_from(name: &str) -> Result<Self, String> {
+        if is_valid_tag_name(name) {
+            Ok(Self(name.to_string()))
+        } else {
+            Err(format!("Invalid tag name: “{name}”."))
+        }
+    }
+
+    pub fn as_str(&self) -> &String {
+        &self.0
+    }
 }
 
 #[derive(Debug, PartialEq)]

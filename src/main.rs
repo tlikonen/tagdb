@@ -166,7 +166,11 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
             if args.other.len() != 2 {
                 Err("The retag command requires two tag names: OLD and NEW.")?;
             }
-            Cmd::Retag(Tags::try_from(&args.other)?)
+
+            Cmd::Retag(
+                Tag::try_from(&args.other[0])?,
+                Tag::try_from(&args.other[1])?,
+            )
         }
 
         _ => panic!("unexpected command"),

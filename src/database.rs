@@ -263,13 +263,13 @@ async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32,
     Ok(id)
 }
 
-pub async fn retag(
-    db: &mut SqliteConnection,
-    old: &Tags,
-    new: &Tags,
-) -> Result<(), Box<dyn Error>> {
-    let old = old.iter().next().expect("OLD tag missing");
-    let new = new.iter().next().expect("NEW tag missing");
+pub async fn retag(db: &mut SqliteConnection, old: &Tag, new: &Tag) -> Result<(), Box<dyn Error>> {
+    if old == new {
+        Err("OLD and NEW tag can’t be the same.")?;
+    }
+
+    let old = old.as_str();
+    let new = new.as_str();
 
     let row = sqlx::query("SELECT id FROM tags WHERE name = $1")
         .bind(old)
