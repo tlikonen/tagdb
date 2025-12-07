@@ -108,13 +108,6 @@ impl Tags {
             Ok(Self(tags))
         }
     }
-
-    pub fn iter(&self) -> TagsIter<'_> {
-        TagsIter {
-            tags: self,
-            index: 0,
-        }
-    }
 }
 
 pub struct TagsIter<'a> {
@@ -141,7 +134,10 @@ impl<'a> IntoIterator for &'a Tags {
     type IntoIter = TagsIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.iter()
+        Self::IntoIter {
+            tags: self,
+            index: 0,
+        }
     }
 }
 
@@ -191,7 +187,7 @@ mod tests {
     #[test]
     fn tags_iterator() {
         let tags = Tags::try_from(["a", "b"]).unwrap();
-        let mut it = tags.iter();
+        let mut it = tags.into_iter();
 
         assert_eq!(Some("a"), it.next().map(|x| x.as_str()));
         assert_eq!(Some("b"), it.next().map(|x| x.as_str()));

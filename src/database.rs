@@ -109,7 +109,7 @@ pub async fn list_tags(
 ) -> Result<HashMap<String, u64>, sqlx::Error> {
     let empty = String::new();
     let list: Vec<&String> = match tags {
-        Some(t) => t.iter().collect(),
+        Some(t) => t.into_iter().collect(),
         None => vec![&empty],
     };
 
