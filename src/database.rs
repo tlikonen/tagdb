@@ -10,7 +10,7 @@ const CHANGES_BEFORE_VACUUM: i32 = 1000;
 pub const CL_TIME_EPOCH: i64 = 2208988800;
 
 impl Tags {
-    pub async fn find_records(&self, db: &mut SqliteConnection) -> Result<Records, Box<dyn Error>> {
+    pub async fn find_records(&self, db: &mut DBase) -> Result<Records, Box<dyn Error>> {
         match self.matching_record_ids(db).await? {
             Some(ids) => ids.records(db).await,
             None => Err("Records not found.".into()),
@@ -19,7 +19,7 @@ impl Tags {
 
     pub async fn matching_record_ids(
         &self,
-        db: &mut SqliteConnection,
+        db: &mut DBase,
     ) -> Result<Option<RecordIds>, Box<dyn Error>> {
         let mut intersect = HashSet::with_capacity(10);
         let mut set = HashSet::with_capacity(10);
@@ -57,7 +57,7 @@ impl Tags {
 }
 
 impl RecordIds {
-    pub async fn records(&self, db: &mut SqliteConnection) -> Result<Records, Box<dyn Error>> {
+    pub async fn records(&self, db: &mut DBase) -> Result<Records, Box<dyn Error>> {
         let mut records = Vec::with_capacity(5);
 
         for id in self.hash() {
@@ -104,7 +104,7 @@ impl RecordIds {
 }
 
 pub async fn list_tags(
-    db: &mut SqliteConnection,
+    db: &mut DBase,
     tags: Option<&Tags>,
 ) -> Result<HashMap<String, u64>, sqlx::Error> {
     let empty = String::new();
@@ -135,7 +135,7 @@ pub async fn list_tags(
 }
 
 impl RecordNew {
-    pub async fn insert(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+    pub async fn insert(&self, db: &mut DBase) -> Result<(), sqlx::Error> {
         let mut change_count: i32 = 0;
 
         let record_id = {
@@ -177,7 +177,7 @@ impl RecordNew {
 }
 
 impl RecordUpdate {
-    pub async fn update(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+    pub async fn update(&self, db: &mut DBase) -> Result<(), sqlx::Error> {
         let record_id = self.id;
 
         sqlx::query("UPDATE records SET modified = $1, content = $2 WHERE id = $3")
@@ -258,7 +258,7 @@ impl RecordEditor {
         Ok(new)
     }
 
-    pub async fn delete(&self, db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+    pub async fn delete(&self, db: &mut DBase) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM records WHERE id = $1")
             .bind(self.id)
             .execute(&mut *db)
@@ -268,7 +268,7 @@ impl RecordEditor {
     }
 }
 
-async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32, sqlx::Error> {
+async fn get_or_insert_tag(db: &mut DBase, name: &str) -> Result<i32, sqlx::Error> {
     let id: i32;
 
     match sqlx::query("SELECT id FROM tags WHERE name = $1")
@@ -290,7 +290,7 @@ async fn get_or_insert_tag(db: &mut SqliteConnection, name: &str) -> Result<i32,
     Ok(id)
 }
 
-pub async fn retag(db: &mut SqliteConnection, old: &Tag, new: &Tag) -> Result<(), Box<dyn Error>> {
+pub async fn retag(db: &mut DBase, old: &Tag, new: &Tag) -> Result<(), Box<dyn Error>> {
     if old == new {
         Err("OLD and NEW tag can’t be the same.")?;
     }
@@ -383,7 +383,7 @@ pub async fn retag(db: &mut SqliteConnection, old: &Tag, new: &Tag) -> Result<()
     Ok(())
 }
 
-pub async fn delete_unused_tags(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+pub async fn delete_unused_tags(db: &mut DBase) -> Result<(), sqlx::Error> {
     sqlx::query(
         "DELETE FROM tags WHERE id IN \
          (SELECT tags.id FROM tags LEFT JOIN record_tag AS j \
@@ -394,7 +394,7 @@ pub async fn delete_unused_tags(db: &mut SqliteConnection) -> Result<(), sqlx::E
     Ok(())
 }
 
-pub async fn is_edit_message_seen(db: &mut SqliteConnection) -> Result<bool, sqlx::Error> {
+pub async fn is_edit_message_seen(db: &mut DBase) -> Result<bool, sqlx::Error> {
     match sqlx::query("SELECT value FROM maintenance WHERE key = 'seen edit message'")
         .fetch_optional(&mut *db)
         .await?
@@ -404,7 +404,7 @@ pub async fn is_edit_message_seen(db: &mut SqliteConnection) -> Result<bool, sql
     }
 }
 
-pub async fn set_edit_message_seen(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+pub async fn set_edit_message_seen(db: &mut DBase) -> Result<(), sqlx::Error> {
     sqlx::query("INSERT INTO maintenance (key, value) VALUES ('seen edit message', 1)")
         .execute(&mut *db)
         .await?;
@@ -412,7 +412,7 @@ pub async fn set_edit_message_seen(db: &mut SqliteConnection) -> Result<(), sqlx
     Ok(())
 }
 
-pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Error>> {
+pub async fn connect(config: &mut Config) -> Result<DBase, Box<dyn Error>> {
     let path;
 
     if let Some(db) = &config.database {
@@ -437,7 +437,7 @@ pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Er
         .filename(&path)
         .create_if_missing(true)
         .optimize_on_close(true, None);
-    let mut db = SqliteConnection::connect_with(&opts).await?;
+    let mut db = DBase::connect_with(&opts).await?;
     init(&mut db, &path).await?;
 
     match &config.format {
@@ -477,7 +477,7 @@ pub async fn connect(config: &mut Config) -> Result<SqliteConnection, Box<dyn Er
     Ok(db)
 }
 
-async fn init(db: &mut SqliteConnection, path: &Path) -> Result<(), Box<dyn Error>> {
+async fn init(db: &mut DBase, path: &Path) -> Result<(), Box<dyn Error>> {
     let db_exists = sqlx::query(
         "SELECT 1 FROM sqlite_master \
          WHERE type = 'table' AND name = 'maintenance'",
@@ -583,7 +583,7 @@ async fn init(db: &mut SqliteConnection, path: &Path) -> Result<(), Box<dyn Erro
     Ok(())
 }
 
-async fn update_db(db: &mut SqliteConnection, version: i32) -> Result<(), Box<dyn Error>> {
+async fn update_db(db: &mut DBase, version: i32) -> Result<(), Box<dyn Error>> {
     match version {
         2 => {
             // Add --color option.
@@ -750,13 +750,13 @@ async fn update_db(db: &mut SqliteConnection, version: i32) -> Result<(), Box<dy
     Ok(())
 }
 
-async fn vacuum(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+async fn vacuum(db: &mut DBase) -> Result<(), sqlx::Error> {
     sqlx::query("VACUUM").execute(&mut *db).await?;
     change_counter_reset(db).await?;
     Ok(())
 }
 
-pub async fn vacuum_check(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+pub async fn vacuum_check(db: &mut DBase) -> Result<(), sqlx::Error> {
     let row = sqlx::query("SELECT value FROM maintenance WHERE key = 'change counter'")
         .fetch_one(&mut *db)
         .await?;
@@ -768,14 +768,14 @@ pub async fn vacuum_check(db: &mut SqliteConnection) -> Result<(), sqlx::Error> 
     Ok(())
 }
 
-async fn change_counter_reset(db: &mut SqliteConnection) -> Result<(), sqlx::Error> {
+async fn change_counter_reset(db: &mut DBase) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE maintenance SET value = 0 WHERE key = 'change counter'")
         .execute(&mut *db)
         .await?;
     Ok(())
 }
 
-async fn change_counter_add(db: &mut SqliteConnection, count: i32) -> Result<(), sqlx::Error> {
+async fn change_counter_add(db: &mut DBase, count: i32) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE maintenance SET value = value + $1 WHERE key = 'change counter'")
         .bind(count)
         .execute(&mut *db)
@@ -783,7 +783,7 @@ async fn change_counter_add(db: &mut SqliteConnection, count: i32) -> Result<(),
     Ok(())
 }
 
-pub async fn assert_write_access(db: &mut SqliteConnection) -> Result<(), Box<dyn Error>> {
+pub async fn assert_write_access(db: &mut DBase) -> Result<(), Box<dyn Error>> {
     change_counter_add(db, 0).await.map_err(
         |_| "Couldn’t get write access to the database. It’s probably locked by another process.",
     )?;

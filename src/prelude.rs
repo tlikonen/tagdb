@@ -10,7 +10,7 @@ pub(crate) use {
     },
     chrono::{DateTime, Local},
     futures::TryStreamExt as _,
-    sqlx::{Connection, Row as _, SqliteConnection, sqlite::SqliteConnectOptions},
+    sqlx::{Connection as _, Row as _, SqliteConnection as DBase, sqlite::SqliteConnectOptions},
     std::{
         cmp::Ordering,
         collections::{HashMap, HashSet},

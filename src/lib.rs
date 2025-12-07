@@ -34,11 +34,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<(), Box<dyn E
     Ok(())
 }
 
-async fn cmd_normal(
-    db: &mut SqliteConnection,
-    config: Config,
-    tags: Tags,
-) -> Result<(), Box<dyn Error>> {
+async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> Result<(), Box<dyn Error>> {
     let mut first = true;
     for record in tags.find_records(db).await?.iter() {
         if first {
@@ -51,7 +47,7 @@ async fn cmd_normal(
     Ok(())
 }
 
-async fn cmd_count(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn Error>> {
+async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
     match tags.matching_record_ids(db).await? {
         Some(ids) => println!("{}", ids.count()),
         None => println!("0"),
@@ -60,7 +56,7 @@ async fn cmd_count(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn 
 }
 
 // async fn cmd_list(
-//     db: &mut SqliteConnection,
+//     db: &mut DBase,
 //     maybetags: Option<Tags>,
 // ) -> Result<(), Box<dyn Error>> {
 //     let name_count = database::list_tags(db, maybetags.as_ref()).await?;
@@ -79,7 +75,7 @@ async fn cmd_count(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn 
 //     Ok(())
 // }
 
-// async fn cmd_create(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn Error>> {
+// async fn cmd_create(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
 //     let mut ta = db.begin().await?;
 //     database::assert_write_access(&mut ta).await?;
 
@@ -103,7 +99,7 @@ async fn cmd_count(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn 
 //     Ok(())
 // }
 
-// async fn cmd_create_stdin(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn Error>> {
+// async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
 //     let mut ta = db.begin().await?;
 //     database::assert_write_access(&mut ta).await?;
 
@@ -123,7 +119,7 @@ async fn cmd_count(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn 
 // }
 
 // async fn cmd_edit(
-//     db: &mut SqliteConnection,
+//     db: &mut DBase,
 //     config: Config,
 //     tags: Tags,
 // ) -> Result<(), Box<dyn Error>> {
@@ -285,7 +281,7 @@ async fn cmd_count(db: &mut SqliteConnection, tags: Tags) -> Result<(), Box<dyn 
 //     Ok(())
 // }
 
-// async fn cmd_retag(db: &mut SqliteConnection, old: Tag, new: Tag) -> Result<(), Box<dyn Error>> {
+// async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> Result<(), Box<dyn Error>> {
 //     let mut ta = db.begin().await?;
 //     database::assert_write_access(&mut ta).await?;
 //     database::retag(&mut ta, &old, &new).await?;
