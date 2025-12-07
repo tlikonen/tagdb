@@ -1,3 +1,5 @@
+use crate::prelude::*;
+
 pub struct Config {
     pub short: bool,
     pub verbose: bool,
@@ -47,11 +49,11 @@ pub struct RecordUpdate {
 pub enum Cmd {
     Normal(Tags),
     Count(Tags),
-    List(Option<Tags>),
-    Create(Tags),
-    CreateStdin(Tags),
-    Edit(Tags),
-    Retag(Tag, Tag),
+    // List(Option<Tags>),
+    // Create(Tags),
+    // CreateStdin(Tags),
+    // Edit(Tags),
+    // Retag(Tag, Tag),
 }
 
 #[derive(PartialEq)]
@@ -145,6 +147,26 @@ impl<'a> IntoIterator for &'a Tags {
 
 fn is_valid_tag_name(tag: &str) -> bool {
     !tag.is_empty() && tag.chars().all(|x| !x.is_whitespace())
+}
+
+pub struct RecordIds(pub HashSet<i32>);
+
+impl RecordIds {
+    pub fn hash(&self) -> &HashSet<i32> {
+        &self.0
+    }
+
+    pub fn count(&self) -> usize {
+        self.hash().len()
+    }
+}
+
+pub struct Records(pub Vec<Record>);
+
+impl Records {
+    pub fn iter(&self) -> impl Iterator<Item = &Record> {
+        self.0.iter()
+    }
 }
 
 #[cfg(test)]

@@ -9,89 +9,98 @@ const CHANGES_BEFORE_VACUUM: i32 = 1000;
 // this program was initially implemented in the Common Lisp language.
 pub const CL_TIME_EPOCH: i64 = 2208988800;
 
-pub async fn list_matching_records(
-    db: &mut SqliteConnection,
-    tags: &Tags,
-) -> Result<Option<HashSet<i32>>, sqlx::Error> {
-    let mut intersect = HashSet::with_capacity(10);
-    let mut set = HashSet::with_capacity(10);
-    let mut first = true;
-
-    for tag in tags {
-        let mut rows = sqlx::query(
-            "SELECT j.record_id FROM record_tag AS j \
-             LEFT JOIN tags AS t ON j.tag_id = t.id \
-             WHERE t.name LIKE $1 ESCAPE '\\'",
-        )
-        .bind(like_esc_wild(tag))
-        .fetch(&mut *db);
-
-        set.clear();
-        while let Some(row) = rows.try_next().await? {
-            let id: i32 = row.try_get("record_id")?;
-            set.insert(id);
-        }
-
-        if first {
-            intersect.clone_from(&set);
-            first = false;
-        } else {
-            intersect = intersect.intersection(&set).cloned().collect();
+impl Tags {
+    pub async fn find_records(&self, db: &mut SqliteConnection) -> Result<Records, Box<dyn Error>> {
+        match self.matching_record_ids(db).await? {
+            Some(ids) => ids.records(db).await,
+            None => Err("Records not found.".into()),
         }
     }
 
-    if intersect.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(intersect))
-    }
-}
+    pub async fn matching_record_ids(
+        &self,
+        db: &mut SqliteConnection,
+    ) -> Result<Option<RecordIds>, Box<dyn Error>> {
+        let mut intersect = HashSet::with_capacity(10);
+        let mut set = HashSet::with_capacity(10);
+        let mut first = true;
 
-pub async fn list_records(
-    db: &mut SqliteConnection,
-    record_ids: HashSet<i32>,
-) -> Result<Vec<Record>, sqlx::Error> {
-    let mut records = Vec::with_capacity(5);
-
-    for id in record_ids {
-        let mut tags = Vec::with_capacity(5);
-
-        {
+        for tag in self {
             let mut rows = sqlx::query(
-                "SELECT t.name FROM record_tag AS j \
+                "SELECT j.record_id FROM record_tag AS j \
                  LEFT JOIN tags AS t ON j.tag_id = t.id \
-                 WHERE j.record_id = $1",
+                 WHERE t.name LIKE $1 ESCAPE '\\'",
             )
-            .bind(id)
+            .bind(like_esc_wild(tag))
             .fetch(&mut *db);
 
+            set.clear();
             while let Some(row) = rows.try_next().await? {
-                let tag: String = row.try_get("name")?;
-                tags.push(tag);
+                let id: i32 = row.try_get("record_id")?;
+                set.insert(id);
+            }
+
+            if first {
+                intersect.clone_from(&set);
+                first = false;
+            } else {
+                intersect = intersect.intersection(&set).cloned().collect();
             }
         }
 
-        if !tags.is_empty() {
-            let row = sqlx::query("SELECT created, modified, content FROM records WHERE id = $1")
-                .bind(id)
-                .fetch_one(&mut *db)
-                .await?;
-
-            records.push(Record {
-                id,
-                created: row.try_get("created")?,
-                modified: row.try_get("modified")?,
-                tags: {
-                    tags.sort_by_key(|tag| tag.to_lowercase());
-                    tags
-                },
-                content: row.try_get("content")?,
-            });
+        if intersect.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(RecordIds(intersect)))
         }
     }
+}
 
-    records.sort_by_key(|r| r.tags.join(" ").to_lowercase());
-    Ok(records)
+impl RecordIds {
+    pub async fn records(&self, db: &mut SqliteConnection) -> Result<Records, Box<dyn Error>> {
+        let mut records = Vec::with_capacity(5);
+
+        for id in self.hash() {
+            let mut tags = Vec::with_capacity(5);
+
+            {
+                let mut rows = sqlx::query(
+                    "SELECT t.name FROM record_tag AS j \
+                     LEFT JOIN tags AS t ON j.tag_id = t.id \
+                     WHERE j.record_id = $1",
+                )
+                .bind(id)
+                .fetch(&mut *db);
+
+                while let Some(row) = rows.try_next().await? {
+                    let tag: String = row.try_get("name")?;
+                    tags.push(tag);
+                }
+            }
+
+            if !tags.is_empty() {
+                let row =
+                    sqlx::query("SELECT created, modified, content FROM records WHERE id = $1")
+                        .bind(id)
+                        .fetch_one(&mut *db)
+                        .await?;
+
+                records.push(Record {
+                    id: *id,
+                    created: row.try_get("created")?,
+                    modified: row.try_get("modified")?,
+                    tags: {
+                        tags.sort_by_key(|tag| tag.to_lowercase());
+                        tags
+                    },
+                    content: row.try_get("content")?,
+                });
+            }
+        }
+
+        records.sort_by_key(|r| r.tags.join(" ").to_lowercase());
+        Ok(Records(records))
+    }
 }
 
 pub async fn list_tags(
