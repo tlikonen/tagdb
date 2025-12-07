@@ -110,16 +110,16 @@ impl Tags {
     }
 }
 
-pub struct TagsIter<'a> {
-    tags: &'a Tags,
+pub struct VecIter<T> {
+    vec: T,
     index: usize,
 }
 
-impl<'a> Iterator for TagsIter<'a> {
+impl<'a> Iterator for VecIter<&'a Tags> {
     type Item = &'a String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.tags.0.get(self.index) {
+        match self.vec.0.get(self.index) {
             None => None,
             value => {
                 self.index += 1;
@@ -131,11 +131,11 @@ impl<'a> Iterator for TagsIter<'a> {
 
 impl<'a> IntoIterator for &'a Tags {
     type Item = &'a String;
-    type IntoIter = TagsIter<'a>;
+    type IntoIter = VecIter<&'a Tags>;
 
     fn into_iter(self) -> Self::IntoIter {
         Self::IntoIter {
-            tags: self,
+            vec: self,
             index: 0,
         }
     }
@@ -159,9 +159,29 @@ impl RecordIds {
 
 pub struct Records(pub Vec<Record>);
 
-impl Records {
-    pub fn iter(&self) -> impl Iterator<Item = &Record> {
-        self.0.iter()
+impl<'a> Iterator for VecIter<&'a Records> {
+    type Item = &'a Record;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.vec.0.get(self.index) {
+            None => None,
+            value => {
+                self.index += 1;
+                value
+            }
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a Records {
+    type Item = &'a Record;
+    type IntoIter = VecIter<&'a Records>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Self::IntoIter {
+            vec: self,
+            index: 0,
+        }
     }
 }
 

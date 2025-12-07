@@ -36,7 +36,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<(), Box<dyn E
 
 async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> Result<(), Box<dyn Error>> {
     let mut first = true;
-    for record in tags.find_records(db).await?.iter() {
+    for record in &tags.find_records(db).await? {
         if first {
             first = false;
         } else {
