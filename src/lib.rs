@@ -13,7 +13,7 @@ pub static PROGRAM_LICENSE: &str = env!("CARGO_PKG_LICENSE");
 
 const TAG_PREFIX_EDITOR: &str = "#";
 
-pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<(), Box<dyn Error>> {
+pub async fn command_stage(mut config: Config, cmd: Cmd) -> ResultDE<()> {
     unsafe {
         libc::umask(0o077);
     }
@@ -34,7 +34,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<(), Box<dyn E
     Ok(())
 }
 
-async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> Result<(), Box<dyn Error>> {
+async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
     let mut first = true;
     for record in &tags.find_records(db).await? {
         if first {
@@ -47,7 +47,7 @@ async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> Result<(), Bo
     Ok(())
 }
 
-async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
+async fn cmd_count(db: &mut DBase, tags: Tags) -> ResultDE<()> {
     match tags.matching_record_ids(db).await? {
         Some(ids) => println!("{}", ids.count()),
         None => println!("0"),
@@ -58,7 +58,7 @@ async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
 // async fn cmd_list(
 //     db: &mut DBase,
 //     maybetags: Option<Tags>,
-// ) -> Result<(), Box<dyn Error>> {
+// ) -> ResultDE<()> {
 //     let name_count = database::list_tags(db, maybetags.as_ref()).await?;
 
 //     if name_count.is_empty() {
@@ -75,7 +75,7 @@ async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
 //     Ok(())
 // }
 
-// async fn cmd_create(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
+// async fn cmd_create(db: &mut DBase, tags: Tags) -> ResultDE<()> {
 //     let mut ta = db.begin().await?;
 //     database::assert_write_access(&mut ta).await?;
 
@@ -99,7 +99,7 @@ async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
 //     Ok(())
 // }
 
-// async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
+// async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> ResultDE<()> {
 //     let mut ta = db.begin().await?;
 //     database::assert_write_access(&mut ta).await?;
 
@@ -122,7 +122,7 @@ async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
 //     db: &mut DBase,
 //     config: Config,
 //     tags: Tags,
-// ) -> Result<(), Box<dyn Error>> {
+// ) -> ResultDE<()> {
 //     let mut ta = db.begin().await?;
 
 //     let records = find_records(&mut ta, &tags).await?;
@@ -281,7 +281,7 @@ async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
 //     Ok(())
 // }
 
-// async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> Result<(), Box<dyn Error>> {
+// async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> ResultDE<()> {
 //     let mut ta = db.begin().await?;
 //     database::assert_write_access(&mut ta).await?;
 //     database::retag(&mut ta, &old, &new).await?;
@@ -289,7 +289,7 @@ async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<(), Box<dyn Error>> {
 //     Ok(())
 // }
 
-fn return_to_editor() -> Result<bool, Box<dyn Error>> {
+fn return_to_editor() -> ResultDE<bool> {
     loop {
         print!(
             "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: "
@@ -317,7 +317,7 @@ fn tmp_file() -> Result<tempfile::NamedTempFile, String> {
     Ok(tmp)
 }
 
-fn run_text_editor(name: &str) -> Result<(), Box<dyn Error>> {
+fn run_text_editor(name: &str) -> ResultDE<()> {
     use std::{env, process::Command};
 
     let editor = match env::var("EDITOR") {

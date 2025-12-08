@@ -10,17 +10,14 @@ const CHANGES_BEFORE_VACUUM: i32 = 1000;
 pub const CL_TIME_EPOCH: i64 = 2208988800;
 
 impl Tags {
-    pub async fn find_records(&self, db: &mut DBase) -> Result<Records, Box<dyn Error>> {
+    pub async fn find_records(&self, db: &mut DBase) -> ResultDE<Records> {
         match self.matching_record_ids(db).await? {
             Some(ids) => ids.records(db).await,
             None => Err("Records not found.".into()),
         }
     }
 
-    pub async fn matching_record_ids(
-        &self,
-        db: &mut DBase,
-    ) -> Result<Option<RecordIds>, Box<dyn Error>> {
+    pub async fn matching_record_ids(&self, db: &mut DBase) -> ResultDE<Option<RecordIds>> {
         let mut intersect = HashSet::with_capacity(10);
         let mut set = HashSet::with_capacity(10);
         let mut first = true;
@@ -57,7 +54,7 @@ impl Tags {
 }
 
 impl RecordIds {
-    pub async fn records(&self, db: &mut DBase) -> Result<Records, Box<dyn Error>> {
+    pub async fn records(&self, db: &mut DBase) -> ResultDE<Records> {
         let mut records = Vec::with_capacity(5);
 
         for id in self.hash() {
@@ -240,7 +237,7 @@ impl RecordUpdate {
 }
 
 impl RecordEditor {
-    pub fn for_update(self) -> Result<RecordUpdate, Box<dyn Error>> {
+    pub fn for_update(self) -> ResultDE<RecordUpdate> {
         let mut tags = None;
         if let Some(proposed_tags) = &self.tags {
             tags = Some(Tags::try_from(proposed_tags)?);
@@ -290,7 +287,7 @@ async fn get_or_insert_tag(db: &mut DBase, name: &str) -> Result<i32, sqlx::Erro
     Ok(id)
 }
 
-pub async fn retag(db: &mut DBase, old: &Tag, new: &Tag) -> Result<(), Box<dyn Error>> {
+pub async fn retag(db: &mut DBase, old: &Tag, new: &Tag) -> ResultDE<()> {
     if old == new {
         Err("OLD and NEW tag can’t be the same.")?;
     }
@@ -412,7 +409,7 @@ pub async fn set_edit_message_seen(db: &mut DBase) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-pub async fn connect(config: &mut Config) -> Result<DBase, Box<dyn Error>> {
+pub async fn connect(config: &mut Config) -> ResultDE<DBase> {
     let path;
 
     if let Some(db) = &config.database {
@@ -477,7 +474,7 @@ pub async fn connect(config: &mut Config) -> Result<DBase, Box<dyn Error>> {
     Ok(db)
 }
 
-async fn init(db: &mut DBase, path: &Path) -> Result<(), Box<dyn Error>> {
+async fn init(db: &mut DBase, path: &Path) -> ResultDE<()> {
     let db_exists = sqlx::query(
         "SELECT 1 FROM sqlite_master \
          WHERE type = 'table' AND name = 'maintenance'",
@@ -583,7 +580,7 @@ async fn init(db: &mut DBase, path: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn update_db(db: &mut DBase, version: i32) -> Result<(), Box<dyn Error>> {
+async fn update_db(db: &mut DBase, version: i32) -> ResultDE<()> {
     match version {
         2 => {
             // Add --color option.
@@ -783,7 +780,7 @@ async fn change_counter_add(db: &mut DBase, count: i32) -> Result<(), sqlx::Erro
     Ok(())
 }
 
-pub async fn assert_write_access(db: &mut DBase) -> Result<(), Box<dyn Error>> {
+pub async fn assert_write_access(db: &mut DBase) -> ResultDE<()> {
     change_counter_add(db, 0).await.map_err(
         |_| "Couldn’t get write access to the database. It’s probably locked by another process.",
     )?;

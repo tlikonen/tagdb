@@ -4,8 +4,8 @@ pub(crate) use {
         database::CL_TIME_EPOCH,
         database_name,
         objects::{
-            Config, Format, Record, RecordEditor, RecordIds, RecordNew, RecordUpdate, Records, Tag,
-            Tags,
+            Config, Format, Record, RecordEditor, RecordIds, RecordNew, RecordUpdate, Records,
+            ResultDE, Tag, Tags,
         },
     },
     chrono::{DateTime, Local},
@@ -14,7 +14,6 @@ pub(crate) use {
     std::{
         cmp::Ordering,
         collections::{HashMap, HashSet},
-        error::Error,
         fs,
         io::{self, Write},
         path::{Path, PathBuf},

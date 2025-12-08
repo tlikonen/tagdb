@@ -1,5 +1,7 @@
 use crate::prelude::*;
 
+pub type ResultDE<T> = Result<T, Box<dyn std::error::Error>>;
+
 pub struct Config {
     pub short: bool,
     pub verbose: bool,
