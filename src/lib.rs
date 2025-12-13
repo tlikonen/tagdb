@@ -24,10 +24,10 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> ResultDE<()> {
         Cmd::Normal(tags) => cmd_normal(&mut db, config, tags).await?,
         Cmd::Count(tags) => cmd_count(&mut db, tags).await?,
         Cmd::List(maybetags) => cmd_list(&mut db, maybetags).await?,
-        // Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
-        // Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
+        Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
+        Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
         // Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await?,
-        // Cmd::Retag(old, new) => cmd_retag(&mut db, old, new).await?,
+        Cmd::Retag(old, new) => cmd_retag(&mut db, old, new).await?,
     }
 
     database::vacuum_check(&mut db).await?;
@@ -66,48 +66,48 @@ async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> ResultDE<()> {
     Ok(())
 }
 
-// async fn cmd_create(db: &mut DBase, tags: Tags) -> ResultDE<()> {
-//     let mut ta = db.begin().await?;
-//     database::assert_write_access(&mut ta).await?;
+async fn cmd_create(db: &mut DBase, tags: Tags) -> ResultDE<()> {
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
 
-//     let file = tmp_file()?;
-//     let path = file.path();
-//     let name = path.to_string_lossy();
-//     run_text_editor(&name)?;
+    let file = tmp_file()?;
+    let path = file.path();
+    let name = path.to_string_lossy();
+    run_text_editor(&name)?;
 
-//     let buffer = fs::read_to_string(path)?;
-//     let lines: Vec<&str> = buffer.lines().collect();
+    let buffer = fs::read_to_string(path)?;
+    let lines: Vec<&str> = buffer.lines().collect();
 
-//     match remove_empty_lines(&lines) {
-//         Some(content) => {
-//             let new = RecordNew { tags, content };
-//             new.insert(&mut ta).await?;
-//         }
-//         None => Err("Empty file. Aborting.")?,
-//     }
+    match remove_empty_lines(&lines) {
+        Some(content) => {
+            let new = RecordNew { tags, content };
+            new.insert(&mut ta).await?;
+        }
+        None => Err("Empty file. Aborting.")?,
+    }
 
-//     ta.commit().await?;
-//     Ok(())
-// }
+    ta.commit().await?;
+    Ok(())
+}
 
-// async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> ResultDE<()> {
-//     let mut ta = db.begin().await?;
-//     database::assert_write_access(&mut ta).await?;
+async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> ResultDE<()> {
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
 
-//     let buffer = io::read_to_string(io::stdin())?;
-//     let lines: Vec<&str> = buffer.lines().collect();
+    let buffer = io::read_to_string(io::stdin())?;
+    let lines: Vec<&str> = buffer.lines().collect();
 
-//     match remove_empty_lines(&lines) {
-//         Some(content) => {
-//             let new = RecordNew { tags, content };
-//             new.insert(&mut ta).await?;
-//         }
-//         None => Err("Empty content. Aborting.")?,
-//     }
+    match remove_empty_lines(&lines) {
+        Some(content) => {
+            let new = RecordNew { tags, content };
+            new.insert(&mut ta).await?;
+        }
+        None => Err("Empty content. Aborting.")?,
+    }
 
-//     ta.commit().await?;
-//     Ok(())
-// }
+    ta.commit().await?;
+    Ok(())
+}
 
 // async fn cmd_edit(
 //     db: &mut DBase,
@@ -272,13 +272,13 @@ async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> ResultDE<()> {
 //     Ok(())
 // }
 
-// async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> ResultDE<()> {
-//     let mut ta = db.begin().await?;
-//     database::assert_write_access(&mut ta).await?;
-//     database::retag(&mut ta, &old, &new).await?;
-//     ta.commit().await?;
-//     Ok(())
-// }
+async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> ResultDE<()> {
+    let mut ta = db.begin().await?;
+    database::assert_write_access(&mut ta).await?;
+    database::retag(&mut ta, &old, &new).await?;
+    ta.commit().await?;
+    Ok(())
+}
 
 fn return_to_editor() -> ResultDE<bool> {
     loop {

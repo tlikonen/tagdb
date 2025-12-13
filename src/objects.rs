@@ -52,10 +52,10 @@ pub enum Cmd {
     Normal(Tags),
     Count(Tags),
     List(Option<Tags>),
-    // Create(Tags),
-    // CreateStdin(Tags),
+    Create(Tags),
+    CreateStdin(Tags),
     // Edit(Tags),
-    // Retag(Tag, Tag),
+    Retag(Tag, Tag),
 }
 
 #[derive(PartialEq)]
