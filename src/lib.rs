@@ -130,8 +130,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
         }
     }
 
-    let mut headers_ids = HashMap::<String, i32>::with_capacity(10);
-    let mut ids_headers = HashMap::<i32, String>::with_capacity(10);
+    let mut headers = EditorHeaders::new();
 
     {
         let mut header_id: usize = 1;
@@ -146,11 +145,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
 
             let id_line = record.editor_id_line(header_id, &config);
             record.write(&mut file, &id_line)?;
-
-            let record_id = record.id;
-            headers_ids.insert(id_line.clone(), record_id);
-            ids_headers.insert(record_id, id_line);
-
+            headers.insert(record.id, &id_line);
             header_id += 1;
         }
     }
@@ -171,7 +166,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
 
         for line in buffer.lines() {
             // Is this new record header?
-            if let Some(new_id) = headers_ids.get(line) {
+            if let Some(new_id) = headers.get_id(line) {
                 if let Some(old_id) = header_id {
                     records.push(RecordEditor {
                         id: old_id,
@@ -224,7 +219,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
         for record in records {
             print!(
                 "{} – ",
-                ids_headers.get(&record.id).expect("Id is not set.")
+                headers.get_header(record.id).expect("Id is not set.")
             );
             io::stdout().flush()?;
 

@@ -202,6 +202,33 @@ impl TagList {
     }
 }
 
+pub struct EditorHeaders {
+    headers_ids: HashMap<String, i32>,
+    ids_headers: HashMap<i32, String>,
+}
+
+impl EditorHeaders {
+    pub fn new() -> Self {
+        Self {
+            headers_ids: HashMap::<String, i32>::with_capacity(10),
+            ids_headers: HashMap::<i32, String>::with_capacity(10),
+        }
+    }
+
+    pub fn insert(&mut self, record_id: i32, header_line: &str) {
+        self.headers_ids.insert(header_line.to_string(), record_id);
+        self.ids_headers.insert(record_id, header_line.to_string());
+    }
+
+    pub fn get_header(&self, record_id: i32) -> Option<&String> {
+        self.ids_headers.get(&record_id)
+    }
+
+    pub fn get_id(&self, header_line: &str) -> Option<&i32> {
+        self.headers_ids.get(header_line)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

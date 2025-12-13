@@ -4,8 +4,8 @@ pub(crate) use {
         database::CL_TIME_EPOCH,
         database_name,
         objects::{
-            Config, Format, Record, RecordEditor, RecordIds, RecordNew, RecordUpdate, Records,
-            ResultDE, Tag, TagList, Tags,
+            Config, EditorHeaders, Format, Record, RecordEditor, RecordIds, RecordNew,
+            RecordUpdate, Records, ResultDE, Tag, TagList, Tags,
         },
     },
     chrono::{DateTime, Local},
