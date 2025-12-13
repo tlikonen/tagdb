@@ -61,13 +61,7 @@ async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> ResultDE<()> {
     if name_count.is_empty() {
         Err("No tags found.")?;
     } else {
-        let mut list: Vec<(&String, &u64)> = name_count.item().iter().collect();
-        list.sort_by_key(|(name, _)| name.to_lowercase());
-        let width = list.iter().map(|x| num_width(*x.1)).max().unwrap_or(0);
-
-        for (name, count) in list {
-            println!("{count:width$} {name}");
-        }
+        name_count.print();
     }
     Ok(())
 }
@@ -346,15 +340,6 @@ fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
     s.split_whitespace()
 }
 
-fn num_width(mut num: u64) -> usize {
-    let mut width = 1;
-    while num / 10 > 0 {
-        width += 1;
-        num /= 10;
-    }
-    width
-}
-
 fn is_empty_string(s: &str) -> bool {
     s.chars().all(|x| x.is_whitespace())
 }
@@ -407,18 +392,6 @@ pub fn database_name() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn num_width_fn() {
-        assert_eq!(1, num_width(0));
-        assert_eq!(1, num_width(1));
-        assert_eq!(1, num_width(9));
-        assert_eq!(2, num_width(10));
-        assert_eq!(2, num_width(99));
-        assert_eq!(3, num_width(100));
-        assert_eq!(3, num_width(999));
-        assert_eq!(4, num_width(1000));
-    }
 
     #[test]
     fn split_tag_string_fn() {

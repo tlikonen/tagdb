@@ -190,12 +190,12 @@ impl<'a> IntoIterator for &'a Records {
 pub struct TagList(pub HashMap<String, u64>);
 
 impl TagList {
-    pub fn item(&self) -> &HashMap<String, u64> {
-        &self.0
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &u64)> {
+        self.0.iter()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.item().is_empty()
+        self.0.is_empty()
     }
 }
 
