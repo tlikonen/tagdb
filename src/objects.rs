@@ -51,7 +51,7 @@ pub struct RecordUpdate {
 pub enum Cmd {
     Normal(Tags),
     Count(Tags),
-    // List(Option<Tags>),
+    List(Option<Tags>),
     // Create(Tags),
     // CreateStdin(Tags),
     // Edit(Tags),
@@ -184,6 +184,18 @@ impl<'a> IntoIterator for &'a Records {
             vec: self,
             index: 0,
         }
+    }
+}
+
+pub struct TagList(pub HashMap<String, u64>);
+
+impl TagList {
+    pub fn item(&self) -> &HashMap<String, u64> {
+        &self.0
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.item().is_empty()
     }
 }
 

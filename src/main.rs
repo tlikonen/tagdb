@@ -150,13 +150,13 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
 
         "count" => Cmd::Count(Tags::try_from(&args.other)?),
 
-        // "list" => {
-        //     if args.other.is_empty() {
-        //         Cmd::List(None)
-        //     } else {
-        //         Cmd::List(Some(Tags::try_from(&args.other)?))
-        //     }
-        // }
+        "list" => {
+            if args.other.is_empty() {
+                Cmd::List(None)
+            } else {
+                Cmd::List(Some(Tags::try_from(&args.other)?))
+            }
+        }
 
         // "create" => Cmd::Create(Tags::try_from(&args.other)?),
         // "create-stdin" => Cmd::CreateStdin(Tags::try_from(&args.other)?),

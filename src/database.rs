@@ -100,10 +100,7 @@ impl RecordIds {
     }
 }
 
-pub async fn list_tags(
-    db: &mut DBase,
-    tags: Option<&Tags>,
-) -> Result<HashMap<String, u64>, sqlx::Error> {
+pub async fn list_tags(db: &mut DBase, tags: Option<&Tags>) -> Result<TagList, sqlx::Error> {
     let empty = String::new();
     let list: Vec<&String> = match tags {
         Some(t) => t.into_iter().collect(),
@@ -128,7 +125,7 @@ pub async fn list_tags(
         }
     }
 
-    Ok(name_count)
+    Ok(TagList(name_count))
 }
 
 impl RecordNew {

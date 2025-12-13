@@ -23,7 +23,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> ResultDE<()> {
     match cmd {
         Cmd::Normal(tags) => cmd_normal(&mut db, config, tags).await?,
         Cmd::Count(tags) => cmd_count(&mut db, tags).await?,
-        // Cmd::List(maybetags) => cmd_list(&mut db, maybetags).await?,
+        Cmd::List(maybetags) => cmd_list(&mut db, maybetags).await?,
         // Cmd::Create(tags) => cmd_create(&mut db, tags).await?,
         // Cmd::CreateStdin(tags) => cmd_create_stdin(&mut db, tags).await?,
         // Cmd::Edit(tags) => cmd_edit(&mut db, config, tags).await?,
@@ -55,25 +55,22 @@ async fn cmd_count(db: &mut DBase, tags: Tags) -> ResultDE<()> {
     Ok(())
 }
 
-// async fn cmd_list(
-//     db: &mut DBase,
-//     maybetags: Option<Tags>,
-// ) -> ResultDE<()> {
-//     let name_count = database::list_tags(db, maybetags.as_ref()).await?;
+async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> ResultDE<()> {
+    let name_count = database::list_tags(db, maybetags.as_ref()).await?;
 
-//     if name_count.is_empty() {
-//         Err("No tags found.")?;
-//     } else {
-//         let mut list: Vec<(String, u64)> = name_count.into_iter().collect();
-//         list.sort_by_key(|(name, _)| name.to_lowercase());
-//         let width = list.iter().map(|x| num_width(x.1)).max().unwrap_or(0);
+    if name_count.is_empty() {
+        Err("No tags found.")?;
+    } else {
+        let mut list: Vec<(&String, &u64)> = name_count.item().iter().collect();
+        list.sort_by_key(|(name, _)| name.to_lowercase());
+        let width = list.iter().map(|x| num_width(*x.1)).max().unwrap_or(0);
 
-//         for (name, count) in list {
-//             println!("{count:width$} {name}");
-//         }
-//     }
-//     Ok(())
-// }
+        for (name, count) in list {
+            println!("{count:width$} {name}");
+        }
+    }
+    Ok(())
+}
 
 // async fn cmd_create(db: &mut DBase, tags: Tags) -> ResultDE<()> {
 //     let mut ta = db.begin().await?;

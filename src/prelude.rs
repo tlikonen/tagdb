@@ -5,7 +5,7 @@ pub(crate) use {
         database_name,
         objects::{
             Config, Format, Record, RecordEditor, RecordIds, RecordNew, RecordUpdate, Records,
-            ResultDE, Tag, Tags,
+            ResultDE, Tag, TagList, Tags,
         },
     },
     chrono::{DateTime, Local},
