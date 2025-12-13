@@ -187,15 +187,18 @@ impl<'a> IntoIterator for &'a Records {
     }
 }
 
-pub struct TagList(pub HashMap<String, u64>);
+pub struct TagList {
+    pub hash: HashMap<String, u64>,
+    pub num_width: usize,
+}
 
 impl TagList {
     pub fn iter(&self) -> impl Iterator<Item = (&String, &u64)> {
-        self.0.iter()
+        self.hash.iter()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.hash.is_empty()
     }
 }
 

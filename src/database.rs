@@ -108,6 +108,7 @@ pub async fn list_tags(db: &mut DBase, tags: Option<&Tags>) -> Result<TagList, s
     };
 
     let mut name_count = HashMap::<String, u64>::with_capacity(50);
+    let mut max_width = 1;
 
     for tag in list {
         let mut rows = sqlx::query(
@@ -122,10 +123,27 @@ pub async fn list_tags(db: &mut DBase, tags: Option<&Tags>) -> Result<TagList, s
             let name: String = row.try_get("name")?;
             let count: u64 = row.try_get("count")?;
             name_count.insert(name, count);
+
+            let width = num_width(count);
+            if width > max_width {
+                max_width = width;
+            }
         }
     }
 
-    Ok(TagList(name_count))
+    Ok(TagList {
+        hash: name_count,
+        num_width: max_width,
+    })
+}
+
+fn num_width(mut num: u64) -> usize {
+    let mut width = 1;
+    while num / 10 > 0 {
+        width += 1;
+        num /= 10;
+    }
+    width
 }
 
 impl RecordNew {
@@ -819,5 +837,17 @@ mod tests {
         assert_eq!("%abcd%", like_esc_wild("abcd"));
         assert_eq!("%\\_\\%\\\\%", like_esc_wild("_%\\"));
         assert_eq!("%ab%cd%", like_esc_wild("ab*cd"));
+    }
+
+    #[test]
+    fn num_width_fn() {
+        assert_eq!(1, num_width(0));
+        assert_eq!(1, num_width(1));
+        assert_eq!(1, num_width(9));
+        assert_eq!(2, num_width(10));
+        assert_eq!(2, num_width(99));
+        assert_eq!(3, num_width(100));
+        assert_eq!(3, num_width(999));
+        assert_eq!(4, num_width(1000));
     }
 }
