@@ -18,4 +18,5 @@ pub(crate) use {
         io::{self, Write},
         path::{Path, PathBuf},
     },
+    tempfile::NamedTempFile,
 };

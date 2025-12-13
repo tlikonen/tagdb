@@ -131,24 +131,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
     }
 
     let mut headers = EditorHeaders::new();
-
-    {
-        let mut header_id: usize = 1;
-        let mut first = true;
-
-        for record in &records {
-            if first {
-                first = false;
-            } else {
-                writeln!(&mut file)?;
-            }
-
-            let id_line = record.editor_id_line(header_id, &config);
-            record.write(&mut file, &id_line)?;
-            headers.insert(record.id, &id_line);
-            header_id += 1;
-        }
-    }
+    records.write(&mut file, &mut headers, &config)?;
 
     let path = file.path();
     let name = path.to_string_lossy();
@@ -289,7 +272,7 @@ fn return_to_editor() -> ResultDE<bool> {
     }
 }
 
-fn tmp_file() -> Result<tempfile::NamedTempFile, String> {
+fn tmp_file() -> Result<NamedTempFile, String> {
     let tmp = tempfile::Builder::new()
         .prefix(&format!("{PROGRAM_NAME}-"))
         .suffix(".txt")

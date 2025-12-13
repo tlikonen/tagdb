@@ -119,6 +119,32 @@ impl Record {
     }
 }
 
+impl Records {
+    pub fn write(
+        &self,
+        file: &mut NamedTempFile,
+        headers: &mut EditorHeaders,
+        config: &Config,
+    ) -> ResultDE<()> {
+        let mut header_id: usize = 1;
+        let mut first = true;
+
+        for record in self {
+            if first {
+                first = false;
+            } else {
+                writeln!(file)?;
+            }
+
+            let id_line = record.editor_id_line(header_id, config);
+            record.write(file, &id_line)?;
+            headers.insert(record.id, &id_line);
+            header_id += 1;
+        }
+        Ok(())
+    }
+}
+
 impl TagList {
     pub fn print(&self) {
         let mut list: Vec<(&String, &u64)> = self.iter().collect();
