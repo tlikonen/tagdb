@@ -160,7 +160,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
 
         "create" => Cmd::Create(Tags::try_from(&args.other)?),
         "create-stdin" => Cmd::CreateStdin(Tags::try_from(&args.other)?),
-        // "edit" => Cmd::Edit(Tags::try_from(&args.other)?),
+        "edit" => Cmd::Edit(Tags::try_from(&args.other)?),
 
         "retag" => {
             if args.other.len() != 2 {

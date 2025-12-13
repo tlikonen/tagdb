@@ -54,7 +54,7 @@ pub enum Cmd {
     List(Option<Tags>),
     Create(Tags),
     CreateStdin(Tags),
-    // Edit(Tags),
+    Edit(Tags),
     Retag(Tag, Tag),
 }
 
