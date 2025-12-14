@@ -229,6 +229,14 @@ impl EditorHeaders {
     }
 }
 
+pub struct EditorRecords(pub Vec<RecordEditor>);
+
+impl EditorRecords {
+    pub fn into_iter(self) -> impl Iterator<Item = RecordEditor> {
+        self.0.into_iter()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

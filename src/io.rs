@@ -145,6 +145,64 @@ impl Records {
     }
 }
 
+impl EditorRecords {
+    pub fn parse(buffer: &str, headers: &EditorHeaders) -> ResultDE<Self> {
+        let mut header_id: Option<i32> = None;
+        let mut tags = HashSet::<&str>::with_capacity(10);
+        let mut lines: Vec<&str> = Vec::with_capacity(20);
+        let mut records: Vec<RecordEditor> = Vec::with_capacity(10);
+
+        let mut read_tags = false;
+
+        for line in buffer.lines() {
+            // Is this new record header?
+            if let Some(new_id) = headers.get_id(line) {
+                if let Some(old_id) = header_id {
+                    records.push(RecordEditor {
+                        id: old_id,
+                        tags: prepare_tags(&tags),
+                        content: remove_empty_lines(&lines),
+                    });
+
+                    tags.clear();
+                    lines.clear();
+                }
+                header_id = Some(*new_id);
+                read_tags = true;
+                continue;
+            } else if header_id.is_none() {
+                continue;
+            }
+
+            if read_tags {
+                if let Some(s) = line.strip_prefix(TAG_PREFIX_EDITOR) {
+                    for tag in split_tag_string(s) {
+                        tags.insert(tag);
+                    }
+                    continue;
+                } else {
+                    read_tags = false;
+                }
+            }
+
+            lines.push(line);
+        }
+
+        // Store the last record.
+        match header_id {
+            Some(old_id) => {
+                records.push(RecordEditor {
+                    id: old_id,
+                    tags: prepare_tags(&tags),
+                    content: remove_empty_lines(&lines),
+                });
+                Ok(Self(records))
+            }
+            None => Err("No data found.".into()),
+        }
+    }
+}
+
 impl TagList {
     pub fn print(&self) {
         let mut list: Vec<(&String, &u64)> = self.iter().collect();
@@ -242,6 +300,18 @@ pub fn run_text_editor(name: &str) -> ResultDE<()> {
     }
 }
 
+fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
+    s.split_whitespace()
+}
+
+fn prepare_tags(tags: &HashSet<&str>) -> Option<Vec<String>> {
+    if tags.is_empty() {
+        None
+    } else {
+        Some(tags.iter().map(|x| x.to_string()).collect())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,5 +353,21 @@ mod tests {
         assert!(is_org_header("** abc"));
         assert!(is_org_header("*** abc"));
         assert!(is_org_header("**** ä€–"));
+    }
+
+    #[test]
+    fn split_tag_string_fn() {
+        fn sts(s: &str) -> Vec<String> {
+            split_tag_string(s).map(|x| x.to_string()).collect()
+        }
+
+        assert_eq!(Vec::<String>::new(), sts("   "));
+        assert_eq!(Vec::<String>::new(), sts(""));
+        assert_eq!(vec!["111"], sts("111"));
+        assert_eq!(vec!["€€€"], sts("€€€"));
+        assert_eq!(
+            vec!["111", "222", "€€", "444"],
+            sts("  111   222  €€  444  ")
+        );
     }
 }

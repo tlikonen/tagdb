@@ -140,66 +140,19 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
         io::run_text_editor(&name)?;
         let buffer = fs::read_to_string(path)?;
 
-        let mut header_id: Option<i32> = None;
-        let mut tags = HashSet::<&str>::with_capacity(10);
-        let mut lines: Vec<&str> = Vec::with_capacity(20);
-        let mut records: Vec<RecordEditor> = Vec::with_capacity(10);
-
-        let mut read_tags = false;
-
-        for line in buffer.lines() {
-            // Is this new record header?
-            if let Some(new_id) = headers.get_id(line) {
-                if let Some(old_id) = header_id {
-                    records.push(RecordEditor {
-                        id: old_id,
-                        tags: prepare_tags(&tags),
-                        content: remove_empty_lines(&lines),
-                    });
-
-                    tags.clear();
-                    lines.clear();
-                }
-                header_id = Some(*new_id);
-                read_tags = true;
-                continue;
-            } else if header_id.is_none() {
-                continue;
-            }
-
-            if read_tags {
-                if let Some(s) = line.strip_prefix(TAG_PREFIX_EDITOR) {
-                    for tag in split_tag_string(s) {
-                        tags.insert(tag);
-                    }
-                    continue;
-                } else {
-                    read_tags = false;
-                }
-            }
-
-            lines.push(line);
-        }
-
-        // Store the last record.
-        match header_id {
-            Some(old_id) => records.push(RecordEditor {
-                id: old_id,
-                tags: prepare_tags(&tags),
-                content: remove_empty_lines(&lines),
-            }),
-
-            None => {
-                println!("No data found.");
+        let records = match EditorRecords::parse(&buffer, &headers) {
+            Ok(v) => v,
+            Err(e) => {
+                eprintln!("{e}");
                 if return_to_editor()? {
                     continue 'editor;
                 } else {
-                    Err("Aborted.")?;
+                    return Err("Aborted.".into());
                 }
             }
-        }
+        };
 
-        for record in records {
+        for record in records.into_iter() {
             print!(
                 "{} – ",
                 headers.get_header(record.id).expect("Id is not set.")
@@ -282,10 +235,6 @@ fn tmp_file() -> Result<NamedTempFile, String> {
     Ok(tmp)
 }
 
-fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
-    s.split_whitespace()
-}
-
 fn is_empty_string(s: &str) -> bool {
     s.chars().all(|x| x.is_whitespace())
 }
@@ -323,14 +272,6 @@ fn remove_empty_lines(lines: &Vec<&str>) -> Option<String> {
     }
 }
 
-fn prepare_tags(tags: &HashSet<&str>) -> Option<Vec<String>> {
-    if tags.is_empty() {
-        None
-    } else {
-        Some(tags.iter().map(|x| x.to_string()).collect())
-    }
-}
-
 pub fn database_name() -> String {
     format!("{PROGRAM_NAME}.sqlite")
 }
@@ -338,22 +279,6 @@ pub fn database_name() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn split_tag_string_fn() {
-        fn sts(s: &str) -> Vec<String> {
-            split_tag_string(s).map(|x| x.to_string()).collect()
-        }
-
-        assert_eq!(Vec::<String>::new(), sts("   "));
-        assert_eq!(Vec::<String>::new(), sts(""));
-        assert_eq!(vec!["111"], sts("111"));
-        assert_eq!(vec!["€€€"], sts("€€€"));
-        assert_eq!(
-            vec!["111", "222", "€€", "444"],
-            sts("  111   222  €€  444  ")
-        );
-    }
 
     #[test]
     fn remove_empty_lines_fn() {

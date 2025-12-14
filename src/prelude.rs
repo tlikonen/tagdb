@@ -4,9 +4,10 @@ pub(crate) use {
         database::CL_TIME_EPOCH,
         database_name,
         objects::{
-            Config, EditorHeaders, Format, Record, RecordEditor, RecordIds, RecordNew,
-            RecordUpdate, Records, ResultDE, Tag, TagList, Tags,
+            Config, EditorHeaders, EditorRecords, Format, Record, RecordEditor, RecordIds,
+            RecordNew, RecordUpdate, Records, ResultDE, Tag, TagList, Tags,
         },
+        remove_empty_lines,
     },
     chrono::{DateTime, Local},
     futures::TryStreamExt as _,
