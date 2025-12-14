@@ -159,35 +159,39 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
             );
             stdio::stdout().flush()?;
 
-            if record.content.is_some() {
-                match record.for_update() {
+            let mut error = false;
+            let mut error_msg = String::new();
+            match record.content {
+                None => {
+                    // Empty content. Delete the record.
+                    record.delete(&mut ta).await?;
+                    println!("Deleted");
+                }
+
+                Some(_) => match record.for_update() {
                     Ok(rec) => match rec.update(&mut ta).await {
                         Ok(_) => println!("Updated"),
                         Err(e) => {
-                            println!("FAILED");
-                            eprintln!("{e}");
-                            if return_to_editor()? {
-                                continue 'editor;
-                            } else {
-                                Err("Aborted.")?;
-                            }
+                            error_msg = format!("{e}");
+                            error = true;
                         }
                     },
 
                     Err(e) => {
-                        println!("FAILED");
-                        eprintln!("{e}");
-                        if return_to_editor()? {
-                            continue 'editor;
-                        } else {
-                            Err("Aborted.")?;
-                        }
+                        error_msg = format!("{e}");
+                        error = true;
                     }
-                };
-            } else {
-                // Empty content. Delete the record.
-                record.delete(&mut ta).await?;
-                println!("Deleted");
+                },
+            }
+
+            if error {
+                println!("FAILED");
+                eprintln!("{error_msg}");
+                if return_to_editor()? {
+                    continue 'editor;
+                } else {
+                    return Err("Aborted.".into());
+                }
             }
         }
 
