@@ -100,7 +100,7 @@ impl Record {
         }
     }
 
-    pub fn write(&self, file: &mut tempfile::NamedTempFile, id_line: &str) -> ResultDE<()> {
+    pub fn write(&self, file: &mut NamedTempFile, id_line: &str) -> ResultDE<()> {
         writeln!(file, "{id_line}")?;
 
         for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
