@@ -14,5 +14,5 @@
 # empty content the record will be deleted from the database.
 #
 # To abort and cancel all changes save an empty buffer. You can also
-# keep just those record's that you want to modify, and delete all
-# others.
+# keep just those records that you want to modify, and delete all others
+# (including the header lines).
