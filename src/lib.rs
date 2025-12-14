@@ -73,7 +73,7 @@ async fn cmd_create(db: &mut DBase, tags: Tags) -> ResultDE<()> {
     let file = tmp_file()?;
     let path = file.path();
     let name = path.to_string_lossy();
-    run_text_editor(&name)?;
+    io::run_text_editor(&name)?;
 
     let buffer = fs::read_to_string(path)?;
     let lines: Vec<&str> = buffer.lines().collect();
@@ -137,7 +137,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
     let name = path.to_string_lossy();
 
     'editor: loop {
-        run_text_editor(&name)?;
+        io::run_text_editor(&name)?;
         let buffer = fs::read_to_string(path)?;
 
         let mut header_id: Option<i32> = None;
@@ -280,34 +280,6 @@ fn tmp_file() -> Result<NamedTempFile, String> {
         .tempfile()
         .map_err(|_| "Couldn’t create a temporary file for the new record.")?;
     Ok(tmp)
-}
-
-fn run_text_editor(name: &str) -> ResultDE<()> {
-    use std::{env, process::Command};
-
-    let editor = match env::var("EDITOR") {
-        Ok(value) if !value.is_empty() => value,
-        _ => Err("Couldn’t launch text editor: the EDITOR variable is unset.")?,
-    };
-
-    match Command::new(&editor).arg(name).status() {
-        Ok(status) if status.success() => Ok(()),
-
-        Ok(status) => {
-            let err = match status.code() {
-                Some(code) => {
-                    format!("Text editor process “{editor}” returned an error code {code}.")
-                }
-                None => format!("Text editor process “{editor}” was terminated."),
-            };
-            Err(err.into())
-        }
-
-        Err(_) => Err(format!(
-            "Couldn’t launch text editor “{editor}”. Check the EDITOR variable."
-        )
-        .into()),
-    }
 }
 
 fn split_tag_string(s: &str) -> impl Iterator<Item = &str> {
