@@ -15,7 +15,7 @@ pub(crate) use {
         cmp::Ordering,
         collections::{HashMap, HashSet},
         fs,
-        io::{self, Write},
+        io::{self as stdio, Write as _},
         path::{Path, PathBuf},
     },
     tempfile::NamedTempFile,

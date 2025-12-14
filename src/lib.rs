@@ -1,7 +1,7 @@
 mod database;
+mod io;
 mod objects;
 mod prelude;
-mod print;
 
 pub use crate::objects::{Cmd, Config, Format, Tag, Tags};
 use crate::prelude::*;
@@ -94,7 +94,7 @@ async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> ResultDE<()> {
     let mut ta = db.begin().await?;
     database::assert_write_access(&mut ta).await?;
 
-    let buffer = io::read_to_string(io::stdin())?;
+    let buffer = stdio::read_to_string(stdio::stdin())?;
     let lines: Vec<&str> = buffer.lines().collect();
 
     match remove_empty_lines(&lines) {
@@ -204,7 +204,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
                 "{} – ",
                 headers.get_header(record.id).expect("Id is not set.")
             );
-            io::stdout().flush()?;
+            stdio::stdout().flush()?;
 
             if record.content.is_some() {
                 match record.for_update() {
@@ -259,10 +259,10 @@ fn return_to_editor() -> ResultDE<bool> {
         print!(
             "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: "
         );
-        io::stdout().flush()?;
+        stdio::stdout().flush()?;
 
         let mut buffer = String::with_capacity(6);
-        io::stdin().read_line(&mut buffer)?;
+        stdio::stdin().read_line(&mut buffer)?;
 
         match buffer.as_str() {
             "\n" => return Ok(true),
