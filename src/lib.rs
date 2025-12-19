@@ -212,13 +212,14 @@ async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> ResultDE<()> {
 }
 
 fn return_to_editor() -> ResultDE<bool> {
+    let mut buffer = String::with_capacity(6);
     loop {
         print!(
             "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: "
         );
         stdio::stdout().flush()?;
 
-        let mut buffer = String::with_capacity(6);
+        buffer.clear();
         stdio::stdin().read_line(&mut buffer)?;
 
         match buffer.as_str() {
