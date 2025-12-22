@@ -34,7 +34,7 @@ async fn main() -> ExitCode {
 
     let mut error = false;
 
-    for u in &args.unknown {
+    for u in args.unknown_options() {
         eprintln!("Unknown option ”{u}”.");
         error = true;
     }

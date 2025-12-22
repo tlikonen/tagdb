@@ -656,9 +656,9 @@ dependencies = [
 
 [[package]]
 name = "just-getopt"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a84f07fb7ea03221c75cb728769a4a72cc1e7bfe6672b91a123fc1c4ba4300bd"
+checksum = "97185bbe8f4edbaf6a3acc4f3f723358488d2da28e8f12a83529ddc6268f9c30"
 
 [[package]]
 name = "lazy_static"
