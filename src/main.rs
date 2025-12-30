@@ -1,6 +1,8 @@
-use just_getopt::{Args, OptFlags, OptSpecs, OptValue};
-use std::{error::Error, process::ExitCode};
-use tagdb::*;
+use {
+    just_getopt::{Args, OptFlags, OptSpecs, OptValue},
+    std::{error::Error, process::ExitCode},
+    tagdb::*,
+};
 
 #[tokio::main]
 async fn main() -> ExitCode {
