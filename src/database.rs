@@ -22,7 +22,7 @@ impl Tags {
         let mut set = HashSet::with_capacity(10);
         let mut first = true;
 
-        for tag in self {
+        for tag in self.iter() {
             let mut rows = sqlx::query(
                 "SELECT j.record_id FROM record_tag AS j \
                  LEFT JOIN tags AS t ON j.tag_id = t.id \
@@ -103,7 +103,7 @@ impl RecordIds {
 pub async fn list_tags(db: &mut DBase, tags: Option<&Tags>) -> Result<TagList, sqlx::Error> {
     let empty = String::new();
     let list: Vec<&String> = match tags {
-        Some(t) => t.into_iter().collect(),
+        Some(t) => t.iter().collect(),
         None => vec![&empty],
     };
 
@@ -169,7 +169,7 @@ impl RecordNew {
         };
 
         let mut tag_ids = HashSet::with_capacity(5);
-        for tag in &self.tags {
+        for tag in self.tags.iter() {
             let id = get_or_insert_tag(db, tag).await?;
             tag_ids.insert(id);
         }
@@ -204,7 +204,7 @@ impl RecordUpdate {
         // Record-tag connections.
         if let Some(tags) = &self.tags {
             let mut new_tag_ids = HashSet::with_capacity(8);
-            for tag in tags {
+            for tag in tags.iter() {
                 new_tag_ids.insert(get_or_insert_tag(db, tag).await?);
             }
 

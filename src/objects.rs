@@ -110,36 +110,9 @@ impl Tags {
             Ok(Self(tags))
         }
     }
-}
 
-pub struct VecIter<T> {
-    vec: T,
-    index: usize,
-}
-
-impl<'a> Iterator for VecIter<&'a Tags> {
-    type Item = &'a String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.vec.0.get(self.index) {
-            None => None,
-            value => {
-                self.index += 1;
-                value
-            }
-        }
-    }
-}
-
-impl<'a> IntoIterator for &'a Tags {
-    type Item = &'a String;
-    type IntoIter = VecIter<&'a Tags>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        Self::IntoIter {
-            vec: self,
-            index: 0,
-        }
+    pub fn iter(&self) -> impl Iterator<Item = &String> {
+        self.0.iter()
     }
 }
 
@@ -161,29 +134,9 @@ impl RecordIds {
 
 pub struct Records(pub Vec<Record>);
 
-impl<'a> Iterator for VecIter<&'a Records> {
-    type Item = &'a Record;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.vec.0.get(self.index) {
-            None => None,
-            value => {
-                self.index += 1;
-                value
-            }
-        }
-    }
-}
-
-impl<'a> IntoIterator for &'a Records {
-    type Item = &'a Record;
-    type IntoIter = VecIter<&'a Records>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        Self::IntoIter {
-            vec: self,
-            index: 0,
-        }
+impl Records {
+    pub fn iter(&self) -> impl Iterator<Item = &Record> {
+        self.0.iter()
     }
 }
 
@@ -259,7 +212,7 @@ mod tests {
     #[test]
     fn tags_iterator() {
         let tags = Tags::try_from(["a", "b"]).unwrap();
-        let mut it = tags.into_iter();
+        let mut it = tags.iter();
 
         assert_eq!(Some("a"), it.next().map(|x| x.as_str()));
         assert_eq!(Some("b"), it.next().map(|x| x.as_str()));
@@ -271,7 +224,7 @@ mod tests {
         let tags = Tags::try_from(["a", "b", "c"]).unwrap();
 
         let mut output = Vec::new();
-        for tag in &tags {
+        for tag in tags.iter() {
             output.push(tag);
         }
         assert_eq!(vec!["a", "b", "c"], output);

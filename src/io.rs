@@ -129,7 +129,7 @@ impl Records {
         let mut header_id: usize = 1;
         let mut first = true;
 
-        for record in self {
+        for record in self.iter() {
             if first {
                 first = false;
             } else {
