@@ -277,7 +277,7 @@ pub fn run_text_editor(name: &str) -> ResultDE<()> {
 
     let editor = match env::var("EDITOR") {
         Ok(value) if !value.is_empty() => value,
-        _ => Err("Couldn’t launch text editor: the EDITOR variable is unset.")?,
+        _ => return Err("Couldn’t launch text editor: the EDITOR variable is unset.".into()),
     };
 
     match Command::new(&editor).arg(name).status() {

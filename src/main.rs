@@ -78,7 +78,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
                 "text" => Some(Format::Text { color: false }),
                 "text-color" => Some(Format::Text { color: true }),
                 "org-mode" => Some(Format::OrgMode),
-                _ => Err(format!("Invalid value for option “--format={value}”."))?,
+                _ => return Err(format!("Invalid value for option “--format={value}”.").into()),
             };
         }
 
@@ -115,7 +115,11 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
         match options.len() {
             0 => "normal",
             1 => options[0],
-            _ => Err("Only one command option is allowed. Use option “-h” alone for help.")?,
+            _ => {
+                return Err(
+                    "Only one command option is allowed. Use option “-h” alone for help.".into(),
+                );
+            }
         }
     };
 
@@ -166,7 +170,7 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
 
         "retag" => {
             if args.other.len() != 2 {
-                Err("The retag command requires two tag names: OLD and NEW.")?;
+                return Err("The retag command requires two tag names: OLD and NEW.".into());
             }
 
             Cmd::Retag(

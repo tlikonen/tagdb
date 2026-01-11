@@ -263,7 +263,7 @@ impl RecordEditor {
             tags,
             content: match self.content {
                 Some(v) => v,
-                None => Err("No content.")?,
+                None => return Err("No content.".into()),
             },
         };
 
@@ -304,7 +304,7 @@ async fn get_or_insert_tag(db: &mut DBase, name: &str) -> Result<i32, sqlx::Erro
 
 pub async fn retag(db: &mut DBase, old: &Tag, new: &Tag) -> ResultDE<()> {
     if old == new {
-        Err("OLD and NEW tag can’t be the same.")?;
+        return Err("OLD and NEW tag can’t be the same.".into());
     }
 
     let old = old.as_str();
@@ -317,7 +317,7 @@ pub async fn retag(db: &mut DBase, old: &Tag, new: &Tag) -> ResultDE<()> {
 
     let old_id: i32 = match row {
         Some(r) => r.try_get("id")?,
-        None => Err(format!("Tag “{old}” not found."))?,
+        None => return Err(format!("Tag “{old}” not found.").into()),
     };
 
     let row = sqlx::query("SELECT id FROM tags WHERE name = $1")
@@ -518,12 +518,15 @@ async fn init(db: &mut DBase, path: &Path) -> ResultDE<()> {
                 vacuum(db).await?;
             }
 
-            Ordering::Greater => Err(format!(
-                "The database version in file “{}” is {version}\n\
-                 but this program can only handle versions upto {PROGRAM_DB_VERSION}.\n\
-                 Please update the program.",
-                path.display()
-            ))?,
+            Ordering::Greater => {
+                return Err(format!(
+                    "The database version in file “{}” is {version}\n\
+                     but this program can only handle versions upto {PROGRAM_DB_VERSION}.\n\
+                     Please update the program.",
+                    path.display()
+                )
+                .into());
+            }
         }
     } else {
         // Database objects don't exist. Create all.
@@ -755,9 +758,9 @@ async fn update_db(db: &mut DBase, version: i32) -> ResultDE<()> {
             ta.commit().await?;
         }
 
-        other => Err(format!(
-            "Updating to database version {other} is not supported."
-        ))?,
+        other => {
+            return Err(format!("Updating to database version {other} is not supported.").into());
+        }
     }
     Ok(())
 }

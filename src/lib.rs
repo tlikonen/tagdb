@@ -59,7 +59,7 @@ async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> ResultDE<()> {
     let name_count = database::list_tags(db, maybetags.as_ref()).await?;
 
     if name_count.is_empty() {
-        Err("No tags found.")?;
+        return Err("No tags found.".into());
     } else {
         name_count.print();
     }
@@ -83,7 +83,7 @@ async fn cmd_create(db: &mut DBase, tags: Tags) -> ResultDE<()> {
             let new = RecordNew { tags, content };
             new.insert(&mut ta).await?;
         }
-        None => Err("Empty file. Aborting.")?,
+        None => return Err("Empty file. Aborting.".into()),
     }
 
     ta.commit().await?;
@@ -102,7 +102,7 @@ async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> ResultDE<()> {
             let new = RecordNew { tags, content };
             new.insert(&mut ta).await?;
         }
-        None => Err("Empty content. Aborting.")?,
+        None => return Err("Empty content. Aborting.".into()),
     }
 
     ta.commit().await?;
