@@ -140,19 +140,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
         io::run_text_editor(&name)?;
         let buffer = fs::read_to_string(path)?;
 
-        let records = match EditorRecords::parse(&buffer, &headers) {
-            Ok(v) => v,
-            Err(e) => {
-                eprintln!("{e}");
-                if return_to_editor()? {
-                    continue 'editor;
-                } else {
-                    return Err("Aborted.".into());
-                }
-            }
-        };
-
-        for record in records.into_iter() {
+        for record in EditorRecords::parse(&buffer, &headers)?.into_iter() {
             print!(
                 "{} – ",
                 headers.get_header(record.id).expect("Id is not set.")
