@@ -1,6 +1,6 @@
 [package]
 name = "tagdb"
-description = "Tag-based command-line database tool"
+description = "Tag-based command-line database notes tool"
 version = "2.2.0"
 edition = "2024"
 rust-version = "1.85"
