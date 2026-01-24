@@ -59,7 +59,7 @@ uninstall` removes the installed binary file.
 
 ## Copyright and License
 
-Copyright (C) 2014–2025 Teemu Likonen <<tlikonen@iki.fi>> ([web][],
+Copyright (C) 2014–2026 Teemu Likonen <<tlikonen@iki.fi>> ([web][],
 [PGP][])
 
 This program is free software: you can redistribute it and/or modify it
