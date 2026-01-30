@@ -103,9 +103,9 @@ impl Tags {
         }
 
         if !invalid.is_empty() {
-            Err(format!("Invalid tag names: {invalid}."))?
+            Err(format!("Invalid tag names: {invalid}."))
         } else if tags.is_empty() {
-            Err("No tags.")?
+            Err("No tags. At least one tag must be given.".to_string())
         } else {
             Ok(Self(tags))
         }
