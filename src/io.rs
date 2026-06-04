@@ -126,10 +126,9 @@ impl Records {
         headers: &mut EditorHeaders,
         config: &Config,
     ) -> ResultDE<()> {
-        let mut header_id: usize = 1;
         let mut first = true;
 
-        for record in self.iter() {
+        for (header_id, record) in (1..).zip(self.iter()) {
             if first {
                 first = false;
             } else {
@@ -139,7 +138,6 @@ impl Records {
             let id_line = record.editor_id_line(header_id, config);
             record.write(file, &id_line)?;
             headers.insert(record.id, &id_line);
-            header_id += 1;
         }
         Ok(())
     }
