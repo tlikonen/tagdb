@@ -237,10 +237,10 @@ fn remove_empty_lines(lines: &Vec<&str>) -> Option<String> {
     let mut take = 0;
     let mut beginning = true;
 
-    for (n, line) in lines.iter().enumerate() {
+    for (n, line) in (1..).zip(lines) {
         if beginning {
             if is_empty_string(line) {
-                skip = n + 1;
+                skip = n;
             } else {
                 beginning = false;
                 take = 1; // first non-empty line
@@ -249,7 +249,7 @@ fn remove_empty_lines(lines: &Vec<&str>) -> Option<String> {
         }
 
         if !is_empty_string(line) {
-            take = n + 1 - skip;
+            take = n - skip;
         }
     }
 
