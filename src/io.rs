@@ -32,9 +32,9 @@ impl Record {
         };
 
         if config.verbose {
-            println!(
+            stdout(&format!(
                 "{}# Created:  {}{}\n\
-                 {}# Modified: {}{}{}",
+                 {}# Modified: {}{}{}\n",
                 colors(GREEN),
                 colors(CYAN),
                 format_time(self.created, config.utc),
@@ -42,27 +42,28 @@ impl Record {
                 colors(CYAN),
                 format_time(self.modified, config.utc),
                 colors(OFF)
-            );
+            ));
         }
 
         if !config.quiet || config.verbose {
             for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
-                println!(
-                    "{}{TAG_PREFIX} {}{line}{}",
+                stdout(&format!(
+                    "{}{TAG_PREFIX} {}{line}{}\n",
                     colors(GREEN),
                     colors(YELLOW),
                     colors(OFF)
-                );
+                ));
             }
-            println!();
+            stdout("\n");
         }
 
         if config.short {
             if let Some(line) = self.content.lines().next() {
-                println!("{line}");
+                stdout(line);
+                stdout("\n");
             }
         } else {
-            print!("{}", self.content);
+            stdout(&self.content);
         }
     }
 
@@ -72,30 +73,34 @@ impl Record {
         let first = lines.next();
         if let Some(line) = first {
             if line.starts_with("* ") {
-                println!("{line}");
+                stdout(line);
+                stdout("\n");
             } else {
-                println!("* {line}");
+                stdout(&format!("* {line}\n"));
             }
         }
 
         if config.verbose {
-            println!(
+            stdout(&format!(
                 "# Created:  {}\n\
-                 # Modified: {}",
+                 # Modified: {}\n",
                 format_time(self.created, config.utc),
                 format_time(self.modified, config.utc),
-            );
+            ));
         }
 
         if !config.quiet || config.verbose {
             for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
-                println!("{TAG_PREFIX} {line}");
+                stdout(&format!("{TAG_PREFIX} {line}\n"));
             }
         }
 
         if !config.short {
             for line in lines {
-                println!("{}{line}", if is_org_header(line) { "*" } else { "" });
+                stdout(&format!(
+                    "{}{line}\n",
+                    if is_org_header(line) { "*" } else { "" }
+                ));
             }
         }
     }
@@ -206,7 +211,12 @@ impl TagList {
         let mut list: Vec<(&String, &u64)> = self.iter().collect();
         list.sort_by_key(|(name, _)| name.to_lowercase());
         for (name, count) in list {
-            println!("{c:w$} {n}", c = count, w = self.num_width, n = name,);
+            stdout(&format!(
+                "{c:w$} {n}\n",
+                c = count,
+                w = self.num_width,
+                n = name,
+            ));
         }
     }
 }

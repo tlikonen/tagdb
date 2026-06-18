@@ -40,7 +40,7 @@ async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> 
         if first {
             first = false;
         } else {
-            println!();
+            stdout("\n");
         }
         record.print(&config);
     }
@@ -49,8 +49,8 @@ async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> 
 
 async fn cmd_count(db: &mut DBase, tags: Tags) -> ResultDE<()> {
     match tags.matching_record_ids(db).await? {
-        Some(ids) => println!("{}", ids.count()),
-        None => println!("0"),
+        Some(ids) => stdout(&format!("{}\n", ids.count())),
+        None => stdout("0\n"),
     }
     Ok(())
 }
@@ -141,10 +141,10 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
         let buffer = fs::read_to_string(path)?;
 
         for record in EditorRecords::parse(&buffer, &headers)?.into_iter() {
-            print!(
+            stdout(&format!(
                 "{} – ",
                 headers.get_header(record.id).expect("Id is not set.")
-            );
+            ));
             stdio::stdout().flush()?;
 
             let mut error = false;
@@ -153,12 +153,12 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
                 None => {
                     // Empty content. Delete the record.
                     record.delete(&mut ta).await?;
-                    println!("Deleted");
+                    stdout("Deleted\n");
                 }
 
                 Some(_) => match record.for_update() {
                     Ok(rec) => match rec.update(&mut ta).await {
-                        Ok(_) => println!("Updated"),
+                        Ok(_) => stdout("Updated\n"),
                         Err(e) => {
                             error_msg = format!("{e}");
                             error = true;
@@ -173,8 +173,8 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
             }
 
             if error {
-                println!("FAILED");
-                eprintln!("{error_msg}");
+                stdout("FAILED\n");
+                stderr(&format!("{error_msg}\n"));
                 if return_to_editor()? {
                     continue 'editor;
                 } else {
@@ -202,8 +202,8 @@ async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> ResultDE<()> {
 fn return_to_editor() -> ResultDE<bool> {
     let mut buffer = String::with_capacity(6);
     loop {
-        print!(
-            "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: "
+        stdout(
+            "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: ",
         );
         stdio::stdout().flush()?;
 
@@ -267,6 +267,14 @@ fn remove_empty_lines(lines: &Vec<&str>) -> Option<String> {
 
 pub fn database_name() -> String {
     format!("{PROGRAM_NAME}.sqlite")
+}
+
+pub fn stdout(s: &str) {
+    let _ = write!(stdio::stdout(), "{s}");
+}
+
+pub fn stderr(s: &str) {
+    let _ = write!(stdio::stderr(), "{s}");
 }
 
 #[cfg(test)]

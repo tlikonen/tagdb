@@ -37,24 +37,24 @@ async fn main() -> ExitCode {
     let mut error = false;
 
     for u in args.unknown_options() {
-        eprintln!("Unknown option ”{u}”.");
+        stderr(&format!("Unknown option ”{u}”.\n"));
         error = true;
     }
 
     for o in args.required_value_missing() {
-        eprintln!("Option ”{}” requires a value.", o.id);
+        stderr(&format!("Option ”{}” requires a value.\n", o.id));
         error = true;
     }
 
     if error {
-        eprintln!("Use option ”-h” for help.");
+        stderr("Use option ”-h” for help.\n");
         return ExitCode::FAILURE;
     }
 
     match config_stage(args).await {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("{e}");
+            stderr(&format!("{e}\n"));
             ExitCode::FAILURE
         }
     }
@@ -125,30 +125,30 @@ async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
 
     let command = match selected_option {
         "help" => {
-            println!(
+            stdout(&format!(
                 include_str!("usage.txt"),
                 program = tagdb::PROGRAM_NAME,
                 database = tagdb::database_name()
-            );
+            ));
             return Ok(());
         }
 
         "version" => {
-            println!(
+            stdout(&format!(
                 "{prg} v{ver}\n\
                  Author:  {author}\n\
-                 License: {license}",
+                 License: {license}\n",
                 prg = tagdb::PROGRAM_NAME,
                 ver = tagdb::PROGRAM_VERSION,
                 author = tagdb::PROGRAM_AUTHORS,
                 license = tagdb::PROGRAM_LICENSE,
-            );
+            ));
             return Ok(());
         }
 
         "normal" | "short" => {
             if config.quiet && config.verbose {
-                eprintln!("Note: Option “-q” is ignored when combined with “-v”.");
+                stderr("Note: Option “-q” is ignored when combined with “-v”.\n");
                 config.quiet = false;
             }
             Cmd::Normal(Tags::try_from(&args.other)?)

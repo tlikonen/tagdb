@@ -508,10 +508,10 @@ async fn init(db: &mut DBase, path: &Path) -> ResultDE<()> {
             Ordering::Equal => (),
 
             Ordering::Less => {
-                eprintln!(
-                    "Updating database file “{}” from version {version} to {PROGRAM_DB_VERSION}.",
+                stderr(&format!(
+                    "Updating database file “{}” from version {version} to {PROGRAM_DB_VERSION}.\n",
                     path.display()
-                );
+                ));
                 for v in (version + 1)..=(PROGRAM_DB_VERSION) {
                     update_db(db, v).await?;
                 }
@@ -530,7 +530,7 @@ async fn init(db: &mut DBase, path: &Path) -> ResultDE<()> {
         }
     } else {
         // Database objects don't exist. Create all.
-        eprintln!("Preparing database file “{}”.", path.display());
+        stderr(&format!("Preparing database file “{}”.\n", path.display()));
 
         let mut ta = db.begin().await?;
 

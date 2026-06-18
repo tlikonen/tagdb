@@ -7,7 +7,7 @@ pub(crate) use {
             Config, EditorHeaders, EditorRecords, Format, Record, RecordEditor, RecordIds,
             RecordNew, RecordUpdate, Records, ResultDE, Tag, TagList, Tags,
         },
-        remove_empty_lines,
+        remove_empty_lines, stderr, stdout,
     },
     chrono::{DateTime, Local},
     futures::TryStreamExt as _,
