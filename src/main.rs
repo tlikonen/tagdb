@@ -1,6 +1,9 @@
 use {
     just_getopt::{Args, OptFlags, OptSpecs, OptValue},
-    std::process::ExitCode,
+    std::{
+        io::{self, ErrorKind, Write as _},
+        process::ExitCode,
+    },
     tagdb::*,
 };
 
@@ -35,26 +38,33 @@ async fn main() -> ExitCode {
         .getopt(std::env::args().skip(1));
 
     let mut error = false;
+    let mut stderr = io::stderr();
 
     for u in args.unknown_options() {
-        stderr(&format!("Unknown option ”{u}”.\n"));
+        let _ = writeln!(stderr, "Unknown option ”{u}”.");
         error = true;
     }
 
     for o in args.required_value_missing() {
-        stderr(&format!("Option ”{}” requires a value.\n", o.id));
+        let _ = writeln!(stderr, "Option ”{}” requires a value.", o.id);
         error = true;
     }
 
     if error {
-        stderr("Use option ”-h” for help.\n");
+        let _ = writeln!(stderr, "Use option ”-h” for help.");
         return ExitCode::FAILURE;
     }
 
     match config_stage(args).await {
         Ok(_) => ExitCode::SUCCESS,
+
+        Err(Error::Io {
+            kind: ErrorKind::BrokenPipe,
+            ..
+        }) => ExitCode::FAILURE,
+
         Err(e) => {
-            stderr(&format!("{e}\n"));
+            let _ = writeln!(stderr, "{e}");
             ExitCode::FAILURE
         }
     }
@@ -129,7 +139,7 @@ async fn config_stage(args: Args) -> Result<()> {
                 include_str!("usage.txt"),
                 program = tagdb::PROGRAM_NAME,
                 database = tagdb::database_name()
-            ));
+            ))?;
             return Ok(());
         }
 
@@ -142,13 +152,13 @@ async fn config_stage(args: Args) -> Result<()> {
                 ver = tagdb::PROGRAM_VERSION,
                 author = tagdb::PROGRAM_AUTHORS,
                 license = tagdb::PROGRAM_LICENSE,
-            ));
+            ))?;
             return Ok(());
         }
 
         "normal" | "short" => {
             if config.quiet && config.verbose {
-                stderr("Note: Option “-q” is ignored when combined with “-v”.\n");
+                stderr("Note: Option “-q” is ignored when combined with “-v”.\n")?;
                 config.quiet = false;
             }
             Cmd::Normal(Tags::try_from(&args.other)?)

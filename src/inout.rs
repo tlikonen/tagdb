@@ -4,7 +4,7 @@ const TAGS_MAX_WIDTH: usize = 70;
 const TAG_PREFIX: &str = "# Tags:";
 
 impl Record {
-    pub fn print(&self, config: &Config) {
+    pub fn print(&self, config: &Config) -> Result<()> {
         let format = match &config.format {
             Some(f) => f,
             None => &Default::default(),
@@ -16,7 +16,7 @@ impl Record {
         }
     }
 
-    fn print_text(&self, config: &Config, color: bool) {
+    fn print_text(&self, config: &Config, color: bool) -> Result<()> {
         const ESC: char = '\u{001B}';
         const GREEN: &str = "0;32";
         const YELLOW: &str = "0;33";
@@ -42,7 +42,7 @@ impl Record {
                 colors(CYAN),
                 format_time(self.modified, config.utc),
                 colors(OFF)
-            ));
+            ))?;
         }
 
         if !config.quiet || config.verbose {
@@ -52,31 +52,33 @@ impl Record {
                     colors(GREEN),
                     colors(YELLOW),
                     colors(OFF)
-                ));
+                ))?;
             }
-            stdout("\n");
+            stdout("\n")?;
         }
 
         if config.short {
             if let Some(line) = self.content.lines().next() {
-                stdout(line);
-                stdout("\n");
+                stdout(line)?;
+                stdout("\n")?;
             }
         } else {
-            stdout(&self.content);
+            stdout(&self.content)?;
         }
+
+        Ok(())
     }
 
-    fn print_orgmode(&self, config: &Config) {
+    fn print_orgmode(&self, config: &Config) -> Result<()> {
         let mut lines = self.content.lines();
 
         let first = lines.next();
         if let Some(line) = first {
             if line.starts_with("* ") {
-                stdout(line);
-                stdout("\n");
+                stdout(line)?;
+                stdout("\n")?;
             } else {
-                stdout(&format!("* {line}\n"));
+                stdout(&format!("* {line}\n"))?;
             }
         }
 
@@ -86,12 +88,12 @@ impl Record {
                  # Modified: {}\n",
                 format_time(self.created, config.utc),
                 format_time(self.modified, config.utc),
-            ));
+            ))?;
         }
 
         if !config.quiet || config.verbose {
             for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
-                stdout(&format!("{TAG_PREFIX} {line}\n"));
+                stdout(&format!("{TAG_PREFIX} {line}\n"))?;
             }
         }
 
@@ -100,9 +102,11 @@ impl Record {
                 stdout(&format!(
                     "{}{line}\n",
                     if is_org_header(line) { "*" } else { "" }
-                ));
+                ))?;
             }
         }
+
+        Ok(())
     }
 
     pub fn write(&self, file: &mut NamedTempFile, id_line: &str) -> Result<()> {
@@ -207,7 +211,7 @@ impl EditorRecords {
 }
 
 impl TagList {
-    pub fn print(&self) {
+    pub fn print(&self) -> Result<()> {
         let mut list: Vec<(&String, &u64)> = self.iter().collect();
         list.sort_by_key(|(name, _)| name.to_lowercase());
         for (name, count) in list {
@@ -216,8 +220,10 @@ impl TagList {
                 c = count,
                 w = self.num_width,
                 n = name,
-            ));
+            ))?;
         }
+
+        Ok(())
     }
 }
 

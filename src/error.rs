@@ -10,28 +10,14 @@ pub enum Error {
         error: io::Error,
     },
     Db(sqlx::Error),
-    UnknownCmd(String),
-    UnknownTbl(String),
-}
-
-impl Error {
-    pub fn unknown_cmd(cmd: impl ToString) -> Self {
-        Self::UnknownCmd(cmd.to_string())
-    }
-
-    pub fn unknown_tbl(tbl: impl ToString) -> Self {
-        Self::UnknownTbl(tbl.to_string())
-    }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Generic(v) => write!(f, "{v}"),
-            Self::Io { error, .. } => write!(f, "Tiedonsiirtovirhe: {error}"),
-            Self::Db(v) => write!(f, "Tietokantavirhe: {v}"),
-            Self::UnknownCmd(v) => write!(f, "Tuntematon komento ”{v}”."),
-            Self::UnknownTbl(v) => write!(f, "Tuntematon taulukkotyyppi ”{v}”."),
+            Self::Io { error, .. } => write!(f, "{error}"),
+            Self::Db(v) => write!(f, "Database error: {v}"),
         }
     }
 }

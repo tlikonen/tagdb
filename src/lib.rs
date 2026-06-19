@@ -6,7 +6,7 @@ mod prelude;
 
 use crate::prelude::*;
 pub use crate::{
-    error::Result,
+    error::{Error, Result},
     objects::{Cmd, Config, Format, Tag, Tags},
 };
 
@@ -44,17 +44,17 @@ async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
         if first {
             first = false;
         } else {
-            stdout("\n");
+            stdout("\n")?;
         }
-        record.print(&config);
+        record.print(&config)?;
     }
     Ok(())
 }
 
 async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<()> {
     match tags.matching_record_ids(db).await? {
-        Some(ids) => stdout(&format!("{}\n", ids.count())),
-        None => stdout("0\n"),
+        Some(ids) => stdout(&format!("{}\n", ids.count()))?,
+        None => stdout("0\n")?,
     }
     Ok(())
 }
@@ -65,7 +65,7 @@ async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> Result<()> {
     if name_count.is_empty() {
         return Err("No tags found.".into());
     } else {
-        name_count.print();
+        name_count.print()?;
     }
     Ok(())
 }
@@ -148,7 +148,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
             stdout(&format!(
                 "{} – ",
                 headers.get_header(record.id).expect("Id is not set.")
-            ));
+            ))?;
             io::stdout().flush()?;
 
             let mut error = false;
@@ -157,12 +157,12 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
                 None => {
                     // Empty content. Delete the record.
                     record.delete(&mut ta).await?;
-                    stdout("Deleted\n");
+                    stdout("Deleted\n")?;
                 }
 
                 Some(_) => match record.for_update() {
                     Ok(rec) => match rec.update(&mut ta).await {
-                        Ok(_) => stdout("Updated\n"),
+                        Ok(_) => stdout("Updated\n")?,
                         Err(e) => {
                             error_msg = format!("{e}");
                             error = true;
@@ -177,8 +177,8 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
             }
 
             if error {
-                stdout("FAILED\n");
-                stderr(&format!("{error_msg}\n"));
+                stdout("FAILED\n")?;
+                stderr(&format!("{error_msg}\n"))?;
                 if return_to_editor()? {
                     continue 'editor;
                 } else {
@@ -208,7 +208,7 @@ fn return_to_editor() -> Result<bool> {
     loop {
         stdout(
             "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: ",
-        );
+        )?;
         io::stdout().flush()?;
 
         buffer.clear();
@@ -273,12 +273,14 @@ pub fn database_name() -> String {
     format!("{PROGRAM_NAME}.sqlite")
 }
 
-pub fn stdout(s: &str) {
-    let _ = write!(io::stdout(), "{s}");
+pub fn stdout(s: &str) -> Result<()> {
+    write!(io::stdout(), "{s}")?;
+    Ok(())
 }
 
-pub fn stderr(s: &str) {
-    let _ = write!(io::stderr(), "{s}");
+pub fn stderr(s: &str) -> Result<()> {
+    write!(io::stderr(), "{s}")?;
+    Ok(())
 }
 
 #[cfg(test)]
