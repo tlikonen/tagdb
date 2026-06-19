@@ -105,7 +105,7 @@ impl Record {
         }
     }
 
-    pub fn write(&self, file: &mut NamedTempFile, id_line: &str) -> ResultDE<()> {
+    pub fn write(&self, file: &mut NamedTempFile, id_line: &str) -> Result<()> {
         writeln!(file, "{id_line}")?;
 
         for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
@@ -130,7 +130,7 @@ impl Records {
         file: &mut NamedTempFile,
         headers: &mut EditorHeaders,
         config: &Config,
-    ) -> ResultDE<()> {
+    ) -> Result<()> {
         let mut first = true;
 
         for (header_id, record) in (1..).zip(self.iter()) {
@@ -149,7 +149,7 @@ impl Records {
 }
 
 impl EditorRecords {
-    pub fn parse(buffer: &str, headers: &EditorHeaders) -> ResultDE<Self> {
+    pub fn parse(buffer: &str, headers: &EditorHeaders) -> Result<Self> {
         let mut header_id: Option<i32> = None;
         let mut tags = HashSet::<&str>::with_capacity(10);
         let mut lines: Vec<&str> = Vec::with_capacity(20);
@@ -280,7 +280,7 @@ fn is_org_header(s: &str) -> bool {
     false
 }
 
-pub fn run_text_editor(name: &str) -> ResultDE<()> {
+pub fn run_text_editor(name: &str) -> Result<()> {
     use std::{env, process::Command};
 
     let editor = match env::var("EDITOR") {

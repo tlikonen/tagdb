@@ -3,9 +3,10 @@ pub(crate) use {
         TAG_PREFIX_EDITOR,
         database::CL_TIME_EPOCH,
         database_name,
+        error::Result,
         objects::{
             Config, EditorHeaders, EditorRecords, Format, Record, RecordEditor, RecordIds,
-            RecordNew, RecordUpdate, Records, ResultDE, Tag, TagList, Tags,
+            RecordNew, RecordUpdate, Records, Tag, TagList, Tags,
         },
         remove_empty_lines, stderr, stdout,
     },
@@ -15,8 +16,8 @@ pub(crate) use {
     std::{
         cmp::Ordering,
         collections::{HashMap, HashSet},
-        fs,
-        io::{self as stdio, Write as _},
+        fmt, fs,
+        io::{self, Write as _},
         path::{Path, PathBuf},
     },
     tempfile::NamedTempFile,

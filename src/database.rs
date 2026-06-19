@@ -10,14 +10,14 @@ const CHANGES_BEFORE_VACUUM: i32 = 1000;
 pub const CL_TIME_EPOCH: i64 = 2208988800;
 
 impl Tags {
-    pub async fn find_records(&self, db: &mut DBase) -> ResultDE<Records> {
+    pub async fn find_records(&self, db: &mut DBase) -> Result<Records> {
         match self.matching_record_ids(db).await? {
             Some(ids) => ids.records(db).await,
             None => Err("Records not found.".into()),
         }
     }
 
-    pub async fn matching_record_ids(&self, db: &mut DBase) -> ResultDE<Option<RecordIds>> {
+    pub async fn matching_record_ids(&self, db: &mut DBase) -> Result<Option<RecordIds>> {
         let mut intersect = HashSet::with_capacity(10);
         let mut set = HashSet::with_capacity(10);
         let mut first = true;
@@ -54,7 +54,7 @@ impl Tags {
 }
 
 impl RecordIds {
-    pub async fn records(&self, db: &mut DBase) -> ResultDE<Records> {
+    pub async fn records(&self, db: &mut DBase) -> Result<Records> {
         let mut records = Vec::with_capacity(5);
 
         for id in self.hash() {
@@ -100,7 +100,7 @@ impl RecordIds {
     }
 }
 
-pub async fn list_tags(db: &mut DBase, tags: Option<&Tags>) -> Result<TagList, sqlx::Error> {
+pub async fn list_tags(db: &mut DBase, tags: Option<&Tags>) -> Result<TagList> {
     let empty = String::new();
     let list: Vec<&String> = match tags {
         Some(t) => t.iter().collect(),
@@ -147,7 +147,7 @@ fn num_width(mut num: u64) -> usize {
 }
 
 impl RecordNew {
-    pub async fn insert(&self, db: &mut DBase) -> Result<(), sqlx::Error> {
+    pub async fn insert(&self, db: &mut DBase) -> Result<()> {
         let mut change_count: i32 = 0;
 
         let record_id = {
@@ -189,7 +189,7 @@ impl RecordNew {
 }
 
 impl RecordUpdate {
-    pub async fn update(&self, db: &mut DBase) -> Result<(), sqlx::Error> {
+    pub async fn update(&self, db: &mut DBase) -> Result<()> {
         let record_id = self.id;
 
         sqlx::query("UPDATE records SET modified = $1, content = $2 WHERE id = $3")
@@ -252,7 +252,7 @@ impl RecordUpdate {
 }
 
 impl RecordEditor {
-    pub fn for_update(self) -> ResultDE<RecordUpdate> {
+    pub fn for_update(self) -> Result<RecordUpdate> {
         let mut tags = None;
         if let Some(proposed_tags) = &self.tags {
             tags = Some(Tags::try_from(proposed_tags)?);
@@ -270,7 +270,7 @@ impl RecordEditor {
         Ok(new)
     }
 
-    pub async fn delete(&self, db: &mut DBase) -> Result<(), sqlx::Error> {
+    pub async fn delete(&self, db: &mut DBase) -> Result<()> {
         sqlx::query("DELETE FROM records WHERE id = $1")
             .bind(self.id)
             .execute(&mut *db)
@@ -280,7 +280,7 @@ impl RecordEditor {
     }
 }
 
-async fn get_or_insert_tag(db: &mut DBase, name: &str) -> Result<i32, sqlx::Error> {
+async fn get_or_insert_tag(db: &mut DBase, name: &str) -> Result<i32> {
     let id: i32;
 
     match sqlx::query("SELECT id FROM tags WHERE name = $1")
@@ -302,7 +302,7 @@ async fn get_or_insert_tag(db: &mut DBase, name: &str) -> Result<i32, sqlx::Erro
     Ok(id)
 }
 
-pub async fn retag(db: &mut DBase, old: &Tag, new: &Tag) -> ResultDE<()> {
+pub async fn retag(db: &mut DBase, old: &Tag, new: &Tag) -> Result<()> {
     if old == new {
         return Err("OLD and NEW tag can’t be the same.".into());
     }
@@ -395,7 +395,7 @@ pub async fn retag(db: &mut DBase, old: &Tag, new: &Tag) -> ResultDE<()> {
     Ok(())
 }
 
-pub async fn delete_unused_tags(db: &mut DBase) -> Result<(), sqlx::Error> {
+pub async fn delete_unused_tags(db: &mut DBase) -> Result<()> {
     sqlx::query(
         "DELETE FROM tags WHERE id IN \
          (SELECT tags.id FROM tags LEFT JOIN record_tag AS j \
@@ -406,7 +406,7 @@ pub async fn delete_unused_tags(db: &mut DBase) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-pub async fn is_edit_message_seen(db: &mut DBase) -> Result<bool, sqlx::Error> {
+pub async fn is_edit_message_seen(db: &mut DBase) -> Result<bool> {
     match sqlx::query("SELECT value FROM maintenance WHERE key = 'seen edit message'")
         .fetch_optional(&mut *db)
         .await?
@@ -416,7 +416,7 @@ pub async fn is_edit_message_seen(db: &mut DBase) -> Result<bool, sqlx::Error> {
     }
 }
 
-pub async fn set_edit_message_seen(db: &mut DBase) -> Result<(), sqlx::Error> {
+pub async fn set_edit_message_seen(db: &mut DBase) -> Result<()> {
     sqlx::query("INSERT INTO maintenance (key, value) VALUES ('seen edit message', 1)")
         .execute(&mut *db)
         .await?;
@@ -424,7 +424,7 @@ pub async fn set_edit_message_seen(db: &mut DBase) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-pub async fn connect(config: &mut Config) -> ResultDE<DBase> {
+pub async fn connect(config: &mut Config) -> Result<DBase> {
     let path;
 
     if let Some(db) = &config.database {
@@ -489,7 +489,7 @@ pub async fn connect(config: &mut Config) -> ResultDE<DBase> {
     Ok(db)
 }
 
-async fn init(db: &mut DBase, path: &Path) -> ResultDE<()> {
+async fn init(db: &mut DBase, path: &Path) -> Result<()> {
     let db_exists = sqlx::query(
         "SELECT 1 FROM sqlite_master \
          WHERE type = 'table' AND name = 'maintenance'",
@@ -598,7 +598,7 @@ async fn init(db: &mut DBase, path: &Path) -> ResultDE<()> {
     Ok(())
 }
 
-async fn update_db(db: &mut DBase, version: i32) -> ResultDE<()> {
+async fn update_db(db: &mut DBase, version: i32) -> Result<()> {
     match version {
         2 => {
             // Add --color option.
@@ -765,13 +765,13 @@ async fn update_db(db: &mut DBase, version: i32) -> ResultDE<()> {
     Ok(())
 }
 
-async fn vacuum(db: &mut DBase) -> Result<(), sqlx::Error> {
+async fn vacuum(db: &mut DBase) -> Result<()> {
     sqlx::query("VACUUM").execute(&mut *db).await?;
     change_counter_reset(db).await?;
     Ok(())
 }
 
-pub async fn vacuum_check(db: &mut DBase) -> Result<(), sqlx::Error> {
+pub async fn vacuum_check(db: &mut DBase) -> Result<()> {
     let row = sqlx::query("SELECT value FROM maintenance WHERE key = 'change counter'")
         .fetch_one(&mut *db)
         .await?;
@@ -783,14 +783,14 @@ pub async fn vacuum_check(db: &mut DBase) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-async fn change_counter_reset(db: &mut DBase) -> Result<(), sqlx::Error> {
+async fn change_counter_reset(db: &mut DBase) -> Result<()> {
     sqlx::query("UPDATE maintenance SET value = 0 WHERE key = 'change counter'")
         .execute(&mut *db)
         .await?;
     Ok(())
 }
 
-async fn change_counter_add(db: &mut DBase, count: i32) -> Result<(), sqlx::Error> {
+async fn change_counter_add(db: &mut DBase, count: i32) -> Result<()> {
     sqlx::query("UPDATE maintenance SET value = value + $1 WHERE key = 'change counter'")
         .bind(count)
         .execute(&mut *db)
@@ -798,7 +798,7 @@ async fn change_counter_add(db: &mut DBase, count: i32) -> Result<(), sqlx::Erro
     Ok(())
 }
 
-pub async fn assert_write_access(db: &mut DBase) -> ResultDE<()> {
+pub async fn assert_write_access(db: &mut DBase) -> Result<()> {
     change_counter_add(db, 0).await.map_err(
         |_| "Couldn’t get write access to the database. It’s probably locked by another process.",
     )?;

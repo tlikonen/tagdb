@@ -1,7 +1,5 @@
 use crate::prelude::*;
 
-pub type ResultDE<T> = Result<T, Box<dyn std::error::Error>>;
-
 pub struct Config {
     pub short: bool,
     pub verbose: bool,
@@ -62,11 +60,11 @@ pub enum Cmd {
 pub struct Tag(String);
 
 impl Tag {
-    pub fn try_from(name: &str) -> Result<Self, String> {
+    pub fn try_from(name: &str) -> Result<Self> {
         if is_valid_tag_name(name) {
             Ok(Self(name.to_string()))
         } else {
-            Err(format!("Invalid tag name: “{name}”."))
+            Err(format!("Invalid tag name: “{name}”.").into())
         }
     }
 
@@ -79,7 +77,7 @@ impl Tag {
 pub struct Tags(Vec<String>);
 
 impl Tags {
-    pub fn try_from<I, S>(names: I) -> Result<Self, String>
+    pub fn try_from<I, S>(names: I) -> Result<Self>
     where
         I: IntoIterator<Item = S>,
         S: ToString,
@@ -103,9 +101,9 @@ impl Tags {
         }
 
         if !invalid.is_empty() {
-            Err(format!("Invalid tag names: {invalid}."))
+            Err(format!("Invalid tag names: {invalid}.").into())
         } else if tags.is_empty() {
-            Err("No tags. At least one tag must be given.".to_string())
+            Err("No tags. At least one tag must be given.".into())
         } else {
             Ok(Self(tags))
         }
@@ -196,10 +194,13 @@ mod tests {
 
     #[test]
     fn try_from() {
-        assert_eq!(Ok(Tags(vec!("abc".to_string()))), Tags::try_from(["abc"]));
         assert_eq!(
-            Ok(Tags(vec!("€äö".to_string(), "123".to_string()))),
-            Tags::try_from(["€äö", "123"])
+            Tags(vec!("abc".to_string())),
+            Tags::try_from(["abc"]).unwrap()
+        );
+        assert_eq!(
+            Tags(vec!("€äö".to_string(), "123".to_string())),
+            Tags::try_from(["€äö", "123"]).unwrap()
         );
 
         let empty = Vec::<String>::new();

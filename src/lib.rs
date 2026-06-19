@@ -1,10 +1,14 @@
 mod database;
-mod io;
+mod error;
+mod inout;
 mod objects;
 mod prelude;
 
-pub use crate::objects::{Cmd, Config, Format, Tag, Tags};
 use crate::prelude::*;
+pub use crate::{
+    error::Result,
+    objects::{Cmd, Config, Format, Tag, Tags},
+};
 
 pub static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 pub static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -13,7 +17,7 @@ pub static PROGRAM_LICENSE: &str = env!("CARGO_PKG_LICENSE");
 
 const TAG_PREFIX_EDITOR: &str = "#";
 
-pub async fn command_stage(mut config: Config, cmd: Cmd) -> ResultDE<()> {
+pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<()> {
     unsafe {
         libc::umask(0o077);
     }
@@ -34,7 +38,7 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> ResultDE<()> {
     Ok(())
 }
 
-async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
+async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
     let mut first = true;
     for record in tags.find_records(db).await?.iter() {
         if first {
@@ -47,7 +51,7 @@ async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> 
     Ok(())
 }
 
-async fn cmd_count(db: &mut DBase, tags: Tags) -> ResultDE<()> {
+async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<()> {
     match tags.matching_record_ids(db).await? {
         Some(ids) => stdout(&format!("{}\n", ids.count())),
         None => stdout("0\n"),
@@ -55,7 +59,7 @@ async fn cmd_count(db: &mut DBase, tags: Tags) -> ResultDE<()> {
     Ok(())
 }
 
-async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> ResultDE<()> {
+async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> Result<()> {
     let name_count = database::list_tags(db, maybetags.as_ref()).await?;
 
     if name_count.is_empty() {
@@ -66,14 +70,14 @@ async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> ResultDE<()> {
     Ok(())
 }
 
-async fn cmd_create(db: &mut DBase, tags: Tags) -> ResultDE<()> {
+async fn cmd_create(db: &mut DBase, tags: Tags) -> Result<()> {
     let mut ta = db.begin().await?;
     database::assert_write_access(&mut ta).await?;
 
     let file = tmp_file()?;
     let path = file.path();
     let name = path.to_string_lossy();
-    io::run_text_editor(&name)?;
+    inout::run_text_editor(&name)?;
 
     let buffer = fs::read_to_string(path)?;
     let lines: Vec<&str> = buffer.lines().collect();
@@ -90,11 +94,11 @@ async fn cmd_create(db: &mut DBase, tags: Tags) -> ResultDE<()> {
     Ok(())
 }
 
-async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> ResultDE<()> {
+async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> Result<()> {
     let mut ta = db.begin().await?;
     database::assert_write_access(&mut ta).await?;
 
-    let buffer = stdio::read_to_string(stdio::stdin())?;
+    let buffer = io::read_to_string(io::stdin())?;
     let lines: Vec<&str> = buffer.lines().collect();
 
     match remove_empty_lines(&lines) {
@@ -109,7 +113,7 @@ async fn cmd_create_stdin(db: &mut DBase, tags: Tags) -> ResultDE<()> {
     Ok(())
 }
 
-async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
+async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
     let mut ta = db.begin().await?;
 
     let records = tags.find_records(&mut ta).await?;
@@ -137,7 +141,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
     let name = path.to_string_lossy();
 
     'editor: loop {
-        io::run_text_editor(&name)?;
+        inout::run_text_editor(&name)?;
         let buffer = fs::read_to_string(path)?;
 
         for record in EditorRecords::parse(&buffer, &headers)?.into_iter() {
@@ -145,7 +149,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
                 "{} – ",
                 headers.get_header(record.id).expect("Id is not set.")
             ));
-            stdio::stdout().flush()?;
+            io::stdout().flush()?;
 
             let mut error = false;
             let mut error_msg = String::new();
@@ -191,7 +195,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> ResultDE<()> {
     Ok(())
 }
 
-async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> ResultDE<()> {
+async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> Result<()> {
     let mut ta = db.begin().await?;
     database::assert_write_access(&mut ta).await?;
     database::retag(&mut ta, &old, &new).await?;
@@ -199,16 +203,16 @@ async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> ResultDE<()> {
     Ok(())
 }
 
-fn return_to_editor() -> ResultDE<bool> {
+fn return_to_editor() -> Result<bool> {
     let mut buffer = String::with_capacity(6);
     loop {
         stdout(
             "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: ",
         );
-        stdio::stdout().flush()?;
+        io::stdout().flush()?;
 
         buffer.clear();
-        stdio::stdin().read_line(&mut buffer)?;
+        io::stdin().read_line(&mut buffer)?;
 
         match buffer.as_str() {
             "\n" => return Ok(true),
@@ -218,7 +222,7 @@ fn return_to_editor() -> ResultDE<bool> {
     }
 }
 
-fn tmp_file() -> Result<NamedTempFile, String> {
+fn tmp_file() -> Result<NamedTempFile> {
     let tmp = tempfile::Builder::new()
         .prefix(&format!("{PROGRAM_NAME}-"))
         .suffix(".txt")
@@ -270,11 +274,11 @@ pub fn database_name() -> String {
 }
 
 pub fn stdout(s: &str) {
-    let _ = write!(stdio::stdout(), "{s}");
+    let _ = write!(io::stdout(), "{s}");
 }
 
 pub fn stderr(s: &str) {
-    let _ = write!(stdio::stderr(), "{s}");
+    let _ = write!(io::stderr(), "{s}");
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use {
     just_getopt::{Args, OptFlags, OptSpecs, OptValue},
-    std::{error::Error, process::ExitCode},
+    std::process::ExitCode,
     tagdb::*,
 };
 
@@ -60,7 +60,7 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn config_stage(args: Args) -> Result<(), Box<dyn Error>> {
+async fn config_stage(args: Args) -> Result<()> {
     let mut config = {
         let mut format = None;
         let mut format_save = false;
