@@ -9,6 +9,22 @@ use {
 
 #[tokio::main]
 async fn main() -> ExitCode {
+    match cli().await {
+        Ok(_) => ExitCode::SUCCESS,
+
+        Err(Error::Io {
+            kind: ErrorKind::BrokenPipe,
+            ..
+        }) => ExitCode::FAILURE,
+
+        Err(e) => {
+            let _ = writeln!(io::stderr(), "{e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+async fn cli() -> Result<()> {
     let args = OptSpecs::new()
         .option("quiet", "q", OptValue::None)
         .option("quiet", "quiet", OptValue::None)
@@ -41,33 +57,20 @@ async fn main() -> ExitCode {
     let mut stderr = io::stderr();
 
     for u in args.unknown_options() {
-        let _ = writeln!(stderr, "Unknown option ”{u}”.");
+        writeln!(stderr, "Unknown option ”{u}”.")?;
         error = true;
     }
 
     for o in args.required_value_missing() {
-        let _ = writeln!(stderr, "Option ”{}” requires a value.", o.id);
+        writeln!(stderr, "Option ”{}” requires a value.", o.id)?;
         error = true;
     }
 
     if error {
-        let _ = writeln!(stderr, "Use option ”-h” for help.");
-        return ExitCode::FAILURE;
+        return Err("Use option ”-h” for help.".into());
     }
 
-    match config_stage(args).await {
-        Ok(_) => ExitCode::SUCCESS,
-
-        Err(Error::Io {
-            kind: ErrorKind::BrokenPipe,
-            ..
-        }) => ExitCode::FAILURE,
-
-        Err(e) => {
-            let _ = writeln!(stderr, "{e}");
-            ExitCode::FAILURE
-        }
-    }
+    config_stage(args).await
 }
 
 async fn config_stage(args: Args) -> Result<()> {
