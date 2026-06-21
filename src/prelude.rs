@@ -16,7 +16,7 @@ pub(crate) use {
     std::{
         cmp::Ordering,
         collections::{HashMap, HashSet},
-        fmt, fs,
+        fs,
         io::{self, Write as _},
         path::{Path, PathBuf},
     },
