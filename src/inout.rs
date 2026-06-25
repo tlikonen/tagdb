@@ -3,6 +3,8 @@ use crate::prelude::*;
 const TAGS_MAX_WIDTH: usize = 70;
 const TAG_PREFIX: &str = "# Tags:";
 
+type FileBuf = BufWriter<NamedTempFile>;
+
 impl Record {
     pub fn print(&self, config: &Config, stream: &mut OutBuf) -> Result<()> {
         let format = match &config.format {
@@ -111,7 +113,7 @@ impl Record {
         Ok(())
     }
 
-    pub fn write(&self, file: &mut NamedTempFile, id_line: &str) -> Result<()> {
+    pub fn write(&self, file: &mut FileBuf, id_line: &str) -> Result<()> {
         writeln!(file, "{id_line}")?;
 
         for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
@@ -133,7 +135,7 @@ impl Record {
 impl Records {
     pub fn write(
         &self,
-        file: &mut NamedTempFile,
+        file: &mut FileBuf,
         headers: &mut EditorHeaders,
         config: &Config,
     ) -> Result<()> {

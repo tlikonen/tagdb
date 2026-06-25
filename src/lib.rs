@@ -9,9 +9,8 @@ pub use crate::{
     error::{Error, Result},
     objects::{Cmd, Config, Format, Tag, Tags},
 };
-use std::io::BufWriter;
 
-pub type OutBuf = io::BufWriter<io::Stdout>;
+pub type OutBuf = BufWriter<io::Stdout>;
 
 pub static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 pub static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -125,7 +124,9 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
     let records = tags.find_records(&mut ta).await?;
     database::assert_write_access(&mut ta).await?;
 
-    let mut file = tmp_file()?;
+    let tmp = tmp_file()?;
+    let path = tmp.path().to_path_buf();
+    let mut file = BufWriter::new(tmp);
 
     let edit_message_seen = database::is_edit_message_seen(&mut ta).await?;
 
@@ -142,15 +143,14 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
 
     let mut headers = EditorHeaders::new();
     records.write(&mut file, &mut headers, &config)?;
-
-    let path = file.path();
+    file.flush()?;
 
     let mut stdout = io::stdout();
     let mut stderr = io::stderr();
 
     'editor: loop {
-        inout::run_text_editor(path)?;
-        let buffer = fs::read_to_string(path)?;
+        inout::run_text_editor(&path)?;
+        let buffer = fs::read_to_string(&path)?;
 
         for record in EditorRecords::parse(&buffer, &headers)?.into_iter() {
             write!(

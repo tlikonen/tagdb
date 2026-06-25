@@ -17,7 +17,7 @@ pub(crate) use {
         cmp::Ordering,
         collections::{HashMap, HashSet},
         env, fs,
-        io::{self, Write as _},
+        io::{self, BufWriter, Write as _},
         path::{Path, PathBuf},
         process::Command,
     },
