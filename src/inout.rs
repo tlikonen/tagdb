@@ -288,8 +288,8 @@ fn is_org_header(s: &str) -> bool {
     false
 }
 
-pub fn run_text_editor(name: &str) -> Result<()> {
-    use std::{env, process::Command};
+pub fn run_text_editor(file: &Path) -> Result<()> {
+    let name = file.as_os_str();
 
     let editor = match env::var("EDITOR") {
         Ok(value) if !value.is_empty() => value,

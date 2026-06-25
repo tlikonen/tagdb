@@ -83,8 +83,7 @@ async fn cmd_create(db: &mut DBase, tags: Tags) -> Result<()> {
 
     let file = tmp_file()?;
     let path = file.path();
-    let name = path.to_string_lossy();
-    inout::run_text_editor(&name)?;
+    inout::run_text_editor(path)?;
 
     let buffer = fs::read_to_string(path)?;
     let lines: Vec<&str> = buffer.lines().collect();
@@ -145,13 +144,12 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
     records.write(&mut file, &mut headers, &config)?;
 
     let path = file.path();
-    let name = path.to_string_lossy();
 
     let mut stdout = io::stdout();
     let mut stderr = io::stderr();
 
     'editor: loop {
-        inout::run_text_editor(&name)?;
+        inout::run_text_editor(path)?;
         let buffer = fs::read_to_string(path)?;
 
         for record in EditorRecords::parse(&buffer, &headers)?.into_iter() {

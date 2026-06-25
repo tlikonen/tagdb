@@ -16,9 +16,10 @@ pub(crate) use {
     std::{
         cmp::Ordering,
         collections::{HashMap, HashSet},
-        fs,
+        env, fs,
         io::{self, Write as _},
         path::{Path, PathBuf},
+        process::Command,
     },
     tempfile::NamedTempFile,
 };
