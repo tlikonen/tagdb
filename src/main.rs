@@ -74,6 +74,9 @@ async fn cli() -> Result<()> {
 }
 
 async fn config_stage(args: Args) -> Result<()> {
+    let mut stdout = io::stdout();
+    let mut stderr = io::stderr();
+
     let mut config = {
         let mut format = None;
         let mut format_save = false;
@@ -138,30 +141,35 @@ async fn config_stage(args: Args) -> Result<()> {
 
     let command = match selected_option {
         "help" => {
-            stdout(&format!(
+            writeln!(
+                stdout,
                 include_str!("usage.txt"),
                 program = tagdb::PROGRAM_NAME,
                 database = tagdb::database_name()
-            ))?;
+            )?;
             return Ok(());
         }
 
         "version" => {
-            stdout(&format!(
+            writeln!(
+                stdout,
                 "{prg} v{ver}\n\
                  Author:  {author}\n\
-                 License: {license}\n",
+                 License: {license}",
                 prg = tagdb::PROGRAM_NAME,
                 ver = tagdb::PROGRAM_VERSION,
                 author = tagdb::PROGRAM_AUTHORS,
                 license = tagdb::PROGRAM_LICENSE,
-            ))?;
+            )?;
             return Ok(());
         }
 
         "normal" | "short" => {
             if config.quiet && config.verbose {
-                stderr("Note: Option “-q” is ignored when combined with “-v”.\n")?;
+                writeln!(
+                    stderr,
+                    "Note: Option “-q” is ignored when combined with “-v”."
+                )?;
                 config.quiet = false;
             }
             Cmd::Normal(Tags::try_from(&args.other)?)

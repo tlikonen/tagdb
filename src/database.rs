@@ -508,10 +508,11 @@ async fn init(db: &mut DBase, path: &Path) -> Result<()> {
             Ordering::Equal => (),
 
             Ordering::Less => {
-                stderr(&format!(
-                    "Updating database file “{}” from version {version} to {PROGRAM_DB_VERSION}.\n",
+                writeln!(
+                    io::stderr(),
+                    "Updating database file “{}” from version {version} to {PROGRAM_DB_VERSION}.",
                     path.display()
-                ))?;
+                )?;
                 for v in (version + 1)..=(PROGRAM_DB_VERSION) {
                     update_db(db, v).await?;
                 }

@@ -216,11 +216,13 @@ async fn cmd_retag(db: &mut DBase, old: Tag, new: Tag) -> Result<()> {
 
 fn return_to_editor() -> Result<bool> {
     let mut buffer = String::with_capacity(6);
+    let mut stdout = io::stdout();
     loop {
-        stdout(
+        write!(
+            stdout,
             "Press ENTER to return to text editor. Write “abort” to quit and cancel all changes: ",
         )?;
-        io::stdout().flush()?;
+        stdout.flush()?;
 
         buffer.clear();
         io::stdin().read_line(&mut buffer)?;
@@ -286,16 +288,6 @@ pub fn database_name() -> String {
 
 fn std_output() -> OutBuf {
     BufWriter::new(io::stdout())
-}
-
-pub fn stdout(s: &str) -> Result<()> {
-    write!(io::stdout(), "{s}")?;
-    Ok(())
-}
-
-pub fn stderr(s: &str) -> Result<()> {
-    write!(io::stderr(), "{s}")?;
-    Ok(())
 }
 
 #[cfg(test)]

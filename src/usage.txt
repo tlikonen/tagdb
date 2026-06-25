@@ -70,4 +70,3 @@ Command options
 
   --version
         Print program’s version and copyright information.
-
