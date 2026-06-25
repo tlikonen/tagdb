@@ -147,7 +147,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
         file.flush()?;
     }
 
-    let mut stdout = io::stdout();
+    let mut stdout = BufWriter::new(io::stdout());
     let mut stderr = io::stderr();
 
     'editor: loop {
@@ -160,7 +160,6 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
                 "{} – ",
                 headers.get_header(record.id).expect("Id is not set.")
             )?;
-            stdout.flush()?;
 
             let mut error = false;
             let mut error_msg = String::new();
@@ -189,6 +188,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
 
             if error {
                 writeln!(stdout, "FAILED")?;
+                stdout.flush()?;
                 writeln!(stderr, "{error_msg}")?;
                 if return_to_editor()? {
                     continue 'editor;
@@ -201,6 +201,7 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
         break 'editor;
     }
 
+    stdout.flush()?;
     database::delete_unused_tags(&mut ta).await?;
     ta.commit().await?;
     Ok(())
