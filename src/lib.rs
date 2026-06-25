@@ -9,6 +9,9 @@ pub use crate::{
     error::{Error, Result},
     objects::{Cmd, Config, Format, Tag, Tags},
 };
+use std::io::BufWriter;
+
+pub type OutBuf = io::BufWriter<io::Stdout>;
 
 pub static PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 pub static PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -39,22 +42,24 @@ pub async fn command_stage(mut config: Config, cmd: Cmd) -> Result<()> {
 }
 
 async fn cmd_normal(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
+    let mut stream = std_output();
     let mut first = true;
     for record in tags.find_records(db).await?.iter() {
         if first {
             first = false;
         } else {
-            stdout("\n")?;
+            writeln!(stream)?;
         }
-        record.print(&config)?;
+        record.print(&config, &mut stream)?;
     }
+    stream.flush()?;
     Ok(())
 }
 
 async fn cmd_count(db: &mut DBase, tags: Tags) -> Result<()> {
     match tags.matching_record_ids(db).await? {
-        Some(ids) => stdout(&format!("{}\n", ids.count()))?,
-        None => stdout("0\n")?,
+        Some(ids) => writeln!(io::stdout(), "{}", ids.count())?,
+        None => writeln!(io::stdout(), "0")?,
     }
     Ok(())
 }
@@ -65,7 +70,9 @@ async fn cmd_list(db: &mut DBase, maybetags: Option<Tags>) -> Result<()> {
     if name_count.is_empty() {
         return Err("No tags found.".into());
     } else {
-        name_count.print()?;
+        let mut stream = std_output();
+        name_count.print(&mut stream)?;
+        stream.flush()?;
     }
     Ok(())
 }
@@ -271,6 +278,10 @@ fn remove_empty_lines(lines: &Vec<&str>) -> Option<String> {
 
 pub fn database_name() -> String {
     format!("{PROGRAM_NAME}.sqlite")
+}
+
+fn std_output() -> OutBuf {
+    BufWriter::new(io::stdout())
 }
 
 pub fn stdout(s: &str) -> Result<()> {

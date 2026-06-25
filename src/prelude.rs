@@ -1,6 +1,6 @@
 pub(crate) use {
     crate::{
-        TAG_PREFIX_EDITOR,
+        OutBuf, TAG_PREFIX_EDITOR,
         database::CL_TIME_EPOCH,
         database_name,
         error::Result,
@@ -8,7 +8,7 @@ pub(crate) use {
             Config, EditorHeaders, EditorRecords, Format, Record, RecordEditor, RecordIds,
             RecordNew, RecordUpdate, Records, Tag, TagList, Tags,
         },
-        remove_empty_lines, stderr, stdout,
+        remove_empty_lines, stderr,
     },
     chrono::{DateTime, Local},
     futures::TryStreamExt as _,

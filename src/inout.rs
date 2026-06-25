@@ -4,19 +4,19 @@ const TAGS_MAX_WIDTH: usize = 70;
 const TAG_PREFIX: &str = "# Tags:";
 
 impl Record {
-    pub fn print(&self, config: &Config) -> Result<()> {
+    pub fn print(&self, config: &Config, stream: &mut OutBuf) -> Result<()> {
         let format = match &config.format {
             Some(f) => f,
             None => &Default::default(),
         };
 
         match format {
-            Format::Text { color } => self.print_text(config, *color),
-            Format::OrgMode => self.print_orgmode(config),
+            Format::Text { color } => self.print_text(stream, config, *color),
+            Format::OrgMode => self.print_orgmode(stream, config),
         }
     }
 
-    fn print_text(&self, config: &Config, color: bool) -> Result<()> {
+    fn print_text(&self, stream: &mut OutBuf, config: &Config, color: bool) -> Result<()> {
         const ESC: char = '\u{001B}';
         const GREEN: &str = "0;32";
         const YELLOW: &str = "0;33";
@@ -32,9 +32,10 @@ impl Record {
         };
 
         if config.verbose {
-            stdout(&format!(
+            writeln!(
+                stream,
                 "{}# Created:  {}{}\n\
-                 {}# Modified: {}{}{}\n",
+                 {}# Modified: {}{}{}",
                 colors(GREEN),
                 colors(CYAN),
                 format_time(self.created, config.utc),
@@ -42,67 +43,68 @@ impl Record {
                 colors(CYAN),
                 format_time(self.modified, config.utc),
                 colors(OFF)
-            ))?;
+            )?;
         }
 
         if !config.quiet || config.verbose {
             for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
-                stdout(&format!(
-                    "{}{TAG_PREFIX} {}{line}{}\n",
+                writeln!(
+                    stream,
+                    "{}{TAG_PREFIX} {}{line}{}",
                     colors(GREEN),
                     colors(YELLOW),
                     colors(OFF)
-                ))?;
+                )?;
             }
-            stdout("\n")?;
+            writeln!(stream)?;
         }
 
         if config.short {
             if let Some(line) = self.content.lines().next() {
-                stdout(line)?;
-                stdout("\n")?;
+                writeln!(stream, "{line}")?;
             }
         } else {
-            stdout(&self.content)?;
+            write!(stream, "{}", self.content)?;
         }
 
         Ok(())
     }
 
-    fn print_orgmode(&self, config: &Config) -> Result<()> {
+    fn print_orgmode(&self, stream: &mut OutBuf, config: &Config) -> Result<()> {
         let mut lines = self.content.lines();
 
         let first = lines.next();
         if let Some(line) = first {
             if line.starts_with("* ") {
-                stdout(line)?;
-                stdout("\n")?;
+                writeln!(stream, "{line}")?;
             } else {
-                stdout(&format!("* {line}\n"))?;
+                writeln!(stream, "* {line}")?;
             }
         }
 
         if config.verbose {
-            stdout(&format!(
+            writeln!(
+                stream,
                 "# Created:  {}\n\
-                 # Modified: {}\n",
+                 # Modified: {}",
                 format_time(self.created, config.utc),
                 format_time(self.modified, config.utc),
-            ))?;
+            )?;
         }
 
         if !config.quiet || config.verbose {
             for line in into_lines(&self.tags, TAGS_MAX_WIDTH) {
-                stdout(&format!("{TAG_PREFIX} {line}\n"))?;
+                writeln!(stream, "{TAG_PREFIX} {line}")?;
             }
         }
 
         if !config.short {
             for line in lines {
-                stdout(&format!(
-                    "{}{line}\n",
+                writeln!(
+                    stream,
+                    "{}{line}",
                     if is_org_header(line) { "*" } else { "" }
-                ))?;
+                )?;
             }
         }
 
@@ -211,18 +213,18 @@ impl EditorRecords {
 }
 
 impl TagList {
-    pub fn print(&self) -> Result<()> {
+    pub fn print(&self, stream: &mut OutBuf) -> Result<()> {
         let mut list: Vec<(&String, &u64)> = self.iter().collect();
         list.sort_by_key(|(name, _)| name.to_lowercase());
         for (name, count) in list {
-            stdout(&format!(
-                "{c:w$} {n}\n",
+            writeln!(
+                stream,
+                "{c:w$} {n}",
                 c = count,
                 w = self.num_width,
                 n = name,
-            ))?;
+            )?;
         }
-
         Ok(())
     }
 }
