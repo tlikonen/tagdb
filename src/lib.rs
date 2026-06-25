@@ -147,16 +147,20 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
     let path = file.path();
     let name = path.to_string_lossy();
 
+    let mut stdout = io::stdout();
+    let mut stderr = io::stderr();
+
     'editor: loop {
         inout::run_text_editor(&name)?;
         let buffer = fs::read_to_string(path)?;
 
         for record in EditorRecords::parse(&buffer, &headers)?.into_iter() {
-            stdout(&format!(
+            write!(
+                stdout,
                 "{} – ",
                 headers.get_header(record.id).expect("Id is not set.")
-            ))?;
-            io::stdout().flush()?;
+            )?;
+            stdout.flush()?;
 
             let mut error = false;
             let mut error_msg = String::new();
@@ -164,12 +168,12 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
                 None => {
                     // Empty content. Delete the record.
                     record.delete(&mut ta).await?;
-                    stdout("Deleted\n")?;
+                    writeln!(stdout, "Deleted")?;
                 }
 
                 Some(_) => match record.for_update() {
                     Ok(rec) => match rec.update(&mut ta).await {
-                        Ok(_) => stdout("Updated\n")?,
+                        Ok(_) => writeln!(stdout, "Updated")?,
                         Err(e) => {
                             error_msg = format!("{e}");
                             error = true;
@@ -184,8 +188,8 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
             }
 
             if error {
-                stdout("FAILED\n")?;
-                stderr(&format!("{error_msg}\n"))?;
+                writeln!(stdout, "FAILED")?;
+                writeln!(stderr, "{error_msg}")?;
                 if return_to_editor()? {
                     continue 'editor;
                 } else {
