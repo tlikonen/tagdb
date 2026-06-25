@@ -126,24 +126,26 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
 
     let tmp = tmp_file()?;
     let path = tmp.path();
-    let mut file = BufWriter::new(&tmp);
-
-    let edit_message_seen = database::is_edit_message_seen(&mut ta).await?;
-
-    if !edit_message_seen || config.verbose {
-        writeln!(file, "{}", include_str!("editor.txt"))?;
-        if !edit_message_seen {
-            writeln!(
-                file,
-                "# The above message will not show next time unless -v option is used.\n"
-            )?;
-            database::set_edit_message_seen(&mut ta).await?;
-        }
-    }
-
     let mut headers = EditorHeaders::new();
-    records.write(&mut file, &mut headers, &config)?;
-    file.flush()?;
+
+    {
+        let mut file = BufWriter::new(&tmp);
+        let edit_message_seen = database::is_edit_message_seen(&mut ta).await?;
+
+        if !edit_message_seen || config.verbose {
+            writeln!(file, "{}", include_str!("editor.txt"))?;
+            if !edit_message_seen {
+                writeln!(
+                    file,
+                    "# The above message will not show next time unless -v option is used.\n"
+                )?;
+                database::set_edit_message_seen(&mut ta).await?;
+            }
+        }
+
+        records.write(&mut file, &mut headers, &config)?;
+        file.flush()?;
+    }
 
     let mut stdout = io::stdout();
     let mut stderr = io::stderr();
