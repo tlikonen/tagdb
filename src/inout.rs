@@ -3,7 +3,7 @@ use crate::prelude::*;
 const TAGS_MAX_WIDTH: usize = 70;
 const TAG_PREFIX: &str = "# Tags:";
 
-type FileBuf = BufWriter<NamedTempFile>;
+type FileBuf<'a> = BufWriter<&'a NamedTempFile>;
 
 impl Record {
     pub fn print(&self, config: &Config, stream: &mut OutBuf) -> Result<()> {

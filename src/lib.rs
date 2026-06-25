@@ -125,8 +125,8 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
     database::assert_write_access(&mut ta).await?;
 
     let tmp = tmp_file()?;
-    let path = tmp.path().to_path_buf();
-    let mut file = BufWriter::new(tmp);
+    let path = tmp.path();
+    let mut file = BufWriter::new(&tmp);
 
     let edit_message_seen = database::is_edit_message_seen(&mut ta).await?;
 
@@ -149,8 +149,8 @@ async fn cmd_edit(db: &mut DBase, config: Config, tags: Tags) -> Result<()> {
     let mut stderr = io::stderr();
 
     'editor: loop {
-        inout::run_text_editor(&path)?;
-        let buffer = fs::read_to_string(&path)?;
+        inout::run_text_editor(path)?;
+        let buffer = fs::read_to_string(path)?;
 
         for record in EditorRecords::parse(&buffer, &headers)?.into_iter() {
             write!(
