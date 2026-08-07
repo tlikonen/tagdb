@@ -537,55 +537,31 @@ async fn init(db: &mut DBase, path: &Path) -> Result<()> {
             path.display()
         );
 
-        let mut ta = db.begin().await?;
-
-        sqlx::query("PRAGMA auto_vacuum = FULL")
-            .execute(&mut *ta)
-            .await?;
-
-        sqlx::query("CREATE TABLE maintenance (key TEXT UNIQUE, value INTEGER)")
-            .execute(&mut *ta)
-            .await?;
-
-        sqlx::query("INSERT INTO maintenance (key, value) VALUES ('database version', $1)")
-            .bind(PROGRAM_DB_VERSION)
-            .execute(&mut *ta)
-            .await?;
-
-        sqlx::query("INSERT INTO maintenance (key, value) VALUES ('change counter', 0)")
-            .execute(&mut *ta)
-            .await?;
-
-        sqlx::query("INSERT INTO maintenance (key, value) VALUES ('output format', 'text-color')")
-            .execute(&mut *ta)
-            .await?;
-
-        // Myöhemmin ehkä kenttiin: NOT NULL
-        sqlx::query(
+        let commands = [
+            "PRAGMA auto_vacuum = FULL",
+            "CREATE TABLE maintenance (key TEXT UNIQUE, value INTEGER)",
+            "INSERT INTO maintenance (key, value) VALUES ('change counter', 0)",
+            "INSERT INTO maintenance (key, value) VALUES ('output format', 'text-color')",
+            // Myöhemmin ehkä kenttiin: NOT NULL
             "CREATE TABLE records \
              (id INTEGER PRIMARY KEY, created INTEGER, modified INTEGER, content TEXT)",
-        )
-        .execute(&mut *ta)
-        .await?;
-
-        // Myöhemmin ehkä: name TEXT UNIQUE NOT NULL
-        sqlx::query(
-            "CREATE TABLE tags \
-             (id INTEGER PRIMARY KEY, name TEXT UNIQUE)",
-        )
-        .execute(&mut *ta)
-        .await?;
-
-        sqlx::query(
+            // Myöhemmin ehkä: name TEXT UNIQUE NOT NULL
+            "CREATE TABLE tags (id INTEGER PRIMARY KEY, name TEXT UNIQUE)",
             "CREATE TABLE record_tag \
              (record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE, \
              tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE, \
              PRIMARY KEY (record_id, tag_id))",
-        )
-        .execute(&mut *ta)
-        .await?;
+            "CREATE INDEX idx_record_tag_tag_id ON record_tag (tag_id)",
+        ];
 
-        sqlx::query("CREATE INDEX idx_record_tag_tag_id ON record_tag (tag_id)")
+        let mut ta = db.begin().await?;
+
+        for command in commands {
+            sqlx::query(command).execute(&mut *ta).await?;
+        }
+
+        sqlx::query("INSERT INTO maintenance (key, value) VALUES ('database version', $1)")
+            .bind(PROGRAM_DB_VERSION)
             .execute(&mut *ta)
             .await?;
 
