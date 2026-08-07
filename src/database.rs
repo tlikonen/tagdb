@@ -572,6 +572,7 @@ async fn init(db: &mut DBase, path: &Path) -> Result<()> {
         .execute(&mut *db)
         .await?;
 
+    // Tämä pragma poistuu. Pitää korvata LIKE-lauseet GLOB-lauseilla.
     sqlx::query("PRAGMA case_sensitive_like = ON")
         .execute(&mut *db)
         .await?;
