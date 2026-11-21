@@ -807,6 +807,8 @@ fn like_esc_wild(string: &str) -> String {
 }
 
 fn current_time() -> i64 {
+    // The return value is Common Lisp universal time: seconds since
+    // 1900-01-01T00:00:00Z.
     chrono::Utc::now().timestamp() + CL_TIME_EPOCH
 }
 
