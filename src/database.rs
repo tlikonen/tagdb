@@ -282,23 +282,21 @@ impl RecordEditor {
 }
 
 async fn get_or_insert_tag(db: &mut DBase, name: &str) -> Result<i32> {
-    let id: i32;
-
-    match sqlx::query("SELECT id FROM tags WHERE name = $1")
+    let id: i32 = match sqlx::query("SELECT id FROM tags WHERE name = $1")
         .bind(name)
         .fetch_optional(&mut *db)
         .await?
     {
-        Some(row) => id = row.try_get("id")?,
+        Some(row) => row.try_get("id")?,
         None => {
             let row = sqlx::query("INSERT INTO tags (name) VALUES ($1) RETURNING id")
                 .bind(name)
                 .fetch_one(&mut *db)
                 .await?;
             change_counter_add(db, 1).await?;
-            id = row.try_get("id")?;
+            row.try_get("id")?
         }
-    }
+    };
 
     Ok(id)
 }
