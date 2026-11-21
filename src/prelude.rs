@@ -10,7 +10,6 @@ pub(crate) use {
         },
         remove_empty_lines,
     },
-    chrono::{DateTime, Local},
     futures::TryStreamExt as _,
     sqlx::{Connection as _, Row as _, SqliteConnection as DBase, sqlite::SqliteConnectOptions},
     std::{

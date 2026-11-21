@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use jiff::Timestamp;
 
 const PROGRAM_DB_VERSION: i32 = 7;
 const CHANGES_BEFORE_VACUUM: i32 = 1000;
@@ -809,7 +810,7 @@ fn like_esc_wild(string: &str) -> String {
 fn current_time() -> i64 {
     // The return value is Common Lisp universal time: seconds since
     // 1900-01-01T00:00:00Z.
-    chrono::Utc::now().timestamp() + CL_TIME_EPOCH
+    Timestamp::now().as_second() + CL_TIME_EPOCH
 }
 
 #[cfg(test)]

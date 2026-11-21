@@ -1,4 +1,6 @@
 use crate::prelude::*;
+use jiff::Timestamp;
+use jiff::tz::TimeZone;
 
 const TAGS_MAX_WIDTH: usize = 70;
 const TAG_PREFIX: &str = "# Tags:";
@@ -234,19 +236,16 @@ impl TagList {
 fn format_time(ut: i64, utc: bool) -> String {
     // ut = Common Lisp universal time: seconds since
     // 1900-01-01T00:00:00Z.
-
-    let dt_utc = match DateTime::from_timestamp(ut - CL_TIME_EPOCH, 0) {
-        Some(v) => v,
-        None => return "(time decoding error)".to_string(),
+    let Ok(ts) = Timestamp::from_second(ut - CL_TIME_EPOCH) else {
+        return "(time decoding error)".to_string();
     };
 
     if utc {
-        format!("{}Z", dt_utc.format("%Y-%m-%d %H:%M:%S"))
+        let utc = ts.to_zoned_datetime(TimeZone::UTC);
+        utc.strftime("%Y-%m-%d %H:%M:%SZ").to_string()
     } else {
-        format!(
-            "{}",
-            DateTime::<Local>::from(dt_utc).format("%Y-%m-%d %H:%M:%S%:z")
-        )
+        let local = ts.to_zoned_datetime(TimeZone::system());
+        local.strftime("%Y-%m-%d %H:%M:%S%:z").to_string()
     }
 }
 
