@@ -388,4 +388,10 @@ mod tests {
             sts("  111   222  €€  444  ")
         );
     }
+
+    #[test]
+    fn format_time_fn() {
+        let now = 1795249720 + CL_TIME_EPOCH; // 2026-11-21T08:28:40Z
+        assert_eq!(format_time(now, true), "2026-11-21 08:28:40Z");
+    }
 }
